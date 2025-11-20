@@ -1,12 +1,4 @@
-# === 1. SET DECLARATIONS ===
-# These sets define the 'things' in our model.
-
-# 'Raws': The set of all raw materials we can *buy*
-# (e.g., 'wood', 'ore', 'water').
-set Raws;
-
-# 'Products': The set of all finished products we can *sell*
-# (e.g., 'chair', 'iron', 'soda').
+ 
 set Products;
 
 # 'Recipes': The set of all production processes we can run
