@@ -1,15 +1,28 @@
-
-
+/* Problem 18.
+    Production problem with joint production options.
+    
+    Products can be produced individually (P1, P2, P3) or jointly (P1+P2, P2+P3).
+    Joint production has different resource consumption rates.
+    
+    Constraints:
+    - Use at least 20000 h of working time (raw material B)
+    - Fill the production quota: produce at least 200 units (raw material D), max 200
+    - Produce at most 10 units of P3
+    
+    Optimize for profit (revenue - material costs).
+*/
 
 set MATERIALS;
-set PRODUCTS;   
+set PRODUCTS;
 
 param Available {MATERIALS} >= 0;
 param Revenue {PRODUCTS} >= 0;
 param MaterialCost {MATERIALS} >= 0;
 
+# Individual production requirements
 param NeededPerUnit {MATERIALS, PRODUCTS} >= 0;
 
+# Joint production requirements
 param Joint_P1P2_Needed {MATERIALS} >= 0;
 param Joint_P2P3_Needed {MATERIALS} >= 0;
 
@@ -19,15 +32,19 @@ param MaxMatUsage {MATERIALS} >= 0, default 999999;
 param MinProdUsage {PRODUCTS} >= 0, default 0;
 param MaxProdUsage {PRODUCTS} >= 0, default 999999;
 
+# Variables for individual production
 var produced {PRODUCTS} >= 0;
 
-var joint_P1P2 >= 0;
-var joint_P2P3 >= 0;
+# Variables for joint production
+var joint_P1P2 >= 0;  # Units of P1+P2 produced jointly
+var joint_P2P3 >= 0;  # Units of P2+P3 produced jointly
 
+# Total production of each product (individual + joint)
 var total_P1 >= 0;
 var total_P2 >= 0;
 var total_P3 >= 0;
 
+# Define total production
 s.t. Def_Total_P1:
     total_P1 = produced['P1'] + joint_P1P2;
 
@@ -37,49 +54,56 @@ s.t. Def_Total_P2:
 s.t. Def_Total_P3:
     total_P3 = produced['P3'] + joint_P2P3;
 
+# Material availability constraints
 s.t. Material_Availability {m in MATERIALS}:
     sum{p in PRODUCTS} produced[p] * NeededPerUnit[m,p] 
     + joint_P1P2 * Joint_P1P2_Needed[m]
     + joint_P2P3 * Joint_P2P3_Needed[m]
-    <= Available[m];    
+    <= Available[m];
 
-s.t. Material_Usage_min {m in MATERIALS}:
-    sum{p in PRODUCTS} produced[p] * NeededPerUnit[m,p] 
+# Material usage constraints
+s.t. MaterialUsage_min {m in MATERIALS}:
+    sum{p in PRODUCTS} produced[p] * NeededPerUnit[m,p]
     + joint_P1P2 * Joint_P1P2_Needed[m]
     + joint_P2P3 * Joint_P2P3_Needed[m]
-    >= MinMatUsage[m];    
+    >= MinMatUsage[m];
 
-s.t. Material_Usage_max {m in MATERIALS}:
-    sum{p in PRODUCTS} produced[p] * NeededPerUnit[m,p] 
+s.t. MaterialUsage_max {m in MATERIALS}:
+    sum{p in PRODUCTS} produced[p] * NeededPerUnit[m,p]
     + joint_P1P2 * Joint_P1P2_Needed[m]
     + joint_P2P3 * Joint_P2P3_Needed[m]
-    <= MaxMatUsage[m];    
+    <= MaxMatUsage[m];
 
-s.t. Product_Usage_min_P1:
+# Product usage constraints (on total production)
+s.t. ProductUsage_Min_P1:
     total_P1 >= MinProdUsage['P1'];
 
-s.t. Product_Usage_min_P2:
+s.t. ProductUsage_Min_P2:
     total_P2 >= MinProdUsage['P2'];
 
-s.t. Product_Usage_min_P3:
+s.t. ProductUsage_Min_P3:
     total_P3 >= MinProdUsage['P3'];
 
-s.t. Product_Usage_max_P1:
+s.t. ProductUsage_Max_P1:
     total_P1 <= MaxProdUsage['P1'];
 
-s.t. Product_Usage_max_P2:
+s.t. ProductUsage_Max_P2:
     total_P2 <= MaxProdUsage['P2'];
 
-s.t. Product_Usage_max_P3:
+s.t. ProductUsage_Max_P3:
     total_P3 <= MaxProdUsage['P3'];
-    
+
+# Maximize profit (revenue - material costs)
 maximize Total_Profit:
+    # Revenue from all products
     total_P1 * Revenue['P1'] + total_P2 * Revenue['P2'] + total_P3 * Revenue['P3']
+    # Minus material costs
     - sum{m in MATERIALS} (
         sum{p in PRODUCTS} produced[p] * NeededPerUnit[m,p] * MaterialCost[m]
         + joint_P1P2 * Joint_P1P2_Needed[m] * MaterialCost[m]
         + joint_P2P3 * Joint_P2P3_Needed[m] * MaterialCost[m]
     );
+
 solve;
 
 printf "\n\n=== RESULTS ===\n";
