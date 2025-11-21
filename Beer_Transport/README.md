@@ -66,7 +66,7 @@ $$\sum_{b \in \text{Brewery}, u \in \text{University}} \text{transportationcostH
 
 Where $\text{TotalMass}[b,u]$ is the total mass (payload + empty truck mass for all trips) moved one way, from $B$ to $U$.
 
-$$\text{TotalMass}[b,u] = \left( \underbrace{\text{beerdensitykgperl} \times 100 \times \text{transporthl}[b,u]}_{\text{Mass of transported beer in kg}} \right) + \left( \underbrace{\sum_{t \in \text{Trucktype}} 2 \times \text{trips}[b,u,t] \times \text{truckweightt}[t] \times 1000}_{\text{Mass of empty trucks (forward \& return trip) in kg}} \right)$$
+$$\text{TotalMass}[b,u]=\left(\underbrace{\text{beerdensitykgperl}\times 100\times \text{transporthl}[b,u]}_{\text{Mass\ of\ transported\ beer\ in\ kg}}\right)+\left(\underbrace{\sum _{t\in \text{Trucktype}}2\times \text{trips}[b,u,t]\times \text{truckweightt}[t]\times 1000}_{\text{Mass\ of\ empty\ trucks\ (forward\ and\ return\ trip)\ in\ kg}}\right)$$
 
 * The term $\text{beerdensitykgperl} \times 100 \times \text{transporthl}[b,u]$ calculates the mass of the beer in **kilograms** (since $1 \text{ hl} = 100 \text{ L}$).
 * The term $2 \times \text{trips}[b,u,t] \times \text{truckweightt}[t] \times 1000$ calculates the total empty truck weight in **kilograms** for all trips, multiplied by **2** because the cost includes the **empty return trip** (truck weight for the forward trip + truck weight for the return trip).
