@@ -1,28 +1,27 @@
 
 
-
 param nDays;
 set Days:=1..nDays;
 set Cars;
 param price{Cars,Days};
-
 param initialbudget;
 param garagecount;
 
 var buy{Cars,Days} integer;
 
-minimize endbudget:
-    initialbudget - sum{d in Days, c in Cars} buy[c,d] * price[c,d];
-     
 s.t. MustHavePositiveBalanceAtTheEndOfEachDay{d in Days}:
-    initialbudget - sum{d2 in 1..d, c in Cars} buy[c,d2] * price[c,d2] >= 0;
-
+    initialbudget - sum{d2 in 1..d, c in Cars} buy[c,d2]*price[c,d2] >= 0;
+    
 s.t. CannotHaveMoreCarsThanGarageSpace{d in Days}:
     sum{d2 in 1..d, c in Cars} buy[c,d2] <= garagecount;
 
-s.t. CannotSellWhatWeDontHave{d in Days, c in Cars}:
+
+s.t. CannotSellWhatWeDontHave {d in Days, c in Cars}:
     sum{d2 in 1..d} buy[c,d2] >= 0;
 
+maximize endbudget:
+    initialbudget - sum{d in Days, c in Cars} buy[c,d]*price[c,d]
+    ;
 
 solve;
 
@@ -38,15 +37,13 @@ for{d in Days}{
     printf "\tBudget: %d\n", initialbudget - sum{d2 in 1..d, c in Cars} buy[c,d2]*price[c,d2];
 }
 
-
-
 data;
 
 param nDays:= 5;
 set Cars:= Wartburg Lada Fiat Trabant Skoda;
 
 param price:
-            1       2       3           4           5 :=
+            1       2       3       4           5 :=
 Wartburg    60000   65000   61000       66000       60000
 Lada        50000   55000   63000       60000       52000
 Fiat        30000   32000   33000       30000       27000

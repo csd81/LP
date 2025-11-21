@@ -4,14 +4,14 @@ param price{Cars,Days};
 
 var buy{Cars,Days} binary;
 
-minimize totalCost:
-    sum{c in Cars, d in Days} buy[c,d] * price[c,d];
-
 s.t. ExactlyOneCarEachDay{d in Days}:
     sum{c in Cars} buy[c,d] = 1;
-
+ 
 s.t. EachCarExactlyOnce{c in Cars}:
-    sum{d in Days} buy[c,d] = 1;
+    sum{d in Days} buy[c,d] =1;
+
+minimize totalCost:
+    sum{c in Cars, d in Days} buy[c,d]*price[c,d];
 
 solve;
 
@@ -21,7 +21,6 @@ for{c in Cars, d in Days:buy[c,d]==1}
     printf "%10s:\t%s - %d\n",c,d,price[c,d];
 
 printf "\n\n";
-
 
 data;
 
