@@ -52,6 +52,7 @@ These limit the possible solutions:
 2.  **`University_demand_hl`**: Total beer transported *to* any university must meet its demand:
     $$\sum_{b \in \text{Brewery}} \text{transporthl}[b,u] \ge \text{demandhl}[u]$$
 3.  **`Enough_transport_capacity_for_transported_beer_t`**: The total payload capacity provided by the truck trips must be sufficient to carry the mass of the transported beer:
+
     $$\frac{\text{beerdensitykgperl} \times \text{transporthl}[b,u]}{10} \le \sum_{t \in \text{Trucktype}} \text{trips}[b,u,t] \times \text{truckcarrycapacityt}[t]$$
     
     Note: The left side of the inequality converts beer volume from hl (hectoliters) to tonnes. ($1 \text{hl} = 100 \text{L}$; $\text{density}$ is in $\text{kg}/\text{L}$. So $\text{hl} \times 100 \times \text{density}$ is mass in $\text{kg}$, dividing by $1000$ gives mass in tonnes (t). $100/1000 = 1/10$.
