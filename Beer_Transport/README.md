@@ -53,7 +53,8 @@ These limit the possible solutions:
     $$\sum_{b \in \text{Brewery}} \text{transporthl}[b,u] \ge \text{demandhl}[u]$$
 3.  **`Enough_transport_capacity_for_transported_beer_t`**: The total payload capacity provided by the truck trips must be sufficient to carry the mass of the transported beer:
     $$\frac{\text{beerdensitykgperl} \times \text{transporthl}[b,u]}{10} \le \sum_{t \in \text{Trucktype}} \text{trips}[b,u,t] \times \text{truckcarrycapacityt}[t]$$
-    *Note: The left side of the inequality converts beer volume from hl (hectoliters) to tonnes. ($1 \text{ hl} = 100 \text{ L}$; $\text{density}$ is in $\text{kg}/\text{L}$. So $\text{hl} \times 100 \times \text{density}$ is mass in $\text{kg}$, dividing by $1000$ gives mass in tonnes (t). $100/1000 = 1/10$.*
+    
+    Note: The left side of the inequality converts beer volume from hl (hectoliters) to tonnes. ($1 \text{hl} = 100 \text{L}$; $\text{density}$ is in $\text{kg}/\text{L}$. So $\text{hl} \times 100 \times \text{density}$ is mass in $\text{kg}$, dividing by $1000$ gives mass in tonnes (t). $100/1000 = 1/10$.
 
 ---
 
@@ -66,7 +67,7 @@ $$\sum_{b \in \text{Brewery}, u \in \text{University}} \text{transportationcostH
 
 Where $\text{TotalMass}[b,u]$ is the total mass (payload + empty truck mass for all trips) moved one way, from $B$ to $U$.
 
-$$\text{TotalMass}[b,u]=\left(\underbrace{\text{beerdensitykgperl}\times 100\times \text{transporthl}[b,u]}_{\text{Mass\ of\ transported\ beer\ in\ kg}}\right)+\left(\underbrace{\sum _{t\in \text{Trucktype}}2\times \text{trips}[b,u,t]\times \text{truckweightt}[t]\times 1000}_{\text{Mass\ of\ empty\ trucks\ (forward\ and\ return\ trip)\ in\ kg}}\right)$$
+$$\text{TotalMass}[b,u] = \left( \underbrace{\text{beerdensitykgperl} \times 100 \times \text{transporthl}[b,u]}_{\text{Mass of transported beer in kg}} \right) + \left( \underbrace{\sum_{t \in \text{Trucktype}} 2 \times \text{trips}[b,u,t] \times \text{truckweightt}[t] \times 1000}_{\text{Mass of empty trucks (forward and return trip) in kg}} \right)$$
 
 * The term $\text{beerdensitykgperl} \times 100 \times \text{transporthl}[b,u]$ calculates the mass of the beer in **kilograms** (since $1 \text{ hl} = 100 \text{ L}$).
 * The term $2 \times \text{trips}[b,u,t] \times \text{truckweightt}[t] \times 1000$ calculates the total empty truck weight in **kilograms** for all trips, multiplied by **2** because the cost includes the **empty return trip** (truck weight for the forward trip + truck weight for the return trip).
