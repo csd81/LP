@@ -1,3 +1,0 @@
-Problem 32.
-    Solve Problem 21, the transportation problem extended with a middle level of so-called centers introduced. Material does not go directly from the supply to the demand. Instead, material goes from supply nodes to center nodes first, and then from center nodes to demand nodes. Connections between either supplies and centers, or centers and demands, have their own transportation costs as usual. Moreover, centers are not necessarily used in transportation, but if are, an establishment cost must be paid first if any transportation is planned there. Establishment costs are one-time, and given for each center. 
-
