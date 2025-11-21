@@ -1,0 +1,95 @@
+Note: problems marked with a "+" are bonus problems which do not count toward the maximum points of 50 that can be obtained.
+Note: this is rather a "superset" of problems in the exam, than an example exam. That means, possible kinds of questions are represented here, but the exam will have fewer problems.
+
+##############################
+(I) Production mix problem
+
+In a light bulb manufacturing plant, there are four products that can be produced: LED Bulb, Halogen Bulb, or Compact Bulb.
+
+Each of these products requires a specific amount of resources: labor hours, machine hours, and energy. The exact requirements and total weekly availabilities are the following.
+
+		Labor Hours	Machine hours	Energy	Revenue:
+LED Bulb:	0.021		0.051		100	$20
+Halogen Bulb:	0.016		0.040		80	$15
+Compact Bulb: 	0.012		0.022		60	$10
+Availability:	40		168		1000000
+
+(a) By deciding the exact number of each bulb to be produced, what is the maximum revenue that can be obtained?
+Note that the number of bulbs to be created are integers.
+
+(b) Utilization of Labor Hours cost $200/hour, machine hours cost $30/hour, energy costs $0.01/unit energy. Calculate profit in the model instead of total revenue.
+
+(c) Expand the model with a constraint stating that at least 10% of the total availabilities must be used up of each resource.
+
+(+d) There are two different kinds of objective calculations. One is the above, which is $20/LED, $15/Halogen and $10/Compact. However, another marketing study suggests that the actual revenues could rather be $19/LED, $16/Halogen and $11/Compact. The management decided to calculate with both scenarios, however, in a way that the WORSE of the two calculations shall be maximized. Incorporate this into the model.
+
+Note: problems (b), (c) and (d) can be solved one-by-one in different models, or all in a single model, which yield different results. All are considered to be correct.
+
+##############################
+(II) Transportation problem
+
+In a region, there are three grain silos and three markets. The wheat stored in the grain silos shall be distributed among the markets according to demands. The total supplies, demands, and unit transportation costs are the following.
+
+Silo I:		300 units		
+Silo II:	240 units
+Silo III:	190 units
+
+Market_A:	70 units
+Market_B:	330 units
+Market_C:	330 units
+
+I	15$	19$	27$
+II	30$	27$	15$
+III	40$	30$	31$
+	A	B	C
+
+(a) Suppose that all of the demands are supplied from the silos, what is the minimal transportation cost?
+
+(+b) The government introduced a new tax for track usage. This means that an extra shall be paid on each of the 3x3=9 routes to be travelled, which is a fixed 1000$ per route. We must, from now, decide for each route whether we want to transport any amount from that particular silo to that particular market - and if we do, then a fixed cost of $1000, shall be paid for each of such routes, regardless of the amount transported.
+
+For example, if we transport from I->A, I->B, II->B, II->C, III->C, then the total transportation costs increase by $5000 because five routes are used.
+
+Implement the extra costs into your model and answer whether the optimal transportation changes with the new tax.
+
+##############################
+(III) Assignment problem
+
+A running team competition consists of 7 runners, named now as A, B, C, D, E, F and G. These runners each must complete a track. There are 7 tracks, denoted as 1, 2, 3, 4, 5, 6 and 7.
+
+Note that the tracks have different difficulties (rough land, elevation, orientation, etc.), and the runners have their own strong and weak points. Therefore, for each runner, and each track, there is an individual estimated time (in minutes) for the runner to do that track, which is the following.
+
+	1	2	3	4	5	6	7
+A	40.4	45.2	38.3	44.2	46.7	50.5	37.2	
+B	43.0	41.1	41.1	49.3	39.9	43.4	44.3
+C	30.9	31.8	33.7	35.5	36.0	39.1	33.7
+D	50.4	49.7	48.8	45.0	47.9	50.0	48.0
+E	45.0	44.7	43.2	46.1	41.9	42.7	43.4
+F	40.0	44.0	39.9	43.0	45.9	53.5	45.2
+G	39.9	46.6	39.3	44.2	40.8	42.0	42.5
+
+The team must decide for which runner to run which track so that their strengths and weaknesses are distributed the best possible way. 
+
+(a) The overall result of the team is their total running time added. What is the minimum total time for the team?
+
+(+b) The overall result of the team is the last runner to finish (they start at the same time). What is the minimum of the latest runner of the team to finish?
+
+##############################
+(IV) Knapsack
+
+A satellite to be used can carry a total of 130 kg of sensors. The company may choose which projects it supports. For each project, the total mass of the sensors is known, as well as how much revenue it gives for the company. The projects are the following.
+
+	Mass		Revenue (10e3 $s)
+A	13.3 kg		200
+B	270 g		6
+C	30 kg		300
+D	800 g		19
+E	1300 g		24
+F	24 kg		355
+G	35 kg		500
+H	35 kg		480
+I	28.9 kg		421
+J	2307 g		31
+
+(a) What projects should be selected for the satellite to carry to obtain the most revenue in total?
+
+(+b) For efficiency reasons, the management wants that at least 97% of the availability to be utilized. Is it possible? If so, what is the optimal selection of projects then?
