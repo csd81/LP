@@ -32,10 +32,10 @@ The problems are classified based on the nature of their decision variables:
 | **Product Design (Maximize Income)** | Binary ($\text{use}[c]$, $\text{buy}[g]$) | **MILP/IP** |
 | **Resource-Constrained Scheduling** (Orders) | Binary ($\text{do}[o]$) | **MILP/IP** |
 | **Smartwatch Pricing** | Binary ($\text{use}$, $\text{buy}$), Continuous ($\text{sellprice}$) | **MILP** (The bilinear term suggests non-linear, but it's linearized to MILP) |
-| **Parallel Machine Scheduling** | Binary ($\text{assign}$, $\text{preceeds}$), Continuous ($\text{starting\_time}$, $\text{makespan}$) | **MILP** |
+| **Parallel Machine Scheduling** | Binary ($\text{assign}$, $\text{preceeds}$), Continuous ($\text{starting_time}$, $\text{makespan}$) | **MILP** |
 | **Car Transporter Loading** | Binary ($\text{ok}$, $\text{mount}$), Continuous ($\text{pos}$) | **MILP** |
 | **Tree Painting Schedule** | Binary ($\text{do}$), Continuous ($\text{progress}$) | **MILP** |
-| **Beer Transportation (Complex)** | Integer ($\text{trips}$), Continuous ($\text{transport\_hl}$) | **MILP** |
+| **Beer Transportation (Complex)** | Integer ($\text{trips}$), Continuous ($\text{transport_hl}$) | **MILP** |
 | **Assignment Problem (Beers)** | Binary ($\text{prepare}[s,c]$) | **MILP/IP** (Solvable as an Assignment Problem) |
 | **Store Layout (Min Length)** | Integer/Binary (Implicit in $\text{rowLength}$) | **MILP** |
 | **Store Layout (Max Revenue)** | Binary (Assignment), Continuous ($\text{sellprice}$) | **MILP** (Complex, non-linear components are typically linearized) |
@@ -47,7 +47,7 @@ The problems are classified based on the nature of their decision variables:
 | **Bus Route Optimization** | Binary (Implicit in Assignment) | **MILP/IP** |
 | **Transportation Problem (Simple)** | Continuous ($\text{transport}$) | **LP** |
 | **Currency Exchange** | Continuous ($\text{exchange}$, $\text{balance}$) | **LP** |
-| **Job Assignment (Min Makespan)** | Binary ($\text{do}$), Continuous ($\text{work\_hours}$, $\text{finish\_time}$) | **MILP** |
+| **Job Assignment (Min Makespan)** | Binary ($\text{do}$), Continuous ($\text{work_hours}$, $\text{finish_time}$) | **MILP** |
 | **Transportation Problem (clever.mod)** | Continuous ($\text{transport}$) | **LP** |
 | **Graph Coloring** | Binary ($K, P, Z, F$) | **MILP/IP** (Specifically a pure Integer Program) |
 | **Transportation Problem (Factories/Pubs)** | Continuous ($\text{szallit}$) | **LP** |
