@@ -48,11 +48,11 @@ These are the values the model must determine:
 These limit the possible solutions:
 
 1.  **`Brewery_capacity_hl`**: Total beer transported *out* of any brewery cannot exceed its production capacity:
-    $$\sum_{u \in \text{University}} \text{transport\_hl}[b,u] \le \text{production\_hl}[b]$$
+    $$\sum_{u \in \text{University}} \text{transport hl}[b,u] \le \text{production hl}[b]$$
 2.  **`University_demand_hl`**: Total beer transported *to* any university must meet its demand:
-    $$\sum_{b \in \text{Brewery}} \text{transport\_hl}[b,u] \ge \text{demand\_hl}[u]$$
+    $$\sum_{b \in \text{Brewery}} \text{transport hl}[b,u] \ge \text{demand hl}[u]$$
 3.  **`Enough_transport_capacity_for_transported_beer_t`**: The total payload capacity provided by the truck trips must be sufficient to carry the mass of the transported beer:
-    $$\frac{\text{beer\_density\_kg\_per\_l} \times \text{transport\_hl}[b,u]}{10} \le \sum_{t \in \text{Trucktype}} \text{trips}[b,u,t] \times \text{truck\_carry\_capacity\_t}[t]$$
+    $$\frac{\text{beer density kg per l} \times \text{transport hl}[b,u]}{10} \le \sum_{t \in \text{Trucktype}} \text{trips}[b,u,t] \times \text{truck carry capacity t}[t]$$
     *Note: The left side of the inequality converts beer volume from hl (hectoliters) to tonnes. ($1 \text{ hl} = 100 \text{ L}$; $\text{density}$ is in $\text{kg}/\text{L}$. So $\text{hl} \times 100 \times \text{density}$ is mass in $\text{kg}$, dividing by $1000$ gives mass in tonnes (t). $100/1000 = 1/10$.*
 
 ---
@@ -62,14 +62,14 @@ These limit the possible solutions:
 The objective is to **minimize** the total transportation cost in $\text{HUF}$. The cost calculation includes the cost of moving both the **beer** (payload) and the **trucks** (tare weight), multiplied by the distance.
 
 **Minimize `Transportation_cost_HUF`**:
-$$\sum_{b \in \text{Brewery}, u \in \text{University}} \text{transportation\_cost\_HUF\_per\_kg\_per\_km} \times \text{distance\_km}[b,u] \times \text{TotalMass}[b,u]$$
+$$\sum_{b \in \text{Brewery}, u \in \text{University}} \text{transportation cost HUF per kg per km} \times \text{distance km}[b,u] \times \text{TotalMass}[b,u]$$
 
 Where $\text{TotalMass}[b,u]$ is the total mass (payload + empty truck mass for all trips) moved one way, from $B$ to $U$.
 
-$$\text{TotalMass}[b,u] = \left( \underbrace{\text{beer\_density\_kg\_per\_l} \times 100 \times \text{transport\_hl}[b,u]}_{\text{Mass of transported beer in kg}} \right) + \left( \underbrace{\sum_{t \in \text{Trucktype}} 2 \times \text{trips}[b,u,t] \times \text{truck\_weight\_t}[t] \times 1000}_{\text{Mass of empty trucks (forward \& return trip) in kg}} \right)$$
+$$\text{TotalMass}[b,u] = \left( \underbrace{\text{beer density kg per l} \times 100 \times \text{transport hl}[b,u]}_{\text{Mass of transported beer in kg}} \right) + \left( \underbrace{\sum_{t \in \text{Trucktype}} 2 \times \text{trips}[b,u,t] \times \text{truck weight t}[t] \times 1000}_{\text{Mass of empty trucks (forward \& return trip) in kg}} \right)$$
 
-* The term $\text{beer\_density\_kg\_per\_l} \times 100 \times \text{transport\_hl}[b,u]$ calculates the mass of the beer in **kilograms** (since $1 \text{ hl} = 100 \text{ L}$).
-* The term $2 \times \text{trips}[b,u,t] \times \text{truck\_weight\_t}[t] \times 1000$ calculates the total empty truck weight in **kilograms** for all trips, multiplied by **2** because the cost includes the **empty return trip** (truck weight for the forward trip + truck weight for the return trip).
+* The term $\text{beer density kg per l} \times 100 \times \text{transport hl}[b,u]$ calculates the mass of the beer in **kilograms** (since $1 \text{ hl} = 100 \text{ L}$).
+* The term $2 \times \text{trips}[b,u,t] \times \text{truck weight t}[t] \times 1000$ calculates the total empty truck weight in **kilograms** for all trips, multiplied by **2** because the cost includes the **empty return trip** (truck weight for the forward trip + truck weight for the return trip).
 
 ---
 
