@@ -1,4 +1,4 @@
-
+# Input data declaration
 
 set BookSets;
 param width{BookSets};
@@ -16,36 +16,53 @@ param minPosition;
 
 param M:=500;
 
-var use{Shelves} binary;
+# Variables
+var use{Shelves} binary; 
 var position{Shelves} >= minPosition;
 var put{BookSets,Shelves} binary;
 
 var maxbookheight{Shelves}>=0;
 var maxusedshelf;
 
-s.t. ShelfUsage {s in Shelves : s!= 1}:
-    use[s] <= use[s-1];
+# Constraints
+
+# If a shelf is used all the shelves below it are used
+s.t. ShelfUsage {s in Shelves : s!=1}:
+  use[s] <= use[s-1];
+
+# If a shelf is used, it should be higher then the one below it (maxbook + 7cm)
 
 s.t. MaxBookHeightSetter{b in BookSets, s in Shelves}:
-    maxbookheight[s] >= height[b] * put[b,s];
-
+  maxbookheight[s] >= height[b] * put[b,s];
+  
 s.t. ShelfPositioning{s in Shelves: s!=1}:
-    position[s] >= position[s-1]+maxbookheight[s-1]+shelfHeight+minDistance;
+  position[s] >= position[s-1]+maxbookheight[s-1]+shelfHeight+minDistance;
+
+
+# Only put booksets on used shelves
+# Only put as many booksets on shelves as they can hold
 
 s.t. ShelfCapacity{s in Shelves}:
-    sum{b in BookSets} put[b,s] * width[b] <= shelfWidth * use[s];
+  sum{b in BookSets} put[b,s] * width[b] <= shelfWidth * use[s];
 
+# Each booksets must be put on exactly one shelf
 s.t. BookSetAssignment{b in BookSets}:
-    sum{s in Shelves} put[b,s] = 1;
+  sum{s in Shelves} put[b,s] = 1;
 
+# Set max used shelf
 s.t. MaxUsedShelf{s in Shelves}:
-    maxusedshelf >= position[s] - M * (1-use[s]);
+  maxusedshelf >= position[s] - M *(1 - use[s]);
+
+# Objective function
 
 minimize topShelfHeight: maxusedshelf;
 
+# Display statements
 solve;
 
 display  maxusedshelf;
+
+
 
 printf "<svg width='%d' height='%d'>",shelfWidth+20,(sum{ss in Shelves: (ss==shelfCount && use[ss]==1) || (use[ss]==1 && use[ss+1]==0)} (position[ss] + maxbookheight[ss]+shelfHeight)-position[1])+20; # <-- s/500/totalheight
 for {s in Shelves : use[s]==1}
