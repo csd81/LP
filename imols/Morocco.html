@@ -1,0 +1,147 @@
+<p>The problem is to determine the optimal amounts of petrol to purchase
+at each available station during a car trip from Oujda, Morocco, to
+Capetown, South Africa, in order to <strong>minimize the total fuel
+cost</strong>.</p>
+<hr />
+<h2 id="problem-parameters">⛽ Problem Parameters</h2>
+<ul>
+<li><strong>Total Trip Distance:</strong> 11,000 km.</li>
+<li><strong>Car Tank Capacity:</strong> 70 liters.</li>
+<li><strong>Initial Fuel:</strong> The tank is full (70 liters) at the
+start in Oujda.</li>
+<li><strong>Fuel Consumption Rate:</strong> 7.5 liters per 100 km.</li>
+<li><strong>Safety Requirement:</strong> At all times, including upon
+arrival at any petrol station, the car must have enough fuel for an
+<strong>additional 50 km</strong>.</li>
+</ul>
+<h2 id="petrol-stations-and-data">📍 Petrol Stations and Data</h2>
+<p>The trip involves <strong>22 petrol stations</strong>. The data for
+each station’s distance from Oujda and the price of petrol is as
+follows:</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Petrol Station</th>
+<th style="text-align: center;">Distance from Oujda (km)</th>
+<th style="text-align: center;">Price of Petrol (Dh/l)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Algeria1</td>
+<td style="text-align: center;">320</td>
+<td style="text-align: center;">100</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Algeria2</td>
+<td style="text-align: center;">840</td>
+<td style="text-align: center;">90</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Algeria3</td>
+<td style="text-align: center;">1350</td>
+<td style="text-align: center;">70</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Algeria4</td>
+<td style="text-align: center;">2000</td>
+<td style="text-align: center;">80</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Algeria5</td>
+<td style="text-align: center;">2580</td>
+<td style="text-align: center;">100</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Algeria6</td>
+<td style="text-align: center;">3170</td>
+<td style="text-align: center;">90</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Niger1</td>
+<td style="text-align: center;">3560</td>
+<td style="text-align: center;">120</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Niger2</td>
+<td style="text-align: center;">4080</td>
+<td style="text-align: center;">130</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Nigeria1</td>
+<td style="text-align: center;">4660</td>
+<td style="text-align: center;">140</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Nigeria2</td>
+<td style="text-align: center;">5180</td>
+<td style="text-align: center;">120</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Cameroon</td>
+<td style="text-align: center;">5500</td>
+<td style="text-align: center;">150</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Gabon</td>
+<td style="text-align: center;">5950</td>
+<td style="text-align: center;">160</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Congo1</td>
+<td style="text-align: center;">6479</td>
+<td style="text-align: center;">110</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Congo2</td>
+<td style="text-align: center;">6990</td>
+<td style="text-align: center;">130</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Angola1</td>
+<td style="text-align: center;">7440</td>
+<td style="text-align: center;">120</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Angola2</td>
+<td style="text-align: center;">7960</td>
+<td style="text-align: center;">130</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Angola3</td>
+<td style="text-align: center;">8410</td>
+<td style="text-align: center;">120</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Namibia1</td>
+<td style="text-align: center;">8730</td>
+<td style="text-align: center;">140</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Namibia2</td>
+<td style="text-align: center;">9250</td>
+<td style="text-align: center;">150</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Namibia3</td>
+<td style="text-align: center;">9770</td>
+<td style="text-align: center;">130</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">SouthAfrica1</td>
+<td style="text-align: center;">10350</td>
+<td style="text-align: center;">140</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SouthAfrica2</td>
+<td style="text-align: center;">10670</td>
+<td style="text-align: center;">120</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="optimization-goal">🎯 Optimization Goal</h2>
+<p>Determine <strong>where and how much</strong> petrol to purchase at
+each of the 22 stations (the decision variables) to <strong>minimize the
+total cost</strong> while satisfying the constraints on tank capacity
+and the safety fuel requirement.</p>
