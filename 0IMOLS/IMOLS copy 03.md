@@ -13,7 +13,12 @@ Motivational example: fröccs
 Modeling is used in many fields for different purposes, such as simulation, planning, and of course, optimization. A model is essentially a simplified version of something real, which makes it easier and cheaper to work with. A model does not have to be mathematical; for example, a mock-up can be viewed as a physical model. On this site, however, the word *model* will always refer to a *mathematical model*, unless stated otherwise.
 
 Many different things can serve as models. The simplest ones are taught in high school physics, for example,
-(v = \dfrac{s}{t}),
+
+$$
+v = \dfrac{s}{t}
+
+$$
+
 where (v) is the average velocity if distance (s) is covered in time (t). This is a simple equation involving 3 variables. Other models may use different mathematical structures, such as graphs. In this course, we will focus on *algebraic* models as discussed below.
 
 It’s important to note that in most cases, a model is only a *simplification* of a real-life phenomenon. Typically, the model ignores some parameters that may influence how a system behaves. In the example above, we implicitly assumed that the object moves along a straight line. When a real-world problem arises, the modeler has a serious responsibility in choosing which parameters to include and at what level of detail they should be represented.
@@ -38,15 +43,14 @@ Later on, we will not focus on this first step of modeling. We will assume that 
 **Model for the Fröccs example**
 Let’s assume we already have a solution—not necessarily an optimal one, just any valid solution. This solution specifies how much we sell from each type of drink. Let:
 
-* (x_{KF}) denote the number of portions of *Kisfröccs* we sell,
-* (x_{NF}) the number of portions of *Nagyfröccs*,
+* $x_{KF}$ denote the number of portions of *Kisfröccs* we sell,
+* $x_{NF}$ the number of portions of *Nagyfröccs*,
 * and so on for the other drink types.
 
-From these values, we can easily compute how much wine is needed for this solution. For (x_{KF}) portions of Kisfröccs, we need (x_{KF} \cdot 1) dl of wine. Similarly, for (x_{NF}) portions of Nagyfröccs, we need (x_{NF} \cdot 2) dl of wine. Following the same logic, the total wine used (in deciliters) is
+From these values, we can easily compute how much wine is needed for this solution. For $x_{KF}$ portions of Kisfröccs, we need $x_{KF} \cdot 1$ dl of wine. Similarly, for $x_{NF}$ portions of Nagyfröccs, we need $x_{NF} \cdot 2$ dl of wine. Following the same logic, the total wine used (in deciliters) is
 
-[
+$$
 1 \cdot x_{KF}
-
 * 2 \cdot x_{NF}
 * 1 \cdot x_{HL}
 * 3 \cdot x_{HM}
@@ -54,11 +58,12 @@ From these values, we can easily compute how much wine is needed for this soluti
 * 9 \cdot x_{KrF}
 * 1 \cdot x_{SF}
 * 6 \cdot x_{PF}.
-  ]
+
+$$
 
 Our wine stock is 100 liters = 1000 deciliters, so for any acceptable solution, the following inequality must hold:
 
-[
+$$
 1 \cdot x_{KF}
 
 * 2 \cdot x_{NF}
@@ -69,11 +74,12 @@ Our wine stock is 100 liters = 1000 deciliters, so for any acceptable solution, 
 * 1 \cdot x_{SF}
 * 6 \cdot x_{PF}
   \le 1000.
-  ]
+
+$$
 
 We can similarly write a constraint for soda:
 
-[
+$$
 1 \cdot x_{KF}
 
 * 1 \cdot x_{NF}
@@ -84,7 +90,8 @@ We can similarly write a constraint for soda:
 * 9 \cdot x_{SF}
 * 3 \cdot x_{PF}
   \le 1500.
-  ]
+
+$$
 
 If the values of
 (x_{KF}, x_{NF}, \dots)
@@ -92,7 +99,7 @@ are chosen from the interval ([0, \infty[) (i.e., nonnegative real numbers) in s
 
 Just as we computed wine and soda usage, we can express the profit of such a plan as
 
-[
+$$
 110 \cdot x_{KF}
 
 * 200 \cdot x_{NF}
@@ -102,17 +109,19 @@ Just as we computed wine and soda usage, we can express the profit of such a pla
 * 800 \cdot x_{KrF}
 * 200 \cdot x_{SF}
 * 550 \cdot x_{PF}.
-  ]
+
+$$
 
 This is the value we want to *maximize*.
 
 Putting everything together, we get:
 
-[
+$$
 x_{KF}, x_{NF}, x_{HL}, x_{HM}, x_{VHM}, x_{KrF}, x_{SF}, x_{PF} \in [0, \infty[
-]
 
-[
+$$
+
+$$
 1 \cdot x_{KF}
 
 * 2 \cdot x_{NF}
@@ -123,9 +132,12 @@ x_{KF}, x_{NF}, x_{HL}, x_{HM}, x_{VHM}, x_{KrF}, x_{SF}, x_{PF} \in [0, \infty[
 * 1 \cdot x_{SF}
 * 6 \cdot x_{PF}
   \le 1000
-  ]
+
+$$
 
 [
+
+$$
 1 \cdot x_{KF}
 
 * 1 \cdot x_{NF}
@@ -136,9 +148,14 @@ x_{KF}, x_{NF}, x_{HL}, x_{HM}, x_{VHM}, x_{KrF}, x_{SF}, x_{PF} \in [0, \infty[
 * 9 \cdot x_{SF}
 * 3 \cdot x_{PF}
   \le 1500
-  ]
+
+$$
+
+]
 
 [
+
+$$
 110 \cdot x_{KF}
 
 * 200 \cdot x_{NF}
@@ -149,7 +166,10 @@ x_{KF}, x_{NF}, x_{HL}, x_{HM}, x_{VHM}, x_{KrF}, x_{SF}, x_{PF} \in [0, \infty[
 * 200 \cdot x_{SF}
 * 550 \cdot x_{PF}
   \to \max.
-  ]
+
+$$
+
+]
 
 This mathematical description of the problem’s constraints, goal, and decision variables follows the rules of a *Linear Programming* (LP) model:
 
@@ -204,43 +224,57 @@ Try to come up with such a *linear* constraint yourself before reading further!
 
 We can check that
 
-[
+$$
 y_1 + y_3 + y_4 \ge 1
-]
+
+$$
 
 works as desired. A small truth table illustrates this:
 
-[
-\begin{array}{ccc|c}
-y_1 & y_3 & y_4 & y_1 + y_3 + y_4 \
-\hline
-0 & 0 & 0 & 0 \not\ge 1 \
-0 & 0 & 1 & 1 \ge 1 \
-0 & 1 & 0 & 1 \ge 1 \
-0 & 1 & 1 & 2 \ge 1 \
-1 & 0 & 0 & 1 \ge 1 \
-1 & 0 & 1 & 2 \ge 1 \
-1 & 1 & 0 & 2 \ge 1 \
-1 & 1 & 1 & 3 \ge 1
-\end{array}
-]
+$$
+y_1 & y_3 & y_4 & y_1 + y_3 + y_4 \\
+0   0 & 0 & 0 \not\ge 1 \\
+0   0 & 1 & 1 \ge 1 \\
+0   1 & 0 & 1 \ge 1 \\
+0   1 & 1 & 2 \ge 1 \\
+1   0 & 0 & 1 \ge 1 \\
+1   0 & 1 & 2 \ge 1 \\
+1   1 & 0 & 2 \ge 1 \\
+1   1 & 1 & 3 \ge 1
+
+$$
 
 Following this pattern, we can write a similar constraint for each band. For example, for **Stratovarius**:
 
 [
+
+$$
 y_1 + y_2 + y_3 + y_5 \ge 1
+
+$$
+
 ]
 
 For **Dalriada**:
 
 [
+
+$$
 y_3 + y_5 \ge 1
+
+$$
+
 ]
 
 The case of **Apocalyptica** is special:
 
 [
+
+$$
 y_4 \ge 1,
+
+$$
+
 ]
 
 which effectively forces (y_4 = 1). This makes sense because festival 4 is the only one where Apocalyptica performs.
@@ -251,7 +285,12 @@ which effectively forces (y_4 = 1). This makes sense because festival 4 is the o
 Our goal is to attend as *few* festivals as possible. Using the variables (y_n), we need to express the total number of festivals we attend. It is easy to see that
 
 [
+
+$$
 y_1 + y_2 + y_3 + y_4 + y_5
+
+$$
+
 ]
 
 gives exactly that number.
@@ -261,41 +300,26 @@ gives exactly that number.
 **Finally, the complete model**
 Combining everything:
 
-[
-y_1, y_2, y_3, y_4, y_5 \in {0,1}
-]
+$$
+y_1, y_2, y_3, y_4, y_5 \in {0,1}\\
 
-[
-y_1 + y_3 + y_4 \ge 1
-]
+y_1 + y_3 + y_4 \ge 1\\
 
-[
-y_1 + y_2 + y_3 + y_5 \ge 1
-]
+y_1 + y_2 + y_3 + y_5 \ge 1\\
 
-[
-y_1 + y_2 + y_4 + y_5 \ge 1
-]
+y_1 + y_2 + y_4 + y_5 \ge 1\\
 
-[
-y_3 + y_5 \ge 1
-]
+y_3 + y_5 \ge 1\\
 
-[
-y_4 \ge 1
-]
+y_4 \ge 1\\
 
-[
-y_2 + y_3 + y_4 + y_5 \ge 1
-]
+y_2 + y_3 + y_4 + y_5 \ge 1\\
 
-[
-y_3 + y_5 \ge 1
-]
+y_3 + y_5 \ge 1\\
 
-[
-y_1 + y_2 + y_3 + y_4 + y_5 \to \min
-]
+y_1 + y_2 + y_3 + y_4 + y_5 \to \min\\
+
+$$
 
 Now let’s check whether this model satisfies the LP rules listed earlier:
 
