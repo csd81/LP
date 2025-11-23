@@ -16,7 +16,7 @@ Start by creating a more general model where the fröccs types are provided as d
 
 **Sets and parameters**
 
-```
+```ampl
 set FroccsTypes;
 param price{FroccsTypes};
 param soda_stock;
@@ -37,7 +37,7 @@ var quantity{FroccsTypes} >= 0;
 
 **Constraints**
 
-```
+```ampl
 s.t. SodaUsage: sum{f in FroccsTypes} quantity[f] * soda_content[f] <= soda_stock;
 
 s.t. WineUsage: sum{f in FroccsTypes} quantity[f] * wine_content[f] <= wine_stock;
@@ -179,10 +179,8 @@ To test your skills, try creating a generic model for a more advanced version of
 
 1. **Warm-up:**
    Include the ticket price of each festival and change the objective to minimize total cost instead of simply minimizing the number of festivals.
-
 2. **Next step:**
    Assign dates to each festival and add a constraint that you cannot attend two festivals at the same time.
-
 3. **Challenge:**
    Extend the model with an additional feature of your choice to make it more realistic.
 
