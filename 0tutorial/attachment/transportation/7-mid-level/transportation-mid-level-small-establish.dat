@@ -1,0 +1,42 @@
+data;
+
+set Supplies := S1 S2 S3 S4;
+set Centers := C1 C2;
+set Demands := D1 D2 D3 D4 D5 D6;
+
+param Available :=
+	S1	100
+	S2	250
+	S3	190
+	S4	210
+	;
+
+param Required :=
+	D1	120
+	D2	140
+	D3	170
+	D4	90
+	D5	110
+	D6	120
+	;
+
+param CostA:
+		C1	C2 :=
+	S1	5	10
+	S2	10	2
+	S3	3	7
+	S4	10	4
+	;
+
+param CostB:
+		D1	D2	D3	D4	D5	D6 :=
+	C1	10	3	9	8	1	6
+	C2	2	7	3	2	7	8
+	;
+
+param EstablishCost :=
+	C1	1200
+	C2	1400
+	;
+
+end;

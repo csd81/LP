@@ -1,0 +1,48 @@
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+ -m assignment.mod -d assignment-basic.dat --log assignment-basic.log
+Reading model section from assignment.mod...
+36 lines were read
+Reading data section from assignment-basic.dat...
+17 lines were read
+Checking (line 3)...
+Generating Fixing_Constraints...
+Generating One_Task_Per_Worker...
+Generating One_Worker_Per_Task...
+Generating Total_Cost...
+Model has been successfully generated
+GLPK Integer Optimizer, v4.65
+15 rows, 49 columns, 147 non-zeros
+49 integer variables, all of which are binary
+Preprocessing...
+14 rows, 49 columns, 98 non-zeros
+49 integer variables, all of which are binary
+Scaling...
+ A: min|aij| =  1.000e+00  max|aij| =  1.000e+00  ratio =  1.000e+00
+Problem data seem to be well scaled
+Constructing initial basis...
+Size of triangular part is 13
+Solving LP relaxation...
+GLPK Simplex Optimizer, v4.65
+14 rows, 49 columns, 98 non-zeros
+      0: obj =   5.600000000e+01 inf =   5.000e+00 (1)
+     13: obj =   7.000000000e+01 inf =   0.000e+00 (0)
+*    36: obj =   4.200000000e+01 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Integer optimization begins...
+Long-step dual simplex will be used
++    36: mip =     not found yet >=              -inf        (1; 0)
++    36: >>>>>   4.200000000e+01 >=   4.200000000e+01   0.0% (1; 0)
++    36: mip =   4.200000000e+01 >=     tree is empty   0.0% (0; 1)
+INTEGER OPTIMAL SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.2 Mb (250680 bytes)
+Optimal Cost: 42
+W1->T2 (6)
+W2->T1 (7)
+W3->T7 (6)
+W4->T5 (6)
+W5->T3 (7)
+W6->T6 (3)
+W7->T4 (7)
+Model has been successfully processed

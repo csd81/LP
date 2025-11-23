@@ -1,0 +1,11 @@
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+ -m eqsystem-data-options-wrongindex.mod -d eqsystem-data-options-wrongindex-B-ERROR-outofdomain.dat
+ --log eqsystem-data-options-wrongindex-B-ERROR-outofdomain.log
+Reading model section from eqsystem-data-options-wrongindex.mod...
+23 lines were read
+Reading data section from eqsystem-data-options-wrongindex-B-ERROR-outofdomain.dat...
+25 lines were read
+Generating Cts...
+eqsystem-data-options-wrongindex.mod:10: Coef[x,Eq1] out of domain
+MathProg model processing error

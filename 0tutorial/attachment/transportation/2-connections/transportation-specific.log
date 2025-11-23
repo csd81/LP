@@ -1,0 +1,37 @@
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+ -m transportation-specific.mod -d transportation-connections.dat --log transportation-specific.log
+Reading model section from transportation-specific.mod...
+37 lines were read
+Reading data section from transportation-connections.dat...
+30 lines were read
+Checking (line 13)...
+Generating Availability_at_Supply_Points...
+Generating Requirement_at_Demand_Points...
+Generating Total_Costs...
+Model has been successfully generated
+GLPK Simplex Optimizer, v4.65
+11 rows, 16 columns, 48 non-zeros
+Preprocessing...
+10 rows, 16 columns, 32 non-zeros
+Scaling...
+ A: min|aij| =  1.000e+00  max|aij| =  1.000e+00  ratio =  1.000e+00
+Problem data seem to be well scaled
+Constructing initial basis...
+Size of triangular part is 10
+      0: obj =   0.000000000e+00 inf =   7.500e+02 (6)
+     10: obj =   3.620000000e+03 inf =   0.000e+00 (0)
+*    16: obj =   2.790000000e+03 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.1 Mb (138287 bytes)
+Optimal cost: 2790.
+From S1 to D1, transport 100 amount for 500 (unit cost: 5).
+From S2 to D1, transport 20 amount for 20 (unit cost: 1).
+From S2 to D2, transport 140 amount for 280 (unit cost: 2).
+From S2 to D4, transport 90 amount for 90 (unit cost: 1).
+From S3 to D3, transport 80 amount for 80 (unit cost: 1).
+From S3 to D5, transport 110 amount for 440 (unit cost: 4).
+From S4 to D3, transport 90 amount for 540 (unit cost: 6).
+From S4 to D6, transport 120 amount for 840 (unit cost: 7).
+Model has been successfully processed

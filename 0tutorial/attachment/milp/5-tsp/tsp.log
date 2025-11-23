@@ -1,0 +1,68 @@
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+ -m tsp.mod -d tsp.dat --log tsp.log
+Reading model section from tsp.mod...
+85 lines were read
+Reading data section from tsp.dat...
+26 lines were read
+Checking (line 3)...
+Generating Path_In...
+Generating Path_Out...
+Generating Flow_Direction...
+Generating Flow_On_Used...
+Generating Material_Balance...
+Generating Total_Weight...
+Model has been successfully generated
+GLPK Integer Optimizer, v4.65
+780 rows, 722 columns, 3173 non-zeros
+361 integer variables, all of which are binary
+Preprocessing...
+741 rows, 703 columns, 2774 non-zeros
+361 integer variables, all of which are binary
+Scaling...
+ A: min|aij| =  1.000e+00  max|aij| =  1.800e+01  ratio =  1.800e+01
+GM: min|aij| =  9.357e-01  max|aij| =  1.069e+00  ratio =  1.142e+00
+EQ: min|aij| =  8.980e-01  max|aij| =  1.000e+00  ratio =  1.114e+00
+2N: min|aij| =  5.000e-01  max|aij| =  1.000e+00  ratio =  2.000e+00
+Constructing initial basis...
+Size of triangular part is 550
+Solving LP relaxation...
+GLPK Simplex Optimizer, v4.65
+741 rows, 703 columns, 2774 non-zeros
+      0: obj =   2.480793837e+02 inf =   2.028e+03 (173)
+    371: obj =   9.359058086e+01 inf =   1.771e-14 (0) 2
+*   545: obj =   4.786533041e+00 inf =   1.998e-15 (0) 2
+OPTIMAL LP SOLUTION FOUND
+Integer optimization begins...
+Long-step dual simplex will be used
++   545: mip =     not found yet >=              -inf        (1; 0)
++  1859: >>>>>   5.969014627e+01 >=   2.300457897e+01  61.5% (48; 1)
++  4111: >>>>>   4.777953551e+01 >=   2.623268810e+01  45.1% (75; 7)
++  7223: >>>>>   4.576632755e+01 >=   2.722682823e+01  40.5% (90; 32)
++ 15676: >>>>>   4.459475467e+01 >=   3.434024294e+01  23.0% (154; 77)
++ 40401: mip =   4.459475467e+01 >=   4.155090911e+01   6.8% (504; 641)
++ 52815: mip =   4.459475467e+01 >=     tree is empty   0.0% (0; 2407)
+INTEGER OPTIMAL SOLUTION FOUND
+Time used:   9.0 secs
+Memory used: 4.7 Mb (4954539 bytes)
+Shortest Hamiltonian cycle: 44.5948
+P00->P31 (3.16228)
+P08->P15 (3.16228)
+P15->P34 (2.23607)
+P22->P00 (2.82843)
+P23->P22 (1)
+P28->P29 (1)
+P29->P08 (2.23607)
+P31->P40 (1.41421)
+P34->P23 (1.41421)
+P40->P60 (2)
+P56->P28 (3.60555)
+P60->P61 (1)
+P61->P90 (3.16228)
+P69->P56 (3.16228)
+P73->P93 (2)
+P90->P73 (3.60555)
+P93->P94 (1)
+P94->P97 (3)
+P97->P69 (3.60555)
+Model has been successfully processed

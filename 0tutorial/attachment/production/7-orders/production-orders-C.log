@@ -1,0 +1,68 @@
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+ -m production-orders.mod -d production-orders-C.dat --log production-orders-C.log
+Reading model section from production-orders.mod...
+68 lines were read
+Reading data section from production-orders-C.dat...
+70 lines were read
+Checking (line 6)...
+Generating Material_Balance_Production...
+Generating Material_Balance_Orders...
+Generating Material_Balance_Total_Raws_1...
+Generating Material_Balance_Total_Raws_2...
+Generating Material_Balance_Total_Products_1...
+Generating Material_Balance_Total_Products_2...
+Generating Total_Costs_Calc...
+Generating Total_Revenue_Calc...
+Generating Profit_Calc...
+Generating Profit...
+Model has been successfully generated
+GLPK Integer Optimizer, v4.65
+32 rows, 43 columns, 112 non-zeros
+3 integer variables, none of which are binary
+Preprocessing...
+29 rows, 33 columns, 94 non-zeros
+3 integer variables, none of which are binary
+Scaling...
+ A: min|aij| =  1.300e-02  max|aij| =  4.000e+05  ratio =  3.077e+07
+GM: min|aij| =  1.930e-01  max|aij| =  5.182e+00  ratio =  2.686e+01
+EQ: min|aij| =  4.591e-02  max|aij| =  1.000e+00  ratio =  2.178e+01
+2N: min|aij| =  3.906e-02  max|aij| =  1.099e+00  ratio =  2.812e+01
+Constructing initial basis...
+Size of triangular part is 29
+Solving LP relaxation...
+GLPK Simplex Optimizer, v4.65
+29 rows, 33 columns, 94 non-zeros
+      0: obj =  -0.000000000e+00 inf =   1.490e+04 (4)
+      8: obj =  -1.575313137e+03 inf =   0.000e+00 (0)
+*    15: obj =   2.139700000e+04 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Integer optimization begins...
+Long-step dual simplex will be used
++    15: mip =     not found yet <=              +inf        (1; 0)
++    17: >>>>>   2.070541216e+04 <=   2.070541216e+04   0.0% (2; 0)
++    17: mip =   2.070541216e+04 <=     tree is empty   0.0% (0; 3)
+INTEGER OPTIMAL SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.2 Mb (217263 bytes)
+Total Costs: 26497.3
+Total Revenue: 47202.7
+Profit: 20705.4
+Acquiring order Ord1: 1x
+Acquiring order Ord2: 0x
+Acquiring order Ord3: 30x
+Volume of recipe MakeP1: 0
+Volume of recipe MakeP2: 553.716
+Volume of recipe MakeP3: 0
+Volume of recipe Comp1: 89.1554
+Volume of recipe Comp2: 10
+Raw materials (orders + market -> production + leftover):
+Consumption of raw A: 25700 + 23893.1 -> 49593.1 + 0 (total: 49593.1)
+Consumption of raw B: 10600 + 109400 -> 120000 + 0 (total: 120000)
+Consumption of raw C: 390000 + 610000 -> 1e+06 + 0 (total: 1e+06)
+Consumption of raw D: 500 + 252.027 -> 752.027 + 0 (total: 752.027)
+Products (production -> orders + market):
+Production of product P1: 89.1554 -> 70 + 19.1554 (total: 89.1554)
+Production of product P2: 652.872 -> 80 + 572.872 (total: 652.872)
+Production of product P3: 10 -> 0 + 10 (total: 10)
+Model has been successfully processed

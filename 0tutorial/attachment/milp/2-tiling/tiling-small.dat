@@ -1,0 +1,6 @@
+data;
+
+param Width := 6;
+param Height := 4;
+
+end;

@@ -1,0 +1,29 @@
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+ -m eqsystem-aligned.mod --log eqsystem-aligned.log
+Reading model section from eqsystem-aligned.mod...
+20 lines were read
+Generating Eq1...
+Generating Eq2...
+Generating Eq3...
+Generating Eq4...
+Model has been successfully generated
+GLPK Simplex Optimizer, v4.65
+4 rows, 4 columns, 10 non-zeros
+Preprocessing...
+4 rows, 4 columns, 10 non-zeros
+Scaling...
+ A: min|aij| =  1.000e+00  max|aij| =  7.000e+00  ratio =  7.000e+00
+Problem data seem to be well scaled
+Constructing initial basis...
+Size of triangular part is 3
+      0: obj =   0.000000000e+00 inf =   3.000e+00 (1)
+      1: obj =   0.000000000e+00 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.1 Mb (94277 bytes)
+x = 0.5
+y = 3
+z = -2
+w = 10
+Model has been successfully processed

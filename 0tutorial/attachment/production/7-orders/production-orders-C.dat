@@ -1,0 +1,70 @@
+data;
+
+set Raws := A B C D;
+set Products := P1 P2 P3;
+set Recipes := MakeP1 MakeP2 MakeP3 Comp1 Comp2;
+
+param Min_Usage :=
+	B	21000
+	D	200
+	P2	100
+	;
+
+param Max_Usage :=
+	A	50000
+	B	120000
+	C	1000000
+	D	1500
+	P3	10
+	;
+
+param Value :=
+	A	1
+	B	0.07
+	C	0.013
+	D	8
+	P1	252
+	P2	89
+	P3	139
+	;
+
+param Recipe_Ratio:
+		A	B	C	D	P1	P2	P3 :=
+	MakeP1	200	25	3200	1	1	0	0
+	MakeP2	50	180	1000	1	0	1	0
+	MakeP3	0	75	4500	1	0	0	1
+	Comp1	240	200	4400	2	1	1	0
+	Comp2	51	250	5400	2	0	1	1
+	;
+
+param Initial_Funds := 35000;
+
+set Orders := Ord1 Ord2 Ord3;
+param Order_Material_Flow:
+		A	B	C	D	P1	P2	P3 :=
+	Ord1	20000	10000	300000	500	40	80	0
+	Ord2	15000	10000	400000	500	45	70	6
+	Ord3	190	20	3000	0	1	0	0
+	;
+
+param Order_Cash_Flow := # negative means income
+	Ord1	10000
+	Ord2	10000
+	Ord3	-500
+	;
+
+param Order_Count :=
+	Ord1	10
+	Ord2	10
+	Ord3	30
+	;
+
+param Order_Pay_Before :=
+	Ord1	0
+	Ord2	0
+	Ord3	1
+	;
+
+# Solution: 20705.41, with Ord1 used 1x, Ord3 used 30x, and recipe activities of 553.72 MakeP2, 89.16 Comp1 and 10 Comp2.
+
+end;

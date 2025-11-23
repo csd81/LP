@@ -1,0 +1,35 @@
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+ -m production-basic-straightforward.mod --log production-basic-straightforward.log
+Reading model section from production-basic-straightforward.mod...
+27 lines were read
+Generating Raw_material_A...
+Generating Raw_material_B...
+Generating Raw_material_C...
+Generating Raw_material_D...
+Generating Raw_material...
+Model has been successfully generated
+GLPK Simplex Optimizer, v4.65
+5 rows, 3 columns, 14 non-zeros
+Preprocessing...
+4 rows, 3 columns, 11 non-zeros
+Scaling...
+ A: min|aij| =  1.000e+00  max|aij| =  4.500e+03  ratio =  4.500e+03
+GM: min|aij| =  4.317e-01  max|aij| =  2.317e+00  ratio =  5.367e+00
+EQ: min|aij| =  1.863e-01  max|aij| =  1.000e+00  ratio =  5.367e+00
+Constructing initial basis...
+Size of triangular part is 4
+*     0: obj =  -0.000000000e+00 inf =   0.000e+00 (3)
+*     3: obj =   3.338897638e+04 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.1 Mb (110357 bytes)
+Total Revenue: 33389
+Production of P1: 91.3386
+Production of P2: 94.6457
+Production of P3: 14.0157
+Usage of A: 23000, remaining: -3.63798e-12
+Usage of B: 20370.9, remaining: 10629.1
+Usage of C: 450000, remaining: -5.82077e-11
+Usage of D: 200, remaining: 0
+Model has been successfully processed

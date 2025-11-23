@@ -1,0 +1,38 @@
+data;
+
+set Supplies := S1 S2 S3 S4;
+set Demands := D1 D2 D3 D4 D5 D6;
+
+param Available :=
+	S1	100
+	S2	250
+	S3	190
+	S4	210
+	;
+
+param Required :=
+	D1	120
+	D2	140
+	D3	170
+	D4	90
+	D5	110
+	D6	120
+	;
+
+param Cost:
+		D1	D2	D3	D4	D5	D6 :=
+	S1	5	10	3	9	5	12
+	S2	1	2	6	1	2	6
+	S3	6	5	1	6	4	8
+	S4	9	10	6	8	9	7
+	;
+
+param FixedCost:
+		D1	D2	D3	D4	D5	D6 :=
+	S1	50	50	80	50	200	50
+	S2	200	50	50	50	200	50
+	S3	50	200	200	50	50	50
+	S4	50	50	50	200	200	200
+	;
+
+end;

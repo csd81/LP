@@ -1,0 +1,59 @@
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+ -m transportation-mid-level.mod -d transportation-mid-level-small-establish.dat
+ --log transportation-mid-level-small-establish.log
+Reading model section from transportation-mid-level.mod...
+62 lines were read
+Reading data section from transportation-mid-level-small-establish.dat...
+42 lines were read
+Checking (line 15)...
+Generating Availability_at_Supply_Points...
+Generating Total_To_Center...
+Generating Total_From_Center...
+Generating Requirement_at_Demand_Points...
+Generating Zero_at_Center_if_Not_Established...
+Generating Total_Costs...
+Model has been successfully generated
+GLPK Integer Optimizer, v4.65
+17 rows, 24 columns, 70 non-zeros
+2 integer variables, all of which are binary
+Preprocessing...
+16 rows, 24 columns, 48 non-zeros
+2 integer variables, all of which are binary
+Scaling...
+ A: min|aij| =  1.000e+00  max|aij| =  7.500e+02  ratio =  7.500e+02
+GM: min|aij| =  1.000e+00  max|aij| =  1.000e+00  ratio =  1.000e+00
+EQ: min|aij| =  1.000e+00  max|aij| =  1.000e+00  ratio =  1.000e+00
+2N: min|aij| =  7.324e-01  max|aij| =  1.000e+00  ratio =  1.365e+00
+Constructing initial basis...
+Size of triangular part is 16
+Solving LP relaxation...
+GLPK Simplex Optimizer, v4.65
+16 rows, 24 columns, 48 non-zeros
+      0: obj =   0.000000000e+00 inf =   7.500e+02 (6)
+     11: obj =   1.157000000e+04 inf =   0.000e+00 (0)
+*    20: obj =   6.072666667e+03 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Integer optimization begins...
+Long-step dual simplex will be used
++    20: mip =     not found yet >=              -inf        (1; 0)
++    24: >>>>>   7.350000000e+03 >=   7.350000000e+03   0.0% (3; 0)
++    24: mip =   7.350000000e+03 >=     tree is empty   0.0% (0; 5)
+INTEGER OPTIMAL SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.2 Mb (186971 bytes)
+Optimal cost: 7350.
+Establishing center C1 for 1200.
+Establishing center C2 for 1400.
+A: From S1 to C1, transport 100 amount for 500 (unit cost: 5).
+A: From S2 to C2, transport 250 amount for 500 (unit cost: 2).
+A: From S3 to C1, transport 190 amount for 570 (unit cost: 3).
+A: From S4 to C2, transport 210 amount for 840 (unit cost: 4).
+B: From C1 to D2, transport 140 amount for 420 (unit cost: 3).
+B: From C1 to D5, transport 110 amount for 110 (unit cost: 1).
+B: From C1 to D6, transport 40 amount for 240 (unit cost: 6).
+B: From C2 to D1, transport 120 amount for 240 (unit cost: 2).
+B: From C2 to D3, transport 170 amount for 510 (unit cost: 3).
+B: From C2 to D4, transport 90 amount for 180 (unit cost: 2).
+B: From C2 to D6, transport 80 amount for 640 (unit cost: 8).
+Model has been successfully processed

@@ -1,0 +1,82 @@
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+ -m tiling.mod -d tiling-large.dat --log tiling-large.log --tmlim 60
+Reading model section from tiling.mod...
+40 lines were read
+Reading data section from tiling-large.dat...
+6 lines were read
+Generating No_Overlap...
+Generating Number_of_Crosses...
+Model has been successfully generated
+GLPK Integer Optimizer, v4.65
+901 rows, 1684 columns, 5604 non-zeros
+1684 integer variables, all of which are binary
+Preprocessing...
+896 rows, 1680 columns, 4816 non-zeros
+1680 integer variables, all of which are binary
+Scaling...
+ A: min|aij| =  1.000e+00  max|aij| =  1.000e+00  ratio =  1.000e+00
+Problem data seem to be well scaled
+Constructing initial basis...
+Size of triangular part is 896
+Solving LP relaxation...
+GLPK Simplex Optimizer, v4.65
+896 rows, 1680 columns, 4816 non-zeros
+*     0: obj =  -0.000000000e+00 inf =   0.000e+00 (784)
+Perturbing LP to avoid stalling [253]...
+Removing LP perturbation [1896]...
+*  1896: obj =   1.631480829e+02 inf =   0.000e+00 (0) 12
+OPTIMAL LP SOLUTION FOUND
+Integer optimization begins...
+Long-step dual simplex will be used
++  1896: mip =     not found yet <=              +inf        (1; 0)
++  4284: mip =     not found yet <=   1.630000000e+02        (34; 0)
++  7014: mip =     not found yet <=   1.630000000e+02        (74; 0)
++ 10493: mip =     not found yet <=   1.630000000e+02        (142; 0)
++ 11252: >>>>>   1.380000000e+02 <=   1.630000000e+02  18.1% (176; 0)
++ 14263: mip =   1.380000000e+02 <=   1.620000000e+02  17.4% (189; 35)
++ 17266: mip =   1.380000000e+02 <=   1.620000000e+02  17.4% (235; 35)
++ 20517: mip =   1.380000000e+02 <=   1.620000000e+02  17.4% (306; 36)
++ 23135: mip =   1.380000000e+02 <=   1.620000000e+02  17.4% (342; 36)
++ 25559: mip =   1.380000000e+02 <=   1.620000000e+02  17.4% (389; 36)
++ 28240: mip =   1.380000000e+02 <=   1.620000000e+02  17.4% (448; 36)
++ 29844: >>>>>   1.400000000e+02 <=   1.620000000e+02  15.7% (484; 36)
++ 32902: mip =   1.400000000e+02 <=   1.620000000e+02  15.7% (481; 108)
++ 35250: mip =   1.400000000e+02 <=   1.620000000e+02  15.7% (528; 108)
+Time used: 60.0 secs.  Memory used: 6.3 Mb.
++ 36285: mip =   1.400000000e+02 <=   1.620000000e+02  15.7% (545; 108)
+TIME LIMIT EXCEEDED; SEARCH TERMINATED
+Time used:   60.4 secs
+Memory used: 6.6 Mb (6870601 bytes)
+Max. Cross Tiles (30x30): 140
+...+....+...+..+..+..+...+..+.
+.++#++.+#+++#++#++#++#+++#++#+
++#+++#++++#+++.+.++..++#+++.+.
+.+.+.++#+++.+#+++#+.+..+++#++.
+.++#+.+++#+..++#++.+#+++#+++#+
++#++++#+++.+..++..+.++#++.+.+.
+.+++#+++#++#++#+++#++.++.+#++.
+.+#++.+.+.++.+++#+++#++#++++#+
+..+.++#+++#++#+++.+.++.++#+++.
+..++#+++#+++.++#++#++#++.++#+.
+.+#++.+.+++#+.++.++.+++#++.++.
+.++.++#++#++++#++#++#++++#++#+
++#++#+++.+++#+++.++.++#+.++.+.
+.++.+++#++#++++#++#+.++.++#++.
+.+#++#+++.+++#+++.+.+#++#+++#+
+..++.+++#++#++++#+.+.++.+.+.+.
+.++#++#++..+++#++++#++#+++#++.
++#+++.++..++#++++#+++.++#+++#+
+.+++#++#++#++.+#++++#+.++..++.
+.+#+++.++.++...+++#++.+#+++#+.
+..+++#++#++#++.+#+++..+++#++..
+.++#+++.++.++#+.+++#++#+++..+.
++#++++#++#++.+.++#+++.++#+.+#+
+.+++#++.+++#+++#++++#+.++.+.+.
+.+#++.++#++++#++++#++++#++#+..
+.++.++#+++#+.+++#++++#+++.++..
++#++#+++..+.++#++++#++++#++#+.
+.++.+++#++.+#++++#++++#+++.++.
+.+#++#+++#+.+.+#++.+#++.+#++#+
+..+..+...+.....+....+....+..+.
+Model has been successfully processed

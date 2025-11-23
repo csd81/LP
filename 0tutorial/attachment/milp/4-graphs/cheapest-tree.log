@@ -1,0 +1,59 @@
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+ -m cheapest-tree.mod -d cheapest-tree.dat --log cheapest-tree.log
+Reading model section from cheapest-tree.mod...
+32 lines were read
+Reading data section from cheapest-tree.dat...
+25 lines were read
+Generating Flow_Direction...
+Generating Flow_On_Used...
+Generating Material_Balance...
+Generating Total_Weight...
+Model has been successfully generated
+GLPK Integer Optimizer, v4.65
+172 rows, 162 columns, 540 non-zeros
+81 integer variables, all of which are binary
+Preprocessing...
+153 rows, 144 columns, 432 non-zeros
+72 integer variables, all of which are binary
+Scaling...
+ A: min|aij| =  1.000e+00  max|aij| =  8.000e+00  ratio =  8.000e+00
+Problem data seem to be well scaled
+Constructing initial basis...
+Size of triangular part is 108
+Solving LP relaxation...
+GLPK Simplex Optimizer, v4.65
+153 rows, 144 columns, 432 non-zeros
+      0: obj =   0.000000000e+00 inf =   9.200e+02 (45)
+     61: obj =   2.568807313e+06 inf =   0.000e+00 (0)
+*   162: obj =   4.750000000e+00 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Integer optimization begins...
+Long-step dual simplex will be used
++   162: mip =     not found yet >=              -inf        (1; 0)
++   299: >>>>>   2.000390000e+05 >=   1.200000000e+01 100.0% (33; 0)
++   435: >>>>>   1.000440000e+05 >=   1.400000000e+01 100.0% (62; 2)
++   507: >>>>>   5.200000000e+01 >=   1.400000000e+01  73.1% (71; 14)
++   679: >>>>>   4.800000000e+01 >=   1.600000000e+01  66.7% (70; 91)
++   726: >>>>>   4.100000000e+01 >=   1.700000000e+01  58.5% (73; 99)
++   792: >>>>>   4.000000000e+01 >=   1.900000000e+01  52.5% (79; 122)
++   984: >>>>>   3.800000000e+01 >=   2.100000000e+01  44.7% (111; 134)
++  1024: >>>>>   3.700000000e+01 >=   2.100000000e+01  43.2% (118; 140)
++  1267: >>>>>   3.600000000e+01 >=   2.300000000e+01  36.1% (157; 156)
++  1967: >>>>>   3.500000000e+01 >=   2.800000000e+01  20.0% (225; 250)
++  2265: >>>>>   3.400000000e+01 >=   2.900000000e+01  14.7% (224; 329)
++  2670: >>>>>   3.100000000e+01 >=   3.100000000e+01   0.0% (117; 624)
++  2670: mip =   3.100000000e+01 >=     tree is empty   0.0% (0; 1043)
+INTEGER OPTIMAL SOLUTION FOUND
+Time used:   0.2 secs
+Memory used: 0.8 Mb (855968 bytes)
+Cheapest spanning tree: 31
+A<-D (3)
+B<-E (4)
+D<-B (1)
+E<-H (2)
+F<-C (6)
+F<-I (8)
+H<-F (2)
+H<-G (5)
+Model has been successfully processed

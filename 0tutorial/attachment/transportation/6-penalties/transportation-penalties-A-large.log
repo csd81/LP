@@ -1,0 +1,52 @@
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+ -m transportation-penalties-A.mod -d transportation-penalties-large.dat --log
+ transportation-penalties-A-large.log --xcheck
+Reading model section from transportation-penalties-A.mod...
+50 lines were read
+Reading data section from transportation-penalties-large.dat...
+33 lines were read
+Checking (line 11)...
+Generating Calculating_Demand_Satisfied...
+Generating Availability_at_Supply_Points...
+Generating Shortage_Penalty_Constraint...
+Generating Surplus_Penalty_Constraint...
+Generating Total_Costs...
+Model has been successfully generated
+GLPK Simplex Optimizer, v4.65
+23 rows, 36 columns, 108 non-zeros
+Preprocessing...
+22 rows, 36 columns, 78 non-zeros
+Scaling...
+ A: min|aij| =  1.000e+00  max|aij| =  1.500e+01  ratio =  1.500e+01
+GM: min|aij| =  8.685e-01  max|aij| =  1.151e+00  ratio =  1.326e+00
+EQ: min|aij| =  7.848e-01  max|aij| =  1.000e+00  ratio =  1.274e+00
+Constructing initial basis...
+Size of triangular part is 22
+      0: obj =   0.000000000e+00 inf =   1.479e+03 (6)
+      9: obj =   3.690000000e+03 inf =   0.000e+00 (0)
+*    12: obj =   2.700000000e+03 inf =   3.453e-14 (0)
+OPTIMAL LP SOLUTION FOUND
+glp_exact: 23 rows, 36 columns, 108 non-zeros
+GNU MP bignum library is being used
+*    12:   objval =                   2700   (0)
+*    12:   objval =                   2700   (0)
+OPTIMAL SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.2 Mb (162110 bytes)
+Optimal cost: 2700.
+Required: D1, Satisfied: 120 (+0)
+Required: D2, Satisfied: 140 (+0)
+Required: D3, Satisfied: 170 (+0)
+Required: D4, Satisfied: 90 (+0)
+Required: D5, Satisfied: 110 (+0)
+Required: D6, Satisfied: 120 (+0)
+From S1 to D1, transport 10 amount for 50 (unit cost: 5).
+From S1 to D5, transport 90 amount for 450 (unit cost: 5).
+From S2 to D1, transport 110 amount for 110 (unit cost: 1).
+From S2 to D2, transport 140 amount for 280 (unit cost: 2).
+From S3 to D3, transport 170 amount for 170 (unit cost: 1).
+From S3 to D5, transport 20 amount for 80 (unit cost: 4).
+From S4 to D4, transport 90 amount for 720 (unit cost: 8).
+From S4 to D6, transport 120 amount for 840 (unit cost: 7).
+Model has been successfully processed

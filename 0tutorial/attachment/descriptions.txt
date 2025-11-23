@@ -1,0 +1,121 @@
+### gnump
+
+2-helloworld
+
+Two sample ,,Hello, World!'' GNU MathProg models, with data hardcoded, one of the models involves integer variables.
+
+### eqsystem
+
+1-simple
+
+Two simple implementations of a given system of equations, data hardcoded in models. One is a straightforward implementation, one is aligned in a matrix format.
+
+2-modifications
+
+The system is modified several times. The model still contains the data hardcoded.
+
+3-parametrization
+
+Parameters introduced to start separating model and data content from each other. The 'rhs' version only uses the right-hand side as a parameter, the 'full' version parametrizes the whole matrix. Data are still hardcoded in the model file.
+
+4-data-blocks
+
+The same two models as before, but in different data sections, from now data sections are in different data files. One extra data file that leads to an error to demonstrate missing parameter values.
+
+5-indexing
+
+An implementation of the same problem now with indexing, and a corresponding data file.
+
+6-data-options
+
+A version of the indexing model, where coefficient parameters have zero default values, and one version where two indices are switched to demonstrate out of domain errors. The good model has two data files, an original and one with a matrix used. The bad model has also two data files, one which erroneously resolves because equations and unknown values are named so, and one for which an out of domain error is reported.
+
+7-columns
+
+A modified model implementation which accepts a more compact data file with a single parameter only. Corresponding data file attached.
+
+8-error-min
+
+The original ultimate model from '6-data-options', and a new one which minimizes maximum of errors of the equations. Two identical datafiles can be provided to each. The former one reports infeasible solution because the system is overspecified, the latter model reports an optimal error of 0.47 for all equations and a corresponding solution.
+
+### production
+
+1-basic
+
+Basic production problem with three implementation variations. One with hardcoded data, two with longer and shorter formulation with indexing. Same problem.
+
+2-limits
+
+Basic production problem modified to add limits. Long, shorter and shortest implementation, the shortest involving auxiliary variables. Data file from 1-basic modified to demonstrate constraints.
+
+3-max-of-min
+
+Objective changed to maximize minimum production instead. Two data file from 2-limits modified, first to ignore all limits, then to ignore only one limit.
+
+4-raw-costs
+
+Added raw material costs and therefore optimizing for profit instead. Problem from 2-limits modified, added costs to the raw materials.
+
+5-diet
+
+Diet problem with implemention similar to the production problem, and corresponding sample data file.
+
+6-arbitrary-recipes
+
+General formulation that can cover both the 4-raw-costs and 5-diet problems. The corresponding two data files are implemented according to the new data file format. A third data file includes some truly arbitrary recipes.
+
+7-bulk
+
+Bulk purchase and selling of resources as ,,Orders'', introducing integers. Three data files, one with the problem from 4-raw-costs and 6-arbitrary-recipes exactly, one with some new arbitrary recipes added as in 6-arbitrary-recipes, and one with many orders added.
+
+### transportation
+
+1-basic
+
+Basic transportation problem model file and sample data file.
+
+2-connections
+
+Same data file, an advanced formulation for the same model, and a new model only including specific connections.
+
+3-increasing-rates
+
+The "advanced formulation" extended with increasing cost rates after a given treshold. Own data file which is the extension of the original one with a treshold and an increasing rate.
+
+4-economy-of-scale
+
+The economy of scale problem, with naive LP and correct MILP implementation. Own data file which is the extension of the original one with a treshold and a decreasing rate.
+
+5-fixed-cost
+
+Model with fixed utilization costs of connections, and two data files (extended versions of the original one) with small and large fixed costs.
+
+6-penalties
+
+Two equivalent implementation of "goal programming", aka relaxed demand constraints with linear penalty functions. Two data files with small and large penalties.
+
+7-mid-level
+
+Unique model file for the three-level transportation problem with fixed center establishment costs. Two unique data files, the difference is small and large establishment costs in each.
+
+### milp
+
+1-knapsack
+
+Basic Knapsack, and Multi-Way Partition Problem, a single data for both problems. The basic shall be tested as LP, which is also supported with an additional 'relaxed' model version.
+
+2-tiling
+
+Tiling rectangular grid with crosses, with small, medium and large instance data files. The large shall be run only with time limit, and shall be tested with --fpump and --cuts.
+
+3-assignment
+
+Assignment problem implementation, with three data files: one with only matrix (optimal: 42), one with a 0 fixed against the solution (optimal: still 42), one with a 1 fixed at cheapest pair (optimal: 43).
+
+4-graphs
+
+Shortest path (Dijkstra's analog) and cheapest tree (Kruskal's analog), on the same example graph in two data files.
+
+5-tsp
+
+Travelling Salesman Problem, on a specific graph on a 9x9 grid, with textual and SVG output.

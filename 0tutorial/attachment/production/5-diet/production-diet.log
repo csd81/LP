@@ -1,0 +1,38 @@
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+ -m production-diet.mod -d production-diet.dat --log production-diet.log
+Reading model section from production-diet.mod...
+32 lines were read
+Reading data section from production-diet.dat...
+32 lines were read
+Generating Nutrient_Requirements...
+Generating Total_Costs_Calc...
+Generating Total_Costs...
+Model has been successfully generated
+GLPK Simplex Optimizer, v4.65
+6 rows, 6 columns, 24 non-zeros
+Preprocessing...
+4 rows, 5 columns, 17 non-zeros
+Scaling...
+ A: min|aij| =  1.000e-04  max|aij| =  3.000e+01  ratio =  3.000e+05
+GM: min|aij| =  2.150e-01  max|aij| =  4.651e+00  ratio =  2.163e+01
+EQ: min|aij| =  4.623e-02  max|aij| =  1.000e+00  ratio =  2.163e+01
+Constructing initial basis...
+Size of triangular part is 4
+      0: obj =   0.000000000e+00 inf =   1.895e+02 (4)
+      4: obj =   4.105013757e+04 inf =   0.000e+00 (0)
+*     5: obj =   2.970718722e+04 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.1 Mb (126436 bytes)
+Total Costs: 29707.2
+Eaten of F1: 0
+Eaten of F2: 42.8571
+Eaten of F3: 0
+Eaten of F4: 49.2014
+Eaten of F5: 28.7489
+Requirement 2000 of nutrient N1 done with 2042.99
+Requirement 180 of nutrient N2 done with 180
+Requirement 30 of nutrient N3 done with 30
+Requirement 0.04 of nutrient N4 done with 0.04
+Model has been successfully processed

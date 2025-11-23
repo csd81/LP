@@ -1,0 +1,17 @@
+data;
+
+set UnknownValues := x y z w v;
+set Equations := Eq1 Eq2 Eq3 Eq4 Eq5;
+
+param EqConstants:
+		x	y	z	w	v	RHS :=
+	Eq1	4	-2	3	.	.	-5
+	Eq2	.	.	-1	-1	.	-5
+	Eq3	.	1	1	.	.	1.5
+	Eq4	4	-7	.	2	5	0
+	Eq5	1	.	2	.	3	-0.5
+	;
+
+# Solution: 2, 3.5, -2, 7, 0.5
+
+end;

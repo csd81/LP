@@ -1,0 +1,47 @@
+data;
+
+set Products := P1 P2 P3;
+set Raw_Materials := A B C D;
+
+param Storage :=
+	A	23000
+	B	31000
+	C	450000
+	D	200
+	;
+
+param Consumption_Rate:
+		P1	P2	P3 :=
+	A	200	50	0
+	B	25	180	75
+	C	3200	1000	4500
+	D	1	1	1
+	;
+
+param Revenue :=
+	P1	252
+	P2	89
+	P3	139
+	;
+
+param Min_Usage :=
+	B	21000
+	D	200
+	;
+
+param Min_Production :=
+	P2	100
+	;
+
+param Max_Production :=
+#	P3	10
+	;
+
+# Modifications:
+# Maximizing minimum production instead.
+# Min. usage, and Max/Min production constraints are again considered, except P3<=10.
+
+# Old solution: common minimum production of 51.72 for all three products.
+# New solution: common minimum production of 43.86 for P1 and P3, and 112.28 for P2.
+
+end;

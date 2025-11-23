@@ -1,0 +1,41 @@
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+ -m tiling.mod -d tiling-small.dat --log tiling-small.log
+Reading model section from tiling.mod...
+40 lines were read
+Reading data section from tiling-small.dat...
+6 lines were read
+Generating No_Overlap...
+Generating Number_of_Crosses...
+Model has been successfully generated
+GLPK Integer Optimizer, v4.65
+25 rows, 32 columns, 72 non-zeros
+32 integer variables, all of which are binary
+Preprocessing...
+20 rows, 28 columns, 60 non-zeros
+28 integer variables, all of which are binary
+Scaling...
+ A: min|aij| =  1.000e+00  max|aij| =  1.000e+00  ratio =  1.000e+00
+Problem data seem to be well scaled
+Constructing initial basis...
+Size of triangular part is 20
+Solving LP relaxation...
+GLPK Simplex Optimizer, v4.65
+20 rows, 28 columns, 60 non-zeros
+*     0: obj =  -0.000000000e+00 inf =   0.000e+00 (8)
+*    11: obj =   2.400000000e+00 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Integer optimization begins...
+Long-step dual simplex will be used
++    11: mip =     not found yet <=              +inf        (1; 0)
++    13: >>>>>   2.000000000e+00 <=   2.000000000e+00   0.0% (2; 0)
++    13: mip =   2.000000000e+00 <=     tree is empty   0.0% (0; 3)
+INTEGER OPTIMAL SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.2 Mb (201823 bytes)
+Max. Cross Tiles (4x6): 2
+....+.
+.+.+#+
++#+.+.
+.+....
+Model has been successfully processed

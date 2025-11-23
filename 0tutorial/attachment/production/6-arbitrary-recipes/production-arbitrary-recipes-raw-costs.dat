@@ -1,0 +1,40 @@
+data;
+
+set Raws := A B C D;
+set Products := P1 P2 P3;
+set Recipes := MakeP1 MakeP2 MakeP3;
+
+param Min_Usage :=
+	B	21000
+	D	200
+	P2	100
+	;
+
+param Max_Usage :=
+	A	23000
+	B	31000
+	C	450000
+	D	200
+	P3	10
+	;
+
+param Value :=
+	A	1
+	B	0.07
+	C	0.013
+	D	8
+	P1	252
+	P2	89
+	P3	139
+	;
+
+param Recipe_Ratio:
+		A	B	C	D	P1	P2	P3 :=
+	MakeP1	200	25	3200	1	1	0	0
+	MakeP2	50	180	1000	1	0	1	0
+	MakeP3	0	75	4500	1	0	0	1
+	;
+
+# Solution: 1577.45, with productions of 25.48, 164.52 and 10 units of P1, P2 and P3.
+
+end;

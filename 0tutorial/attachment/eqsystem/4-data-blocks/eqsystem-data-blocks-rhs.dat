@@ -1,0 +1,11 @@
+data;
+
+param Rhs1 := -5;
+param Rhs2 := -5;
+param Rhs3 := 1.5;
+param Rhs4 := 0;
+param Rhs5 := -0.5;
+
+# Solution: 2, 3.5, -2, 7, 0.5
+
+end;

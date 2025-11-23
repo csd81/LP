@@ -1,0 +1,55 @@
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+ -m transportation-fixed-costs.mod -d transportation-fixed-costs.dat --log
+ transportation-fixed-costs.log
+Reading model section from transportation-fixed-costs.mod...
+40 lines were read
+Reading data section from transportation-fixed-costs.dat...
+38 lines were read
+Checking (line 12)...
+Generating Availability_at_Supply_Points...
+Generating Requirement_at_Demand_Points...
+Generating Zero_Transport_If_Fix_Cost_Not_Paid...
+Generating Total_Costs...
+Model has been successfully generated
+GLPK Integer Optimizer, v4.65
+35 rows, 48 columns, 144 non-zeros
+24 integer variables, all of which are binary
+Preprocessing...
+34 rows, 48 columns, 96 non-zeros
+24 integer variables, all of which are binary
+Scaling...
+ A: min|aij| =  1.000e+00  max|aij| =  1.700e+02  ratio =  1.700e+02
+GM: min|aij| =  1.000e+00  max|aij| =  1.000e+00  ratio =  1.000e+00
+EQ: min|aij| =  1.000e+00  max|aij| =  1.000e+00  ratio =  1.000e+00
+2N: min|aij| =  7.031e-01  max|aij| =  1.328e+00  ratio =  1.889e+00
+Constructing initial basis...
+Size of triangular part is 34
+Solving LP relaxation...
+GLPK Simplex Optimizer, v4.65
+34 rows, 48 columns, 96 non-zeros
+      0: obj =   0.000000000e+00 inf =   7.500e+02 (6)
+     33: obj =   5.463603896e+03 inf =   0.000e+00 (0)
+*    59: obj =   3.343921569e+03 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Integer optimization begins...
+Long-step dual simplex will be used
++    59: mip =     not found yet >=              -inf        (1; 0)
++   111: >>>>>   4.190000000e+03 >=   3.348235294e+03  20.1% (18; 0)
++   131: >>>>>   3.750000000e+03 >=   3.433921569e+03   8.4% (20; 4)
++   149: >>>>>   3.720000000e+03 >=   3.525714286e+03   5.2% (13; 29)
++   229: >>>>>   3.640000000e+03 >=   3.640000000e+03   0.0% (7; 50)
++   229: mip =   3.640000000e+03 >=     tree is empty   0.0% (0; 75)
+INTEGER OPTIMAL SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.2 Mb (234891 bytes)
+Optimal cost: 3640.
+From S1 to D1, transport 100 amount for 550 (unit cost: 5, fixed: 50).
+From S2 to D1, transport 20 amount for 220 (unit cost: 1, fixed: 200).
+From S2 to D2, transport 140 amount for 330 (unit cost: 2, fixed: 50).
+From S2 to D4, transport 90 amount for 140 (unit cost: 1, fixed: 50).
+From S3 to D3, transport 80 amount for 280 (unit cost: 1, fixed: 200).
+From S3 to D5, transport 110 amount for 490 (unit cost: 4, fixed: 50).
+From S4 to D3, transport 90 amount for 590 (unit cost: 6, fixed: 50).
+From S4 to D6, transport 120 amount for 1040 (unit cost: 7, fixed: 200).
+Model has been successfully processed

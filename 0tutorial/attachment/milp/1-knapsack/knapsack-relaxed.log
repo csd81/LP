@@ -1,0 +1,39 @@
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+ -m knapsack-relaxed.mod -d knapsack-basic.dat --log knapsack-relaxed.log
+ --nomip
+Reading model section from knapsack-relaxed.mod...
+26 lines were read
+Reading data section from knapsack-basic.dat...
+32 lines were read
+Generating Total_Weight...
+Generating Total_Gain...
+Model has been successfully generated
+GLPK Simplex Optimizer, v4.65
+2 rows, 10 columns, 20 non-zeros
+Preprocessing...
+1 row, 10 columns, 10 non-zeros
+Scaling...
+ A: min|aij| =  1.130e+01  max|aij| =  2.010e+01  ratio =  1.779e+00
+GM: min|aij| =  1.000e+00  max|aij| =  1.000e+00  ratio =  1.000e+00
+EQ: min|aij| =  1.000e+00  max|aij| =  1.000e+00  ratio =  1.000e+00
+Constructing initial basis...
+Size of triangular part is 1
+*     0: obj =  -0.000000000e+00 inf =   0.000e+00 (10)
+*     5: obj =   1.770248447e+01 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.1 Mb (126429 bytes)
+Optimal Gain: 17.7025
+Total Weight: 60
+A: 0.273292
+B: 0
+C: 1
+D: 0
+E: 1
+F: 0
+G: 0
+H: 1
+I: 1
+J: 0
+Model has been successfully processed

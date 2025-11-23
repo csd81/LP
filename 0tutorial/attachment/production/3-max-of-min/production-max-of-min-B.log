@@ -1,0 +1,38 @@
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+ -m production-max-of-min.mod -d production-max-of-min-B.dat --log production-max-of-min-B.log
+Reading model section from production-max-of-min.mod...
+37 lines were read
+Reading data section from production-max-of-min-B.dat...
+47 lines were read
+Generating Usage_Calc...
+Generating Total_Revenue_Calc...
+Generating Minimum_Production_Calc...
+Generating Minimum_Production...
+Model has been successfully generated
+GLPK Simplex Optimizer, v4.65
+9 rows, 9 columns, 26 non-zeros
+Preprocessing...
+7 rows, 4 columns, 17 non-zeros
+Scaling...
+ A: min|aij| =  1.000e+00  max|aij| =  4.500e+03  ratio =  4.500e+03
+GM: min|aij| =  4.317e-01  max|aij| =  2.317e+00  ratio =  5.367e+00
+EQ: min|aij| =  1.863e-01  max|aij| =  1.000e+00  ratio =  5.367e+00
+Constructing initial basis...
+Size of triangular part is 7
+      0: obj =  -0.000000000e+00 inf =   2.659e+01 (1)
+      1: obj =  -0.000000000e+00 inf =   0.000e+00 (0)
+*     3: obj =   4.385964912e+01 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.1 Mb (135245 bytes)
+Total Revenue: 27142.1
+Minimum Production: 43.8596
+Production of P1: 43.8596
+Production of P2: 112.281
+Production of P3: 43.8596
+Usage of A: 14386, remaining: 8614.04
+Usage of B: 24596.5, remaining: 6403.51
+Usage of C: 450000, remaining: 0
+Usage of D: 200, remaining: 0
+Model has been successfully processed

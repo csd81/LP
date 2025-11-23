@@ -1,0 +1,57 @@
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+ -m transportation-economy-of-scale.mod -d transportation-economy-of-scale.dat
+ --log transportation-economy-of-scale.log
+Reading model section from transportation-economy-of-scale.mod...
+54 lines were read
+Reading data section from transportation-economy-of-scale.dat...
+33 lines were read
+Checking (line 16)...
+Generating Availability_at_Supply_Points...
+Generating Requirement_at_Demand_Points...
+Generating Total_Transported...
+Generating Zero_Over_Threshold_if_Threshold_Not_Chosen...
+Generating Full_Below_Threshold_if_Threshold_Chosen...
+Generating Total_Costs...
+Model has been successfully generated
+GLPK Integer Optimizer, v4.65
+83 rows, 96 columns, 264 non-zeros
+24 integer variables, all of which are binary
+Preprocessing...
+24 constraint coefficient(s) were reduced
+82 rows, 96 columns, 216 non-zeros
+24 integer variables, all of which are binary
+Scaling...
+ A: min|aij| =  1.000e+00  max|aij| =  2.500e+02  ratio =  2.500e+02
+GM: min|aij| =  8.543e-01  max|aij| =  1.171e+00  ratio =  1.370e+00
+EQ: min|aij| =  7.298e-01  max|aij| =  1.000e+00  ratio =  1.370e+00
+2N: min|aij| =  3.906e-01  max|aij| =  1.641e+00  ratio =  4.200e+00
+Constructing initial basis...
+Size of triangular part is 82
+Solving LP relaxation...
+GLPK Simplex Optimizer, v4.65
+82 rows, 96 columns, 216 non-zeros
+      0: obj =   0.000000000e+00 inf =   7.500e+02 (6)
+     40: obj =   3.479369538e+03 inf =   0.000e+00 (0)
+*    67: obj =   2.262715319e+03 inf =   2.030e-15 (0)
+OPTIMAL LP SOLUTION FOUND
+Integer optimization begins...
+Long-step dual simplex will be used
++    67: mip =     not found yet >=              -inf        (1; 0)
++    92: >>>>>   2.672500000e+03 >=   2.404973383e+03  10.0% (16; 0)
++   165: >>>>>   2.627500000e+03 >=   2.588546798e+03   1.5% (13; 12)
++   173: >>>>>   2.625000000e+03 >=   2.600922454e+03   0.9% (6; 24)
++   184: mip =   2.625000000e+03 >=     tree is empty   0.0% (0; 49)
+INTEGER OPTIMAL SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.3 Mb (350618 bytes)
+Optimal cost: 2625.
+From S1 to D1, transport 10=10+0 amount for 50 (unit cost: 5/3.75).
+From S1 to D5, transport 90=90+0 amount for 450 (unit cost: 5/3.75).
+From S2 to D1, transport 110=100+10 amount for 107.5 (unit cost: 1/0.75).
+From S2 to D2, transport 140=100+40 amount for 260 (unit cost: 2/1.5).
+From S3 to D3, transport 170=100+70 amount for 152.5 (unit cost: 1/0.75).
+From S3 to D5, transport 20=20+0 amount for 80 (unit cost: 4/3).
+From S4 to D4, transport 90=90+0 amount for 720 (unit cost: 8/6).
+From S4 to D6, transport 120=100+20 amount for 805 (unit cost: 7/5.25).
+Model has been successfully processed

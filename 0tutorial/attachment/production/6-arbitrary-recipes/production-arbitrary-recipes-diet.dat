@@ -1,0 +1,33 @@
+data;
+
+set Raws := F1 F2 F3 F4 F5;
+set Products := N1 N2 N3 N4;
+set Recipes := EatF1 EatF2 EatF3 EatF4 EatF5;
+
+param Min_Usage :=
+	N1	2000
+	N2	180
+	N3	30
+	N4	0.04
+	;
+
+param Value :=
+	F1	450
+	F2	220
+	F3	675
+	F4	120
+	F5	500
+	;
+
+param Recipe_Ratio:
+		F1	F2	F3	F4	F5	N1	N2	N3	N4 :=
+	EatF1	1	0	0	0	0	30	5.2	0.2	0.0001
+	EatF2	0	1	0	0	0	20	.	0.7	0.0001
+	EatF3	0	0	1	0	0	25	2	0.1	0.0001
+	EatF4	0	0	0	1	0	13	3.6	.	0.0002
+	EatF5	0	0	0	0	1	19	0.1	.	0.0009
+	;
+
+# Solution: 29707.19, with food consumption of 0, 42.86, 0, 49.20, and 28.75 of F1, F2, F3, F4 and F5.
+
+end;

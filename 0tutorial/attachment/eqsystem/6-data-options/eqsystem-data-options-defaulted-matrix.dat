@@ -1,0 +1,25 @@
+data;
+
+set UnknownValues := x y z w v;
+set Equations := Eq1 Eq2 Eq3 Eq4 Eq5;
+
+param Rhs :=
+	Eq1	-5
+	Eq2	-5
+	Eq3	1.5
+	Eq4	0
+	Eq5	-0.5
+	;
+
+param Coef:
+		x	y	z	w	v :=
+	Eq1	4	-2	3	.	.
+	Eq2	.	.	-1	-1	.
+	Eq3	.	1	1	.	.
+	Eq4	4	-7	.	2	5
+	Eq5	1	.	2	.	3
+	;
+
+# Solution: 2, 3.5, -2, 7, 0.5
+
+end;
