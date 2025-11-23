@@ -1,3 +1,248 @@
+# Practice example: Car dealership
+A practice GMPL example with gradually increasing difficulty.
 
+---
 
+### Prerequisites
 
+* Advanced GMPL Techniques 2: Some Handy Tricks
+* GMPL Model of Motivational Examples
+
+---
+
+## Simple warm-up example
+
+We are collectors of classic Eastern European cars, and we want to purchase the following cars—one car per weekday:
+
+* Wartburg 353
+* Lada Nova
+* Polski Fiat 126p
+* Trabant 601
+* Škoda 125
+
+Each day we can buy exactly one, and a genie has revealed in advance how the prices of these cars will change throughout the week:
+
+| Cars / Days | Monday | Tuesday | Wednesday | Thursday | Friday |
+| ----------- | ------ | ------- | --------- | -------- | ------ |
+| Wartburg    | 60000  | 65000   | 61000     | 66000    | 60000  |
+| Lada        | 50000  | 55000   | 63000     | 60000    | 52000  |
+| Fiat        | 30000  | 32000   | 33000     | 30000    | 27000  |
+| Trabant     | 70000  | 65000   | 77000     | 85000    | 100000 |
+| Skoda       | 65000  | 70000   | 75000     | 90000    | 70000  |
+
+The goal: buy all cars—one per day—while minimizing total spending.
+
+```gmpl
+set Days;
+set Cars;
+param price{Cars,Days};
+
+var buy{Cars,Days} binary;
+
+s.t. ExactlyOneCarEachDay{d in Days}:
+    sum{c in Cars} buy[c,d] = 1;
+
+s.t. EachCarExactlyOnce{c in Cars}:
+    sum{d in Days} buy[c,d] = 1;
+
+minimize totalCost:
+    sum{c in Cars, d in Days} buy[c,d]*price[c,d];
+
+solve;
+
+printf "\n\n";
+
+for{c in Cars, d in Days:buy[c,d]==1}
+    printf "%10s:\t%s - %d\n",c,d,price[c,d];
+
+printf "\n\n";
+
+data;
+
+set Days:= Monday Tuesday Wednesday Thursday Friday;
+set Cars:= Wartburg Lada Fiat Trabant Skoda;
+
+param price:
+            Monday  Tuesday Wednesday   Thursday    Friday :=
+Wartburg    60000   65000   61000       66000       60000
+Lada        50000   55000   63000       60000       52000
+Fiat        30000   32000   33000       30000       27000
+Trabant     70000   65000   77000       85000       100000
+Skoda       65000   70000   75000       90000       70000
+;
+```
+
+---
+
+## Making things more complex: Trading
+
+Now let’s make the problem more realistic (and more challenging).
+We no longer restrict ourselves to buying only one car per day. Instead:
+
+* We start with a budget of **200000**.
+* We may **buy and sell cars on any day**.
+* Cars can be stored overnight, but we only have **4 garage spaces**.
+* Cars bought and held count toward garage usage.
+* We aim to **maximize our ending budget** after day 5.
+
+```gmpl
+param nDays;
+set Days := 1..nDays;
+set Cars;
+param price{Cars,Days};
+param initialbudget;
+param garagecount;
+
+var buy{Cars,Days} integer;
+
+s.t. MustHavePositiveBalanceAtTheEndOfEachDay{d in Days}:
+    initialbudget - sum{d2 in 1..d, c in Cars} buy[c,d2]*price[c,d2] >= 0;
+
+s.t. CannotHaveMoreCarsThanGarageSpace{d in Days}:
+    sum{d2 in 1..d, c in Cars} buy[c,d2] <= garagecount;
+
+s.t. CannotSellWhatWeDontHave {d in Days, c in Cars}:
+    sum{d2 in 1..d} buy[c,d2] >= 0;
+
+maximize endbudget:
+    initialbudget - sum{d in Days, c in Cars} buy[c,d]*price[c,d];
+
+solve;
+
+for{d in Days}{
+    printf "Day %d\n",d;
+    printf "\tSell: ";
+    for{c in Cars:buy[c,d]<0}
+        printf "%s(%d) ",c,-buy[c,d];
+    printf "\n\tBuy: ";
+    for{c in Cars:buy[c,d]>0}
+        printf "%s(%d) ",c,buy[c,d];
+    printf "\n";
+    printf "\tBudget: %d\n", initialbudget - sum{d2 in 1..d, c in Cars} buy[c,d2]*price[c,d2];
+}
+
+data;
+
+param nDays:= 5;
+set Cars:= Wartburg Lada Fiat Trabant Skoda;
+
+param price:
+            1       2       3       4       5 :=
+Wartburg    60000   65000   61000   66000   60000
+Lada        50000   55000   63000   60000   52000
+Fiat        30000   32000   33000   30000   27000
+Trabant     70000   65000   77000   85000   100000
+Skoda       65000   70000   75000   90000   70000
+;
+
+param initialbudget:=200000;
+param garagecount:=4;
+```
+
+---
+
+## Final step: loans and renting garage space
+
+Now we add a final layer of realism:
+
+* We can **rent extra garage space** for 4000 per night.
+* We can **take daily loans** with **4% interest per day**.
+* A bank balance is tracked:
+
+  * positive → savings
+  * negative → loans
+* All loans must be repaid by the last day: **bankbalance[nDays] = 0**
+
+Goal: **maximize the final cash budget**.
+
+```gmpl
+param nDays;
+set Days := 1..nDays;
+set Cars;
+param price{Cars,Days};
+param initialbudget;
+param garagecount;
+param interest;
+param garagepriceperday;
+
+var buy{Cars,Days} integer;
+var budget{0..nDays} >= 0;
+var caringarage{Cars,0..nDays} >= 0;
+var loan{Days};
+var bankbalance{0..nDays} <= 0, >= -200000;
+var rentgarage{Days} >= 0, integer;
+
+s.t. InitializeBudget:
+    budget[0] = initialbudget;
+
+s.t. InitializeGarage{c in Cars}:
+    caringarage[c,0] = 0;
+
+s.t. InitialBankBalande:
+    bankbalance[0] = 0;
+
+s.t. BalanceChange{d in Days}:
+    budget[d] = budget[d-1]
+                - sum{c in Cars} buy[c,d]*price[c,d]
+                + loan[d]
+                - rentgarage[d]*garagepriceperday;
+
+s.t. BankBalanceChange{d in Days}:
+    bankbalance[d] = bankbalance[d-1]*(1 + interest) - loan[d];
+
+s.t. NoLoansAtTheEnd:
+    bankbalance[nDays] = 0;
+
+s.t. CarAvailability{d in Days, c in Cars}:
+    caringarage[c,d] = caringarage[c,d-1] + buy[c,d];
+
+s.t. CannotHaveMoreCarsThanGarageSpace{d in Days}:
+    sum{c in Cars} caringarage[c,d] <= garagecount + rentgarage[d];
+
+maximize endbudget: budget[nDays];
+
+solve;
+
+for{d in Days}{
+    printf "Day %d\n",d;
+    printf "\tSell: ";
+    for{c in Cars:buy[c,d]<0}
+        printf "%s(%d) ",c,-buy[c,d];
+    printf "\n\tBuy: ";
+    for{c in Cars:buy[c,d]>0}
+        printf "%s(%d) ",c,buy[c,d];
+    printf "\n";
+    printf "\tBank: %d\n", bankbalance[d-1]*(1+interest);
+    printf "\tLoan: %d\n", loan[d];
+    printf "\tGarage rent: %d\n", rentgarage[d];
+    printf "\tBudget: %d\n", budget[d];
+    printf "\tBank: %d\n", bankbalance[d];
+}
+
+data;
+
+param nDays:= 5;
+set Cars:= Wartburg Lada Fiat Trabant Skoda;
+
+param price:
+            1       2       3       4       5 :=
+Wartburg    60000   65000   61000   66000   60000
+Lada        50000   55000   63000   60000   52000
+Fiat        30000   32000   33000   30000   27000
+Trabant     70000   65000   77000   85000   100000
+Skoda       65000   70000   75000   90000   70000
+;
+
+param initialbudget:=200000;
+param garagecount:=4;
+param interest:=0.05;
+param garagepriceperday:=4000;
+```
+
+If you want, I can also:
+
+* generate visual explanations of each model
+* optimize formatting for your DSP/GMPL “book”
+* convert this into a clean Markdown chapter
+
+Just say the word.
