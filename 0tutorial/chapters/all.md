@@ -132,7 +132,7 @@ It may appear that a constraint does not exclude any solutions from the search s
 Now, let's look at a slightly more elaborate example of an optimization problem.
 
 
-## Problem 3.
+**Problem 3.**
 
 A company wants to design a new type of chocolate in the form of a rectangular block of uniform material. They want the block to contain as much mass as possible; however, there are regulations concerning the block's faces for shipping considerations. One face must have an area no greater than $6 \text{ cm}^2$, another face cannot be greater than $8 \text{ cm}^2$, and the largest face cannot be greater than $12 \text{ cm}^2$. What is the greatest possible mass for a piece of chocolate?
 
@@ -522,7 +522,7 @@ Now that we have a working model file that solves a particular system of linear 
 
 
 
-## Problem 5.
+**Problem 5.**
 
 Take the equations defined by Equation system (8) as the initial system, using its aligned form described in either Equation system (9) or (10). Then, obtain another system by applying the following modifications:
 
@@ -1164,7 +1164,7 @@ Although we do not focus on mathematical proofs here, it is worth mentioning tha
 
   
 
-## Problem 6.
+**Problem 6.**
 
 Append a sixth equation, $x + y + z + w + v = 0$, to Problem 5 and solve it.
 
@@ -1233,7 +1233,7 @@ However, there is still an interesting question when faced with an overspecified
 
 
 
-## Problem 7.
+**Problem 7.**
 
 Given a system of linear equations, find a solution that minimizes the maximum error across all equations. The error for a specific equation is defined as the absolute value of the difference between the Left-Hand Side (LHS) and the Right-Hand Side (RHS).
 (The LHS of the equation consists of the sum of the variables multiplied by their coefficients, while the RHS is a constant. Use the same data description method as before.)
@@ -1368,7 +1368,7 @@ The chapter focuses on how a single model can be extended to incorporate various
 
 The simplest version of the production problem can be generally described as follows.
 
-#### Problem 8.
+**Problem 8.**
 
 Given a set of **products** and a set of **raw materials** needed for their production. Production is linear and can occur in any amount, with fixed **consumption rates** of raw materials: we know exactly how much of each raw material is consumed to produce **one unit** of each product. We have a fixed amount of each raw material available and a fixed unit revenue for each product.
 
@@ -1376,7 +1376,7 @@ Given a set of **products** and a set of **raw materials** needed for their prod
 
 This definition might be a little challenging to grasp. It primarily outlines the **model logic** and will be implemented in a model file. Let's look at a specific example of the production problem with supporting data.
 
-#### Problem 9.
+**Problem 9.**
 
 We have a manufacturing plant capable of producing three different products, named **P1, P2, and P3**. Four raw materials are required for production, named **A, B, C, and D**. We have precise data for the following:
 
@@ -1682,15 +1682,12 @@ The solution should be exactly the same as before again, for the same data file.
 
 Now that we have a working implementation for arbitrary production problems, let's change the problem description itself.
 
------
-
-I've rephrased the text using modern American English spelling (**"maximize"** instead of "maximise," **"modeling"** instead of "modelling"), punctuation (e.g., using a **colon** before a list or example rather than an en-dash), vocabulary (e.g., **"tamper with the code"** is more common than "tamper with the code describing"), and grammar conventions while maintaining the original structure, paragraphs, and data.
+ 
 
 
 
 
-
-## Problem 10.
+**Problem 10.**
 
 Solve the **production problem**, provided that for each **raw material** and each **product**, a **minimum** and **maximum** total **usage** is also given that must be respected by the solution.
 
@@ -1749,7 +1746,7 @@ To demonstrate how it works, consider the following production problem with limi
 
  
 
-## Problem 11.
+**Problem 11.**
 
 Solve the **production problem** described in Problem 9, but with the following restrictions added:
 
@@ -1875,7 +1872,7 @@ In the previous parts, we've seen a complete implementation for the production p
 
 
 
-## Problem 12.
+**Problem 12.**
 
 The problem requires us to **maximize the minimum production** amount among all products, while keeping the problem data the same. The minimum production refers to the product for which the least amount is manufactured.
 
@@ -2027,7 +2024,7 @@ We have seen an example where only the objective was changed. Now let's look at 
 
 ---
 
-## Problem 13.
+**Problem 13.**
 
 Solve the production problem, but now instead of optimizing for revenue, optimize for **profit**. The profit is defined as the difference between the **total revenue** from products and the **total cost** of raw materials consumed for production. The cost for each raw material is proportional to the material consumed and is independent of which product it is used for. A single **unit cost** for each raw material is given.
 
@@ -2035,7 +2032,7 @@ This is the general description of the problem. We will again use an example for
 
 -----
 
-### Problem 14.
+**Problem 14.**
 
 Solve the production problem with the objective of **maximized profit**, using the following problem data, with unit costs of raw materials added.
 
@@ -2120,7 +2117,7 @@ We have seen several versions of the production problem. Now, a seemingly unrela
 
 
 
-## Problem 15.
+**Problem 15.**
 
 Given a set of **food types** and a set of **nutrients**. Each food consists of a given, fixed ratio of the nutrients.
 
@@ -2132,7 +2129,7 @@ After the general problem definition, let's look at a specific example.
 
 -----
 
-### Problem 16.
+**Problem 16.**
 
 Solve the diet problem with the following data. There are five food types, named **F1 to F5**, and four nutrients under focus, named **N1 to N4**. The contents of a unit amount of each food, the unit cost of each food, and the minimum requirement of each nutrient are shown in the following table.
 
@@ -2322,7 +2319,7 @@ Now we can define the production problem with arbitrary recipes as follows.
 
 
 
-## Problem 17.
+**Problem 17.**
 
 Given a set of **raw materials** and a set of **products**. There is also a set of **recipes** defined.
 
@@ -2663,7 +2660,7 @@ Finally, let's look at a new example problem to further demonstrate the capabili
 
  
 
-## Problem 18
+**Problem 18.**
 
 Solve **Problem 14**, the original production problem, using the exact same data, but with two additional production options.
 
@@ -2778,7 +2775,7 @@ The general problem definition for arbitrary recipes and order fulfillment is th
 
  
 
-## Problem 19
+**Problem 19.**
 
 Solve **Problem 17**, the production problem with arbitrary recipes, where production proceeds as usual, but now includes **orders** that we may acquire. Orders are **optional** but must be acquired (and subsequently fulfilled) **completely**, not partially. Each order has the following characteristics:
 
@@ -3700,7 +3697,7 @@ To illustrate how explicitly introducing an index set like `Connections` in the 
 
  
 
-## Problem 23.
+**Problem 23.**
 
 Solve **Problem 22**, the original example transportation problem, with one modification: only those connections are allowed for transportation whose unit costs are **no greater than 7**.
 
@@ -3766,13 +3763,13 @@ The first example is when the unit cost is a constant, but after some threshold 
 
  
 
-## Problem 24.
+**Problem 24.**
 
 Solve Problem 21, the **transportation problem**, with one modification: there are two **unit costs** for transportation—one for amounts **below** a given **threshold** and a higher unit cost for **surplus amounts above** that threshold.
 
 -----
 
-## Problem 25.
+**Problem 25.**
 
 Solve Problem 22, the original example transportation problem, with one modification: the given unit costs are only for transportation amounts **below 100 units**. Above that limit, costs are **increased by 25%** per material unit transported.
 
@@ -3897,13 +3894,13 @@ Here, the simplest case of **economy of scale** is presented, where unit costs s
 
 
 
-## Problem 26.
+**Problem 26.**
 
 Solve Problem 21, the **transportation problem**, with one modification: there are two **unit costs** for transportation—one for amounts **below** a given **threshold** and a **lower** unit cost for **surplus amounts above** that threshold.
 
 -----
 
-## Problem 27.
+**Problem 27.**
 
 Solve Problem 22, the original example transportation problem, with one modification: the given unit costs are only for transportation amounts **below 100 units**. Above that limit, costs are **decreased by 25%** per amount transported.
 
@@ -4085,7 +4082,7 @@ Different scenarios for unit costs and changes were considered. These kinds of c
 
 
 
-## Problem 28.
+**Problem 28.**
 
 Solve Problem 21, the transportation problem, with the following modification: for each connection, there is a **fixed cost** to be paid once for **establishing it**, in order to use that connection to transport materials.
 
@@ -4095,7 +4092,7 @@ The example problem to be solved here is the following.
 
 -----
 
-## Problem 29.
+**Problem 29.**
 
 Solve Problem 28, the transportation problem with fixed costs, using data from the original example **Problem 22**, and the following fixed establishment costs per connection.
 
@@ -4217,7 +4214,7 @@ In this section, the starting point is the original transportation problem again
 
 
 
-## Problem 30.
+**Problem 30.**
 
 Solve Problem 21, the transportation problem with the addition of **flexible demands**. For each demand point, we do not require the exact requirement to be served. Instead, a **penalty** is introduced into the objective which is **proportional to the extent of the difference** between the required amount at a demand point and the actually served amount.
 
@@ -4225,7 +4222,7 @@ Two example problems will be solved, which differ only in the parameter constant
 
 -----
 
-## Problem 31.
+**Problem 31.**
 
 Solve Problem 22, the originally proposed transportation problem, with flexible demands added. There is a **surplus** and a **shortage penalty constant**. The penalty for each demand is calculated by multiplying the difference between the actual transported materials and the requirement by a corresponding penalty constant.
 
@@ -4379,7 +4376,7 @@ So far, the graph had been very simple: there were two sets of nodes in the netw
 
 
 
-## Problem 32.
+**Problem 32.**
 
 Solve **Problem 21**, the transportation problem extended by introducing a middle level of so-called **centers**.
 
@@ -4393,7 +4390,7 @@ Note that in general, transportation could occur over any network. However, if *
 
 -----
 
-## Problem 33.
+**Problem 33.**
 
 Solve **Problem 21**, the general transportation problem with centers, using the following problem data. There are four supplies, named **S1 to S4**, two centers, **C1 and C2**, and six demands, named **D1 to D6**. Transportation costs, available amounts for supplies, and required amounts for demands are summarized in the following table:
 
@@ -4857,7 +4854,7 @@ Now that we have seen the complications that can arise with an integer problem, 
 
 
 
-## Problem 36.
+**Problem 36.**
 
 Given a set of $N \ge 1$ **real numbers**, divide them **exhaustively** into exactly $K \ge 1$ **subsets** so that the difference between the **smallest** and **largest** sum of numbers in a subset is **minimal**.
 
@@ -4867,7 +4864,7 @@ We will solve one example problem.
 
 -----
 
-## Problem 37.
+**Problem 37.**
 
 **Distribute** the $N=10$ **items** described in Problem 35, the **knapsack example problem**, into $K=3$ **knapsacks** so that the difference between the **lightest** and the **heaviest** knapsack is **minimal**.
 
@@ -4980,7 +4977,7 @@ In this section, we **restrict tiling** to the **rectangular grid** of **unit sq
  
 
 
-## Problem 38.
+**Problem 38.**
 
 Determine the **maximum number of non-overlapping crosses** that can be placed in an $N \times M$ grid.
 
@@ -5360,7 +5357,7 @@ Another well-known optimization problem, the **assignment problem** [21], is pre
  
 
 
-## Problem 40.
+**Problem 40.**
 
 Given $N$ workers and $N$ tasks. For each worker and each task, we know how well that particular worker can execute that particular task, which is described by a cost value for that pair.
 
@@ -5374,7 +5371,7 @@ As usual, the general problem is demonstrated through an example.
 
 MILP MODELS
 
-## Problem 41.
+**Problem 41.**
 
 Solve Problem 40, the assignment problem, using the following data. There are $N = 7$ workers, named W1 to W7, the tasks are named T1 to T7, and the following matrix describes the costs that are incurred whenever a particular task is assigned to a particular worker.
 
@@ -5507,7 +5504,7 @@ Now, we will show one interesting extension of the problem. What happens when so
 
 
 
-## Problem 42.
+**Problem 42.**
 
 Solve Problem 40, the assignment problem, with the addition of **a priori decisions**: some possible assignments are explicitly declared to either be used or not used.
 
@@ -5617,13 +5614,13 @@ Simple graphs are useful for representing the scheme of a network of connections
 
 
 
-## Problem 43.
+**Problem 43.**
 
 Solve the **shortest path problem** [24] on an arbitrary simple weighted graph, specified as follows: Given two nodes, find a path connecting these two nodes so that the **total weight of edges on the path is minimal**.
 
 -----
 
-## Problem 44.
+**Problem 44.**
 
 Solve the **minimum weight spanning tree (MST)** [25] problem on an arbitrary simple weighted graph: find the spanning tree of the graph with the **minimal total edge weight**.
 
@@ -5646,7 +5643,7 @@ Other approaches are also available. Our aim here is to show how **MILP models c
 
 -----
 
-## Problem 45.
+**Problem 45.**
 
 On the graph depicted in **Figure 12**, find the shortest path between nodes **A and I**, and find the minimum weight spanning tree.
 
@@ -5945,7 +5942,7 @@ A well-known and notoriously difficult optimization problem and its GNU MathProg
 
 
 
-## Problem 46.
+**Problem 46.**
 
 Given a set of **nodes** and the **distances** between every two of them, find the **shortest cycle** that **visits all nodes**.
 
@@ -5959,7 +5956,7 @@ For simplicity, we will solve the TSP problem for nodes situated on a **plane** 
 
 -----
 
-## Problem 47.
+**Problem 47.**
 
 Find the **shortest route** starting and ending at the **green node** and visiting all **red nodes** depicted in Figure 15.
 
