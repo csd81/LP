@@ -86,7 +86,10 @@ Two quantities are compared here: the time Alice needs to reach the station if h
 
 Now, this is more precise, but Alice may be interested in the minimum speed she can choose, so let $x$ be as small as possible. The formulation is as follows:
 
-$$\begin{aligned} \text{minimize} &: x \\ \text{subject to} &: 30 \text{ min} + \frac{3 \text{ km}}{x} \leq 75 \text{ min}\end{aligned}$$ (4)
+$$\begin{aligned} \text{minimize} &: x \\ 
+\text{subject to} &: 30 \text{ min} + \frac{3 \text{ km}}{x} \leq 75 \text{ min}\end{aligned}$$ 
+
+(4)
 
 At this point, the formulated problem is an **optimization problem**. The goal is not only to find a suitable solution for a real-world problem but to find the **most suitable** one in some specific aspect. From a mathematical perspective, optimization involves finding the *best* solution, not just *a* solution, for an equation, inequality, or a set of such statements. Optimization is a sub-field of Operations Research, as it is an essential way to support business decisions: given a complex real-world situation, what is the best course of action?
 
