@@ -6349,9 +6349,13 @@ The meaning of the data is similar to the production problems mentioned previous
 We have a small factory that can produce several products ($\text{P}1, \ldots, \text{P}5$). We use three **resources** for production. Each product column shows the number of units required from each resource, respectively, to produce one unit of the corresponding product. For example, producing one unit of product $\text{P}4$ requires 3 units from $\text{Res}1$, 5 units from $\text{Res}2$, and 2 units from $\text{Res}3$. A resource can be a raw material, a human resource, electricity, etc. We can produce as much of the products as we want, provided the production doesn't exceed the available **capacities** of the resources. For example, if we produce 8 units of $\text{P}2$ and 1 unit of $\text{P}4$, the total consumption from the first resource will be $8 \cdot 2 + 1 \cdot 3 = 19$ units. The usage of the other resources is calculated similarly. We earn a certain **profit** from the production, which is a linear combination of the production plan and the profit coefficient vector. If the production vector is $x(0, 8, 0, 1, 0)$, and we introduce the profit vector $c(19, 23, 15, 42, 33)$, the earned profit would be $c \cdot x = (19, 23, 15, 42, 33) \cdot (0, 8, 0, 1, 0) = 226$. Our goal is to find a production plan that satisfies all constraints and maximizes the earned profit.
 
 Denoting the matrix of resource coefficients by $A$ and the capacity vector by $b$, our problem can be written in the general $\text{LP}$ format:
+
 $$z = c \cdot x \to \max$$
+
 $$\text{s.t. } Ax \le b, x \ge 0.$$
+
 We will demonstrate how to solve this using the Primal Simplex Method. First, let's write out the model in detail:
+
 $$\begin{array}{rcccccccc}
 x_1 & +2x_2 & +x_3 & +3x_4 & & & & \le & 24 \\
 & x_2 & +x_3 & +5x_4 & +x_5 & & & \le & 43 \\
@@ -6361,6 +6365,7 @@ x_1 & & & +2x_4 & +2x_5 & & & \le & 18 \\
 \end{array}$$
 
 Next, we convert the inequalities into equations by adding so-called **slack variables** ($s_i$) to the left-hand side:
+
 $$\begin{array}{rccccccccc}
 x_1 & +2x_2 & +x_3 & +3x_4 & & +s_1 & & & = & 24 \\
 & x_2 & +x_3 & +5x_4 & +x_5 & & +s_2 & & = & 43 \\
@@ -6368,6 +6373,7 @@ x_1 & & & +2x_4 & +2x_5 & & & +s_3 & = & 18 \\
 19x_1 & +23x_2 & +15x_3 & +42x_4 & +33x_5 & & & = & z & \to \max \\
 & & x \ge 0, s \ge 0
 \end{array}$$
+
 In this model, writing $x \ge 0$ is a shorthand for writing out all non-negativity constraints for the $x$ variables, and the same holds for the $s$ vector. Instead of the system of equations, we can use a compact form called the **simplex tableau**, shown below.
 
 | **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$a_3$** | **$a_4$** | **$a_5$** | **$s_1$** | **$s_2$** | **$s_3$** |
