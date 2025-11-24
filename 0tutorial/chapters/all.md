@@ -146,7 +146,13 @@ In this case, defining the variables isn't even straightforward. Though not expl
 
 The most important requirement for a set of variables to be suitable for a model is that if $x$, $y$, and $z$ are given, the solution to the real-world problem is well-defined. That is, we can accurately determine whether the constraints are satisfied and what the objective value is. Now, let's express the three face area constraints and the volume objective to formulate the optimization model. Note that $x$, $y$, and $z$ should also be positive, but these bounds will be implicitly enforced by an optimal solution of the model.
 
-$$\begin{aligned} \text{maximize} &: xyz \\ \text{subject to} &: xy \leq 6 \text{ cm}^2 \\ & xz \leq 8 \text{ cm}^2 \\ & yz \leq 12 \text{ cm}^2 \\ & x, y, z \geq 0\end{aligned}$$ (6)
+$$\begin{aligned} \text{maximize} &: xyz \\ 
+\text{subject to} &: xy \leq 6 \text{ cm}^2 \\ 
+& xz \leq 8 \text{ cm}^2 \\ 
+& yz \leq 12 \text{ cm}^2 \\ 
+& x, y, z \geq 0\end{aligned}$$ 
+
+(6)
 
 There are many feasible solutions for this model; for example, $x = y = z = 2 \text{ cm}$ is feasible, but $x = y = z = 2.5 \text{ cm}$ is infeasible. There is a single optimal solution, which is $x = 2 \text{ cm}$, $y = 3 \text{ cm}$, and $z = 4 \text{ cm}$; the total volume in this case is $24 \text{ cm}^3$.
 
