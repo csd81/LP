@@ -20,7 +20,7 @@ s.t. InitializeBudget:
 s.t. InitializeGarage{c in Cars}:
     caringarage[c,0]=0;
 
-s.t. InitialBankBalande:
+s.t. InitialBankBalance:
     bankbalance[0]=0;
 
 s.t. BalanceChange{d in Days}:
@@ -28,7 +28,6 @@ s.t. BalanceChange{d in Days}:
 
 s.t. BankBalanceChange{d in Days}:
     bankbalance[d]=bankbalance[d-1]*(1+interest)-loan[d];
-
 s.t. NoLoansAtTheEnd:
     bankbalance[nDays] = 0;
 

@@ -20,7 +20,7 @@ s.t. BalanceChange{d in Days}:
 
 s.t. CarAvailability{d in Days, c in Cars}:
     caringarage[c,d]=caringarage[c,d-1]+buy[c,d];
-    
+
 s.t. CannotHaveMoreCarsThanGarageSpace{d in Days}:
     sum{c in Cars} caringarage[c,d] <= garagecount;
 

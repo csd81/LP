@@ -9,7 +9,7 @@ var buy{Cars,Days} integer;
 
 s.t. MustHavePositiveBalanceAtTheEndOfEachDay{d in Days}:
     initialbudget - sum{d2 in 1..d, c in Cars} buy[c,d2]*price[c,d2] >= 0;
-    
+
 s.t. CannotHaveMoreCarsThanGarageSpace{d in Days}:
     sum{d2 in 1..d, c in Cars} buy[c,d2] <= garagecount;
 

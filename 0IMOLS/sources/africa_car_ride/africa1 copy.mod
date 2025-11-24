@@ -8,11 +8,12 @@ set Stations;
 param distance{Stations}; # km
 param fuelPrice{Stations}; # Dh / l
 
-
 var fill{Stations} >= 0;
 
 s.t. Has_to_meet_safety_measure {s in Stations}:
-  (initialTank + sum {s2 in Stations: distance[s2] < distance[s]} fill[s2]) * (100 / fuelConsumption) >= distance[s]+safetyMeasure;
+  (initialTank + sum {s2 in Stations: distance[s2] < distance[s]} fill[s2]) * (100 / fuelConsumption) 
+>= 
+distance[s]+safetyMeasure;
 
 s.t. Can_not_overfill{s in Stations}:
   initialTank + sum {s2 in Stations: distance[s2] < distance[s]} fill[s2] - distance[s] * (fuelConsumption / 100) + fill[s] <= tankCapacity;
