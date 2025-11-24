@@ -1,0 +1,25 @@
+# Chapter 9: Summary
+
+The capabilities of the **GNU MathProg modeling language** were presented using various problems. This included solving linear equation systems, the production and diet problems and their common extensions, the transportation problem, various general cost functions, and integer programming techniques through common optimization problems.
+
+**Mathematical programming** generally offers a simple, practical solution for the class of problems it's suited for. **$\text{MILP}$** models can be used for a much wider range of cases than their purely **$\text{LP}$** counterparts. Nevertheless, both problem classes are useful in their own right.
+
+Using our expertise in GNU MathProg gives us a **unique tool** for solving complex optimization problems. While the solution speed may not be the fastest available for a particular problem, the **ease of implementation**, **code maintenance**, and **adaptability to changes** in the problem definition make the methodology valuable for both industrial and scientific purposes.
+
+Typically, a single **model file** is developed to address all problem instances, which are implemented in their own **data files**. The **glpsol** solver can parse the language and solve the model simultaneously, and user-defined output can also be generated.
+
+We also provided insight into how $\text{LP}$ models can be solved by the **Simplex Method** and one technique for integer programming problems, the **Gomory cut**. These only serve as an introduction to how $\text{LP}/\text{MILP}$ solver software works in the background. While we can treat solvers as **black boxes**, a basic knowledge of them can be useful for developing mathematical programming models, improving them, and better understanding their results.
+
+Note that there are many approaches other than the main line shown in this Tutorial. We'll mention a few concluding points:
+
+* The GNU MathProg language and a parser/solver like glpsol can be used alone to develop and solve models, but note that the GLPK software kit offers **other features**, most notably a **callable library**. Accessing linear programming tools from a programming language can be better in the long term than using standalone GNU MathProg model files. For instance, in GNU MathProg, we cannot "change" the value of a parameter, which limits input data processing possibilities.
+* Different **configurations** of the glpsol solver were only briefly touched on in this Tutorial. Applying the appropriate **heuristics** or **alternative solution methods** can speed up the search.
+* The glpsol solver is an easy-to-use tool, but it's probably **not the fastest** $\text{LP}/\text{MILP}$ solver. Other free solvers may be superior if performance is an issue, for example, $\text{CBC}$ [7] or $\text{lpsolve}$ [8]. **Commercial $\text{MILP}$ solvers** can be even much better. We can use alternative solvers with GNU MathProg models, as glpsol supports exporting a model into well-known formats.
+* GNU MathProg is **not the only language** for linear programming. There are dozens of other languages, each with its own class of models, input/output formats, and solvers to support.
+* **$\text{LP}$ and $\text{MILP}$ are not the only mathematical programming problem classes** with general-purpose solvers. If specific **nonlinear objectives and constraints** are needed to model a situation, then we might try developing a **Nonlinear or Mixed-Integer Nonlinear Programming ($\text{NLP}$ or $\text{MINLP}$)** model in an adequate environment. Remember, more general tools can be much more costly in terms of running time.
+* Mathematical programming is a powerful tool, but some problems have **much more effective algorithmic solutions**. Sometimes developing a specific algorithm can yield better results, although often at the cost of more coding.
+* Throughout this Tutorial, we only solved models **in their entirety**, resulting in a final answer. Generally, mathematical programming tools can be used as **part of an algorithmic framework**. For example, a large problem can be **decomposed** into several different models that are solved separately or sequentially. Alternatively, an $\text{LP}/\text{MILP}$ model can serve as a **relaxation** for a more complex optimization problem, and as such, provide a **bound** for its objective function.
+
+We hope the reader finds this Tutorial helpful and motivating for solving real-life optimization problems in the future.
+
+ 

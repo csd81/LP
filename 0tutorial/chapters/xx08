@@ -1,0 +1,361 @@
+# Chapter 8: Solution Algorithms
+
+So far, the focus has been on $\text{LP}$ and $\text{MILP}$ **modeling techniques** and the details of **GNU MathProg implementation**. Mathematical programming models are solved by **dedicated solvers**. Typically, the modeling procedure can be performed without knowing how these solvers operate.
+
+Nevertheless, expertise in the **solution algorithms** themselves can be valuable during modeling. It can aid in **designing models**, **improving their efficiency**, **choosing the appropriate solver tools and configurations**, and **interpreting results** and solver outputs. Therefore, this chapter aims to provide insight into how the models we describe in a modeling language are solved behind the scenes.
+
+Operations research has a rich body of literature from the 1970s concerning solution algorithms. We recommend some books for interested readers. First, W. L. Winston's book [31] is a widely used handbook covering the main models and algorithms. We also suggest István Maros's book on Linear Programming [32] and the book by George Dantzig [33].
+
+In fact, **Linear Programming (LP)** is a primary technique within operations research. There are several solution methods, most notably the **Simplex Method** and its different versions. The initial version, called the **Primal Simplex Method**, was introduced by George Dantzig in 1947. We will briefly introduce it in the next section by solving a simple production problem.
+
+---
+
+## 8.1 The Primal Simplex Method
+
+Consider the following table, which contains the data for a production problem:
+
+| | P1 | P2 | P3 | P4 | P5 | Cap |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| Res1 | 1 | 2 | 1 | 3 | 0 | 24 |
+| Res2 | 0 | 1 | 1 | 5 | 1 | 43 |
+| Res3 | 1 | 0 | 0 | 2 | 2 | 18 |
+| **Profit** | **19** | **23** | **15** | **42** | **33** | |
+
+The meaning of the data is similar to the production problems mentioned previously (see Problem 9 from Chapter 5).
+
+We have a small factory that can produce several products ($\text{P}1, \ldots, \text{P}5$). We use three **resources** for production. Each product column shows the number of units required from each resource, respectively, to produce one unit of the corresponding product. For example, producing one unit of product $\text{P}4$ requires 3 units from $\text{Res}1$, 5 units from $\text{Res}2$, and 2 units from $\text{Res}3$. A resource can be a raw material, a human resource, electricity, etc. We can produce as much of the products as we want, provided the production doesn't exceed the available **capacities** of the resources. For example, if we produce 8 units of $\text{P}2$ and 1 unit of $\text{P}4$, the total consumption from the first resource will be $8 \cdot 2 + 1 \cdot 3 = 19$ units. The usage of the other resources is calculated similarly. We earn a certain **profit** from the production, which is a linear combination of the production plan and the profit coefficient vector. If the production vector is $x(0, 8, 0, 1, 0)$, and we introduce the profit vector $c(19, 23, 15, 42, 33)$, the earned profit would be $c \cdot x = (19, 23, 15, 42, 33) \cdot (0, 8, 0, 1, 0) = 226$. Our goal is to find a production plan that satisfies all constraints and maximizes the earned profit.
+
+Denoting the matrix of resource coefficients by $A$ and the capacity vector by $b$, our problem can be written in the general $\text{LP}$ format:
+
+$$z = c \cdot x \to \max$$
+
+$$\text{s.t. } Ax \le b, x \ge 0.$$
+
+We will demonstrate how to solve this using the Primal Simplex Method. First, let's write out the model in detail:
+
+$$\begin{array}{rcccccccc}
+x_1 & +2x_2 & +x_3 & +3x_4 & & & & \le & 24 \\
+& x_2 & +x_3 & +5x_4 & +x_5 & & & \le & 43 \\
+x_1 & & & +2x_4 & +2x_5 & & & \le & 18 \\
+19x_1 & +23x_2 & +15x_3 & +42x_4 & +33x_5 & = & z & \to & \max \\
+& & x_i \ge 0, 1 \le i \le 5
+\end{array}$$
+
+Next, we convert the inequalities into equations by adding so-called **slack variables** ($s_i$) to the left-hand side:
+
+$$\begin{array}{rccccccccc}
+x_1 & +2x_2 & +x_3 & +3x_4 & & +s_1 & & & = & 24 \\
+& x_2 & +x_3 & +5x_4 & +x_5 & & +s_2 & & = & 43 \\
+x_1 & & & +2x_4 & +2x_5 & & & +s_3 & = & 18 \\
+19x_1 & +23x_2 & +15x_3 & +42x_4 & +33x_5 & & & = & z & \to \max \\
+& & x \ge 0, s \ge 0
+\end{array}$$
+
+In this model, writing $x \ge 0$ is a shorthand for writing out all non-negativity constraints for the $x$ variables, and the same holds for the $s$ vector. Instead of the system of equations, we can use a compact form called the **simplex tableau**, shown below.
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$a_3$** | **$a_4$** | **$a_5$** | **$s_1$** | **$s_2$** | **$s_3$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $s_1$ | 24 | 1 | **2** | 1 | 3 | 0 | 1 | 0 | 0 |
+| $s_2$ | 43 | 0 | 1 | 1 | 5 | 1 | 0 | 1 | 0 |
+| $s_3$ | 18 | 1 | 0 | 0 | 2 | 2 | 0 | 0 | 1 |
+| $z$ | 0 | -19 | -23 | -15 | -42 | -33 | 0 | 0 | 0 |
+
+Note that there are several equivalent versions of the simplex tableau. Here, we place the **basis solution** on the left-hand side, and the extra row for the **objective function** at the bottom. These specific choices are not fundamentally important.
+
+Here, **B** stands for the **basis**, which is a maximal linearly independent set of vectors. Currently (initially), $B = \{s_1, s_2, s_3\}$, composed of the three unit vectors. The corresponding **basic feasible solution** is $x_B = (0, 0, 0, 0, 0, 24, 43, 18)$. This is a solution to the linear system; moreover, every variable is non-negative (i.e., the solution is **feasible**), and any non-zero component in the vector corresponds to a basis vector.
+
+The tableau contains all the data, plus an extra row. How do we define the objective function's extra row? It simply contains the **negatives** of the $c$ vector coefficients.
+
+The following theorem is crucial:
+
+> **Theorem 1** Exactly one of the following options occurs:
+>
+> a) There is **no negative entry** in the last row. In this case, the corresponding basic feasible solution is **optimal**.
+>
+> b) There is a negative value in the last row such that there is **no positive value** in its column. In this case, there is **no optimal solution**, as the objective value is not bounded from above.
+>
+> c) Otherwise (there is a negative value in the last row, but for every such value, a positive value exists in its column), we can perform a **basis transformation** so that the corresponding objective value is not smaller.
+
+Since this is only a brief overview of the simplex method, we won't prove the theorem; interested readers can find the proof in any of the suggested books. However, we will demonstrate the transformation process. Each transformation **exchanges one vector in the basis for another** not already present.
+
+Let's assume we choose the column of $a_2$ (the most negative coefficient in the objective row, -23) for the vector that **enters the basis**. The vector that **leaves the basis** is determined by a rule called the **minimum ratio test**. We calculate the following minimum: $\min \{24/2, 43/1\}$. The numerator is taken from the current basic solution ($x_B$), and the denominator is taken from the same row but in the chosen entering column ($a_2$). We **cannot divide by zero** or a **negative value**.
+
+The minimum is $24/2 = 12$, which means the vector in the row corresponding to 24 ($s_1$) must be chosen as the **leaving vector**. The value $\mathbf{2}$ is called the **pivot number**, which is bolded in the initial tableau.
+
+How is the transformation performed?
+* The pivot row (the $s_1$ row) is divided by the pivot value (2).
+* $1/2$ times the pivot row is subtracted from the second row ($s_2$).
+* $0/2$ times the pivot row is subtracted from the third row ($s_3$).
+* $23/2$ times the pivot row is **added** to the objective row ($z$).
+
+In the above calculations ($1/2$, $0/2$, and $23/2$), the numerator comes from the column of the pivot value, and the denominator is always the pivot value. The purpose of choosing these factors is to perform row operations that eliminate every element in the pivot column (other than the pivot element) to zero.
+
+After the transformation, we get the following tableau:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$a_3$** | **$a_4$** | **$a_5$** | **$s_1$** | **$s_2$** | **$s_3$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $a_2$ | 12 | 1/2 | 1 | 1/2 | 3/2 | 0 | 1/2 | 0 | 0 |
+| $s_2$ | 31 | -1/2 | 0 | 1/2 | 7/2 | 1 | -1/2 | 1 | 0 |
+| $s_3$ | 18 | 1 | 0 | 0 | 2 | **2** | 0 | 0 | 1 |
+| $z$ | 276 | -15/2 | 0 | -7/2 | -15/2 | -33 | 23/2 | 0 | 0 |
+
+Now, let's choose the column of $a_5$ to enter the basis (as it has the most negative objective coefficient, $-33$). According to the minimum ratio test: $\min \{\text{N/A}, 31/1, 18/2\}$. Division by $0$ or a negative value (for $\text{a}_5$ in the $a_2$ row) is not allowed. The minimum is $18/2 = 9$. Thus, $s_3$ is the leaving vector.
+
+After the transformation, we get:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$a_3$** | **$a_4$** | **$a_5$** | **$s_1$** | **$s_2$** | **$s_3$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $a_2$ | 12 | 1/2 | 1 | 1/2 | 3/2 | 0 | 1/2 | 0 | 0 |
+| $s_2$ | 22 | -1 | 0 | 1/2 | 5/2 | 0 | -1/2 | 1 | -1/2 |
+| $a_5$ | 9 | 1/2 | 0 | 0 | 1 | 1 | 0 | 0 | 1/2 |
+| $z$ | 573 | 9 | 0 | **-7/2** | 51/2 | 0 | 23/2 | 0 | 33/2 |
+
+Only one negative entry remains in the last row: the column of $a_3$ (with $-7/2$). We must choose this column to enter the basis. According to the minimum ratio test: $\min \{12/(1/2), 22/(1/2), \text{N/A}\}$. The minimum is $12/(1/2) = 24$. Thus, $a_2$ is the leaving vector.
+
+As we've observed, the rule for the objective function change is:
+* If we choose a column to enter the basis where the objective row value is **negative**, the consequence is that the **objective value increases**.
+* If we choose a column where the objective row value is **positive**, the objective value will **decrease** (which we avoid since our goal is to maximize the objective).
+* If we choose a column where the objective row value is **zero**, there will be **no change** in the objective value.
+
+Note that this rule about the entering column choice and the objective change is only true if the basic solution is **non-degenerate**, meaning that if the current basis is $B(a_2, s_2, a_5)$, then all of $x_2, s_2, x_5$ are positive. If the value of the variable in the basic solution in the pivot row were zero, there would be no change in the basic solution column, so there would be no change in the objective.
+
+Let's see what happens after the final transformation:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$a_3$** | **$a_4$** | **$a_5$** | **$s_1$** | **$s_2$** | **$s_3$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $a_3$ | 24 | 1 | 2 | 1 | 3 | 0 | 1 | 0 | 0 |
+| $s_2$ | 10 | -3/2 | -1 | 0 | 1 | 0 | -1 | 1 | -1/2 |
+| $a_5$ | 9 | 1/2 | 0 | 0 | 1 | 1 | 0 | 0 | 1/2 |
+| $z$ | **657** | 25/2 | 7 | 0 | 36 | 0 | 15 | 0 | 33/2 |
+
+We can see there are no more negative entries in the last row, which means (according to Theorem 1) that the current solution is **optimal**. This optimal solution is $x_B = (0, 0, 24, 0, 9 \mid 0, 10, 0)$. The vertical line separates the first five variables (the original product variables) from the last three (the slack variables), as their meanings are different. The solution means that in the optimal plan (where the profit is maximized while all constraints are satisfied), we need to produce **24 units of the third product** and **9 units of the fifth product**. Furthermore, **10 units of the second resource remain unused**; the full capacities of the other two resources are completely consumed.
+
+We performed three transformations, but the final tableau could have been reached with only two transformations (since only $a_3$ and $a_5$ needed to replace vectors in the original basis). It is not easy to know in advance which transformations will lead to the final state in the fewest steps. However, several tricks can help. For example (for a small problem like this), it might be beneficial to choose the vector to leave the basis that results in the largest possible increase in the objective function.
+
+Other issues can complicate the problem, such as the very rare occurrence of **"cycling,"** which means returning to a basis that was previously visited after several transformations. This case is rarely seen in practice.
+
+Another point is that in many cases, before solving a problem, we can perform some **pre-processing**, e.g., identifying and deleting constraints that are **redundant** (meaning that removing the constraint does not change the optimal solution of the remaining system).
+
+What happens if the factory introduces a new (a sixth) product, where the data for its resource need is given by $a_6$? We can easily realize that there's no need to repeat the entire computation. We only compute the column of the new product. The transformed form of the $a_6$ vector can be written as $B^{-1}a_6$, where $B$ is the current basis, and $B^{-1}$ is its inverse. We then insert this column vector into the tableau. If the coefficient of this new vector in the last row (calculated as $c_B B^{-1}a_6 - c_6$) is non-negative, it means producing this new product is **not advantageous**. Otherwise, this value is negative, and only this one is negative in the last row. Then, we continue the transformations as before.
+
+For example, suppose the column of the new product is $a_6 = (1, 2, 1)^T$, where the components represent the resource consumption from the three resources for producing one unit of this new product (say, product $\text{P}6$). Furthermore, let $c_6 = 35$, which is the profit gained from producing one unit of this product.
+
+Note that the current basis is:
+
+$$B(a_3, s_2, a_5) = \begin{bmatrix} 1 & 0 & 0 \\ 1 & 1 & 1 \\ 0 & 0 & 2 \end{bmatrix} \quad \text{and} \quad B^{-1} = \begin{bmatrix} 1 & 0 & 0 \\ -1 & 1 & -1/2 \\ 0 & 0 & 1/2 \end{bmatrix}.$$
+
+We can also find the inverse in the last three columns of the simplex tableau. Thus, $B^{-1}a_6 = (1, 1/2, 1/2)^T$, and $c_B B^{-1}a_6 - c_6 = (15, 0, 33) \cdot (1, 1/2, 1/2) - 35 = -7/2$. This negative value means the production of the new product is **advantageous**, and the procedure will continue, with the vector representing the new product entering the basis.
+
+Finally, we mention an article that discusses various pivoting rules [34].
+
+---
+
+## 8.2 The Two-Phase (Primal) Simplex Method
+
+Here, we will briefly introduce the **Two-Phase Method**. What has been shown previously is, in fact, the **second phase** of this method. Therefore, we need to show the **first phase**.
+
+The goal of the first phase is to **find a basic feasible solution**. In the second phase, starting from this feasible solution, we proceed step-by-step to find an **optimal solution**. When is the first phase needed? It's needed when we are **not able to begin** with a suitable feasible solution.
+
+We will illustrate the first phase with an example. Let's assume our $\text{LP}$ is:
+
+$$\begin{array}{rcccccccc}
+x_1 & +2x_2 & +x_3 & +3x_4 & & & & \ge & 24 \\
+& x_2 & +x_3 & +5x_4 & +x_5 & & & \le & 43 \\
+x_1 & & & +2x_4 & +2x_5 & & & = & 18 \\
+19x_1 & +23x_2 & +15x_3 & +42x_4 & +33x_5 & = & z & \to & \max \\
+& & x_i \ge 0, 1 \le i \le 5
+\end{array}$$
+
+We've slightly modified our original example. This could be interpreted as needing to use **at least 24 units** of the first resource, being able to use **at most 43 units** of the second resource (as before), and needing to consume the **entire amount** of the third resource.
+
+First, we convert the inequalities to equations:
+
+$$\begin{array}{rccccccccc}
+x_1 & +2x_2 & +x_3 & +3x_4 & & -s_1 & & & = & 24 \\
+& x_2 & +x_3 & +5x_4 & +x_5 & & +s_2 & & = & 43 \\
+x_1 & & & +2x_4 & +2x_5 & & & & = & 18 \\
+19x_1 & +23x_2 & +15x_3 & +42x_4 & +33x_5 & & & & = & z \to \max \\
+& & x \ge 0, s \ge 0
+\end{array}$$
+
+Now, we can see that we **do not have enough unit vectors** to serve as an initial basis. Note that $s_2$ is called a **slack variable** and $s_1$ is called a **surplus variable**. Let's create the missing unit vectors we need for a basis:
+
+$$\begin{array}{rcccccccccc}
+x_1 & +2x_2 & +x_3 & +3x_4 & & -s_1 & & +t_1 & & = & 24 \\
+& x_2 & +x_3 & +5x_4 & +x_5 & & +s_2 & & & = & 43 \\
+x_1 & & & +2x_4 & +2x_5 & & & & +t_2 & = & 18 \\
+19x_1 & +23x_2 & +15x_3 & +42x_4 & +33x_5 & & & & & = & z \to \max \\
+& & x \ge 0, s \ge 0, t \ge 0
+\end{array}$$
+
+We call $t_1$ and $t_2$ **artificial variables**; we use them, but we are "not allowed" to use them. The original equation system has a feasible solution (where all equations are satisfied with the bounded $x$ and $s$ variables) if and only if we can **eliminate the artificial variables** from the system. So, our goal is to eliminate them, which is the task of the first phase. Our technique is to introduce an **artificial (or secondary) objective function** as $\hat{z} = -t_1 - t_2$. Instead of the original objective function $z$, we will **maximize $\hat{z}$** in the first phase (using the same maximization method shown earlier). If the maximum value of $\hat{z}$ is **zero**, it means we have successfully eliminated the artificial variables, and we can continue with the second phase, where we return to the original objective function $z$. Otherwise, if the maximum of $\hat{z}$ is **negative**, it means the original $\text{LP}$ cannot be solved without the artificial variables, i.e., it **does not have a feasible solution**.
+
+---
+
+## 8.3 The Dual Simplex Method
+
+Besides the Primal Simplex Method, the **Dual Simplex Method** is the other main version. We introduce it briefly. Let's consider the following $\text{LP}$:
+
+$$\begin{array}{rccccccc}
+x_1 & & +x_3 & & & \ge & 1 \\
+2x_1 & +x_2 & +3x_3 & & & \ge & 3 \\
+x_1 & +2x_2 & & & & \ge & 5 \\
+4x_1 & +2x_2 & +x_3 & & & \ge & 7 \\
+10x_1 & +12x_2 & +15x_3 & = & z & \to & \min \\
+& & x \ge 0
+\end{array}$$
+
+After multiplying all inequalities and the objective function by $-1$ and adding slack variables ($s_i$), we get the following system:
+
+$$\begin{array}{rccccccc}
+-x_1 & & -x_3 & +s_1 & & & & = & -1 \\
+-2x_1 & -x_2 & -3x_3 & & +s_2 & & & = & -3 \\
+-x_1 & -2x_2 & & & & +s_3 & & = & -5 \\
+-4x_1 & -2x_2 & -x_3 & & & & +s_4 & = & -7 \\
+-10x_1 & -12x_2 & -15x_3 & & & & & = & -z \to \max \\
+& & x \ge 0
+\end{array}$$
+
+Here is the first simplex tableau:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$a_3$** | **$s_1$** | **$s_2$** | **$s_3$** | **$s_4$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $s_1$ | -1 | **-1** | 0 | -1 | 1 | 0 | 0 | 0 |
+| $s_2$ | -3 | -2 | -1 | -3 | 0 | 1 | 0 | 0 |
+| $s_3$ | -5 | -1 | -2 | 0 | 0 | 0 | 1 | 0 |
+| $s_4$ | -7 | -4 | -2 | -1 | 0 | 0 | 0 | 1 |
+| $-z$ | 0 | 10 | 12 | 15 | 0 | 0 | 0 | 0 |
+
+At first glance, we can see that this simplex tableau is different from the previous form. There are **only non-negative values** in the last row. We call this property that the basic solution is **dual-feasible**. However, the basic solution is **not primal-feasible**; there are negative values in the $x_B$ column. In fact, all values are negative or zero, as the basic solution is $x_B = (0, 0, 0, -1, -3, -5, -7)$. If, after several transformations, we can reach a tableau that is **both dual and primal feasible**, it means we have found the optimal tableau. Note that in the Primal Simplex Method (Phase 2), we move through primal feasible solutions, while in the Dual Simplex Method, we move through dual feasible solutions.
+
+Here is the rule for the transformation:
+* We choose a row where the coordinate of the basic solution is **negative** (this basis vector will **leave the basis**).
+* From this row, we must choose a **negative pivot value**.
+* We apply an appropriate version of the minimum ratio test for choosing the **entering column**.
+
+Let's suppose $s_1$ is the leaving vector. We choose the pivot value from the first row. We can choose the entering column from $a_1$, $a_2$, and $a_3$ as all other vectors are in the basis. The appropriate values in this row and these columns are $-1$, $0$, and $-1$. As we said, we must choose a negative value, so we cannot choose the zero. Regarding the other two values, we perform the calculation: $\min \{10/|-1|, 15/|-1|\}$. Here, the numerators come from the objective row, and the denominators are the **negatives** of the two previously listed values (i.e., $|-1|$ and $|-1|$). Since $10/1$ is smaller, the value $\mathbf{-1}$ in the $a_1$ column is chosen as the pivot value (bolded in the tableau).
+
+After the transformation (where the rule is the same as for the primal simplex method), we get the following tableau:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$a_3$** | **$s_1$** | **$s_2$** | **$s_3$** | **$s_4$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $a_1$ | 1 | 1 | 0 | 1 | -1 | 0 | 0 | 0 |
+| $s_2$ | -1 | 0 | **-1** | -1 | -2 | 1 | 0 | 0 |
+| $s_3$ | -4 | 0 | -2 | 1 | -1 | 0 | 1 | 0 |
+| $s_4$ | -3 | 0 | -2 | 3 | -4 | 0 | 0 | 1 |
+| $-z$ | -10 | 0 | 12 | 5 | 10 | 0 | 0 | 0 |
+
+Now, let's choose $s_3$ as the leaving vector (since $-4$ is the most negative basic solution value). There are only two negative values in its row that can be considered as the pivot value: $-2$ (in $a_2$) and $-1$ (in $s_1$). The calculation is: $\min \{12/|-2|, 10/|-1|\}$. Since the former fraction ($12/2 = 6$) is smaller, $\mathbf{-2}$ is chosen as the pivot value.
+
+After the transformation, the next tableau is:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$a_3$** | **$s_1$** | **$s_2$** | **$s_3$** | **$s_4$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $a_1$ | 1 | 1 | 0 | 1 | -1 | 0 | 0 | 0 |
+| $s_2$ | 1 | 0 | 0 | -3/2 | -3/2 | 1 | -1/2 | 0 |
+| $a_2$ | 2 | 0 | 1 | -1/2 | 1/2 | 0 | -1/2 | 0 |
+| $s_4$ | 1 | 0 | 0 | 2 | -3 | 0 | -1 | 1 |
+| $-z$ | -34 | 0 | 0 | 11 | 4 | 0 | 6 | 0 |
+
+Since we obtained a tableau with a solution that is **both primal and dual feasible**, this is an optimal solution. Here, $x_B = (1, 2, 0 \mid 0, 1, 0, 1)$, and the optimal value of the objective function is $z = 34$.
+
+---
+
+## 8.4 The Gomory Cut
+
+The **Gomory cut** is a primary tool for finding **integer solutions** for an $\text{LP}$. If we require that the variables of an $\text{LP}$ must be integer numbers, the model is called an **Integer Linear Program ($\text{ILP}$)**. In many cases, some variables are required to be integers, but others can be real values; this is called a **Mixed-Integer Linear Program ($\text{MILP}$)**.
+
+Solving an integer (or mixed-integer) program is typically much harder. There are several tools to handle the integrality of variables; we will show only one such commonly used method. We will demonstrate the method using an example. The example comes from a book by András Prékopa, as mentioned in Tamás Szántai's manuscript [35], page 28 (in Hungarian), and also shown in Mihály Hujter's short (Hungarian) draft [36]. Note that we perform the calculations in a slightly different manner to maintain uniformity with our presentation of the Primal and Dual Simplex tableaux.
+
+Let's consider the following $\text{ILP}$:
+
+$$\begin{array}{rccccccc}
+2x_1 & +x_2 & & & & \ge & 1 \\
+2x_1 & +5x_2 & & & & \ge & 4 \\
+-x_1 & +x_2 & & & & \ge & 0 \\
+-x_1 & -x_2 & & & & \ge & -5 \\
+-x_1 & -2x_2 & & & & \ge & -4 \\
+5x_1 & +4x_2 & = & z & \to & \min \\
+& & x \ge 0, x_1, x_2 \text{ are integers}
+\end{array}$$
+
+Let's transform the inequalities to the "$\le$" type, then convert them to equations by introducing slack variables. We also transform the objective to the "$\max$" form. We get the following:
+
+$$\begin{array}{rccccccc}
+-2x_1 & -x_2 & +s_1 & & & & & = & -1 \\
+-2x_1 & -5x_2 & & +s_2 & & & & = & -4 \\
+x_1 & -x_2 & & & +s_3 & & & = & 0 \\
+x_1 & +x_2 & & & & +s_4 & & = & 5 \\
+x_1 & +2x_2 & & & & & +s_5 & = & 4 \\
+-5x_1 & -4x_2 & & & & & & = & -z \to \max \\
+& & x \ge 0
+\end{array}$$
+
+Now, let's create the usual simplex tableau:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$s_1$** | **$s_2$** | **$s_3$** | **$s_4$** | **$s_5$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $s_1$ | -1 | **-2** | -1 | 1 | 0 | 0 | 0 | 0 |
+| $s_2$ | -4 | -2 | -5 | 0 | 1 | 0 | 0 | 0 |
+| $s_3$ | 0 | 1 | -1 | 0 | 0 | 1 | 0 | 0 |
+| $s_4$ | 5 | 1 | 1 | 0 | 0 | 0 | 1 | 0 |
+| $s_5$ | 4 | 1 | 2 | 0 | 0 | 0 | 0 | 1 |
+| $-z$ | 0 | 5 | 4 | 0 | 0 | 0 | 0 | 0 |
+
+The tableau is **dual-feasible** but **primal-infeasible**. Let's perform basis transformations using the **Dual Simplex Method** to reach the optimal solution. In fact, two steps will be enough. First, $s_1$ leaves the basis and $a_1$ enters (according to the minimum ratio test), then $s_2$ leaves the basis and $a_2$ enters. The resulting tableau is as follows:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$s_1$** | **$s_2$** | **$s_3$** | **$s_4$** | **$s_5$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $a_1$ | 1/8 | 1 | 0 | -5/8 | 1/8 | 0 | 0 | 0 |
+| $a_2$ | 3/4 | 0 | 1 | 1/4 | -1/4 | 0 | 0 | 0 |
+| $s_3$ | 5/8 | 0 | 0 | 7/8 | -3/8 | 1 | 0 | 0 |
+| $s_4$ | 33/8 | 0 | 0 | 3/8 | 1/8 | 0 | 1 | 0 |
+| $s_5$ | 19/8 | 0 | 0 | 1/8 | 3/8 | 0 | 0 | 1 |
+| $-z$ | -29/8 | 0 | 0 | 17/8 | 3/8 | 0 | 0 | 0 |
+
+This tableau is optimal. The optimal (fractional) solution is $x_B = (1/8, 3/4 \mid 0, 0, 5/8, 33/8, 19/8)$. This is the optimal solution of the **relaxed model**, where $x \ge 0$ is required, but the integrality of the variables is not. The optimum value of the relaxed problem is $z = 29/8$.
+
+At this point, we will perform the famous **Gomory Cut**!
+
+Let's choose a fractional variable, e.g., $x_1 = 1/8$. Let's also consider the row of this variable in the tableau, where the data means:
+
+$$1/8 = x_1 - 5/8s_1 + 1/8s_2.$$
+
+We **round up** all coefficients in this equation. The rounding-up values (for $1/8, 1, -5/8, \text{ and } 1/8$) are $7/8, 0, 5/8, \text{ and } 7/8$, respectively. Using these values (and omitting the zero), we create the next (new) constraint:
+
+$$7/8 \le 5/8s_1 + 7/8s_2.$$
+
+We can see that this condition **does not hold**, since $s_1 = s_2 = 0$ in the current optimal (fractional) basic solution. This means that by adding this constraint to the previously used constraints, the current basic solution becomes **infeasible**. Let's multiply the new constraint by $-1$ and introduce a new slack variable, $s_6$. We get:
+
+$$-5/8s_1 - 7/8s_2 + s_6 = -7/8.$$
+
+We add this new equation to the system and write it as a new line in the simplex tableau:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$s_1$** | **$s_2$** | **$s_3$** | **$s_4$** | **$s_5$** | **$s_6$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $a_1$ | 1/8 | 1 | 0 | -5/8 | 1/8 | 0 | 0 | 0 | 0 |
+| $a_2$ | 3/4 | 0 | 1 | 1/4 | -1/4 | 0 | 0 | 0 | 0 |
+| $s_3$ | 5/8 | 0 | 0 | 7/8 | -3/8 | 1 | 0 | 0 | 0 |
+| $s_4$ | 33/8 | 0 | 0 | 3/8 | 1/8 | 0 | 1 | 0 | 0 |
+| $s_5$ | 19/8 | 0 | 0 | 1/8 | 3/8 | 0 | 0 | 1 | 0 |
+| $s_6$ | -7/8 | 0 | 0 | -5/8 | **-7/8** | 0 | 0 | 0 | 1 |
+| $-z$ | -29/8 | 0 | 0 | 17/8 | 3/8 | 0 | 0 | 0 | 0 |
+
+The tableau is still dual-feasible but not primal-feasible. We choose the row of $s_6$ for the leaving vector. According to the minimum ratio test, the pivot value is **$-7/8$** (in $s_2$'s column) since $3/|-7/8| = 3/(7/8) = 24/7 \approx 3.43$, which is smaller than $17/|-5/8| = 17/(5/8) = 136/5 = 27.2$.
+
+After the transformation, the next tableau is as follows:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$s_1$** | **$s_2$** | **$s_3$** | **$s_4$** | **$s_5$** | **$s_6$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $a_1$ | 0 | 1 | 0 | -5/7 | 0 | 0 | 0 | 0 | 1/7 |
+| $a_2$ | 1 | 0 | 1 | 3/7 | 0 | 0 | 0 | 0 | -2/7 |
+| $s_3$ | 1 | 0 | 0 | 8/7 | 0 | 1 | 0 | 0 | -3/7 |
+| $s_4$ | 4 | 0 | 0 | 2/7 | 0 | 0 | 1 | 0 | 1/7 |
+| $s_5$ | 2 | 0 | 0 | -1/7 | 0 | 0 | 0 | 1 | 3/7 |
+| $s_2$ | 1 | 0 | 0 | 5/7 | 1 | 0 | 0 | 0 | -8/7 |
+| $-z$ | -4 | 0 | 0 | 13/7 | 0 | 0 | 0 | 0 | 3/7 |
+
+We obtained an optimal tableau again (primal and dual feasible, so it's optimal). Here, the optimal solution is $x_B = (0, 1 \mid 0, 1, 1, 4, 2)$. Since $x_1 = 0$ and $x_2 = 1$ are integer values, this means we have found the optimal solution of the $\text{ILP}$ as well.
+
+---
+

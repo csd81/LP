@@ -1,0 +1,1660 @@
+# Chapter 7: MILP Models 
+
+In the previous chapters, most of the problems we presented were solvable using an **LP (Linear Programming) model**. Nevertheless, some complex elements, such as fulfilling an entire order, modeling the economy of scale, and including fixed costs, required the use of **integer variables**, which resulted in an **MILP (Mixed-Integer Linear Programming) model**. However, the main problems we looked at—production, diet, and transportation—were fundamentally **continuous** in nature. That is, the variables could take any value within a range of real numbers, and integer values were only necessary under specific conditions.
+
+In this chapter, we will explore several optimization problems that inherently involve **discrete decisions**. The solution space for these problems is not a convex, continuous region but is instead **finite** (or divided into finite parts). These problems naturally require integer variables, typically **binary variables**, to express these discrete choices, inevitably leading to **MILP models**. The complexity of solving these problems is usually significantly higher than for problems involving only continuous decisions. Some MILP problem instances, even if they aren't very large, can be difficult or impossible to solve exhaustively. The exact computational limit depends on the problem itself, the specific MILP model used, the solver software and its configuration, and the machine running the calculations.
+
+-----
+
+## 7.1 Knapsack Problem 
+
+One of the simplest optimization problems that is discrete by nature is the **knapsack problem** [18]. Its definition is as follows:
+
+**Problem 34.**
+
+Given a set of **items**, each having a nonnegative **weight** and a **gain** value. A **weight limit** is known. **Select** a subset of the items so that their total weight does not exceed the given limit, and the total gain is **maximal**.
+
+The problem is named the knapsack problem because it can be visualized as having a large knapsack that must be filled with some of the items, but the total weight you can carry is limited. Therefore, you must carefully choose which items to carry in order to obtain the highest possible gain.
+
+As usual, we'll describe a concrete knapsack problem instance for the general problem.
+
+**Problem 35.**
+
+Solve **Problem 34**, the knapsack problem, with a weight **capacity of 60** and the following items:
+
+| **Item** | **A** | **B** | **C** | **D** | **E** | **F** | **G** | **H** | **I** | **J** |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Weight** | 16.1 | 19.2 | 15.0 | 14.7 | 11.3 | 20.1 | 17.5 | 14.5 | 14.8 | 18.1 |
+| **Gain** | 4.4 | 4.9 | 4.3 | 4.0 | 3.7 | 5.1 | 4.6 | 4.2 | 4.3 | 4.8 |
+
+Starting with the GNU MathProg implementation, we first define the **sets** and **parameters** that describe the problem data. The set `Items` denotes the items, and there are two parameters for each item: `Weight` and `Gain`. A single number, `Capacity`, describes the weight limit. We specify all of these as nonnegative to prevent data errors.
+
+```glp
+set Items;
+param Weight {i in Items}, >=0;
+param Gain {i in Items}, >=0;
+param Capacity, >=0;
+```
+
+Implementing the data section according to Problem 35 and the sets and parameters described here is straightforward.
+
+```glp
+set Items := A B C D E F G H I J;
+param Weight :=
+A 16.1
+B 19.2
+C 15.0
+D 14.7
+E 11.3
+F 20.1
+G 17.5
+H 14.5
+I 14.8
+J 18.1
+;
+param Gain :=
+A 4.4
+B 4.9
+C 4.3
+D 4.0
+E 3.7
+F 5.1
+G 4.6
+H 4.2
+I 4.3
+J 4.8
+;
+param Capacity := 60;
+```
+
+Now let's consider the flexibility we have in choosing a solution for the knapsack problem. Any **subset** of all items is a possible solution, including selecting none or all items. If the number of items is $n$, the total number of different solutions is $2^n$. Note that not all of these subsets are **feasible** due to the weight limit, and we can also eliminate many non-optimal solutions. Nevertheless, the general optimization problem with arbitrary weights and gains is **NP-hard**. Therefore, for a large $n$, finding an exhaustive solution may be practically impossible.
+
+In mathematical programming, we express our decision-making freedom through **decision variables**. This can be easily done using a single **binary variable** for each item. We name it `select`; it is equal to **1** if the item is chosen into the knapsack and **0** if it is not.
+
+```glp
+var select {i in Items}, binary;
+```
+
+There is only one restriction that can prevent a solution from being feasible: the **total weight** of the items. We express in a single constraint that the total weight of the selected items is at most the given limit. The total weight in the knapsack is calculated by summing each `select` variable multiplied by the item's `Weight`. This correctly yields the result because if an item is selected, its weight is added; if it's not selected, it contributes nothing to the total weight of the knapsack.
+
+```glp
+s.t. Total_Weight:
+sum {i in Items} select[i] * Weight[i] <= Capacity;
+```
+
+The objective is to **maximize** the **total gain**. We sum each `select` variable multiplied by the item's `Gain` value.
+
+```glp
+maximize Total_Gain:
+sum {i in Items} select[i] * Gain[i];
+```
+
+After the `solve` statement, we add some print commands to display the solution. Our complete model section is ready:
+
+```glp
+set Items;
+param Weight {i in Items}, >=0;
+param Gain {i in Items}, >=0;
+param Capacity, >=0;
+var select {i in Items}, binary;
+# var select {i in Items}, >=0, <=1;
+s.t. Total_Weight:
+sum {i in Items} select[i] * Weight[i] <= Capacity;
+maximize Total_Gain:
+sum {i in Items} select[i] * Gain[i];
+solve;
+printf "Optimal Gain: %g\n", Total_Gain;
+printf "Total Weight: %g\n",
+sum {i in Items} select[i] * Weight[i];
+for {i in Items}
+{
+printf "%s:%s\n", i, if (select[i]) then " SELECTED" else "";
+}
+end;
+```
+
+Solving Problem 35 reports an **optimal gain of 17.1**, which is achieved by selecting items **C, E, I, and J**. The total weight of these items is **59.2**, which fits within the given limit of 60, though it doesn't utilize the capacity perfectly.
+
+Note that we used a **conditional expression** to print the word `SELECTED` after each item $i$ for which `select[i]` is 1, and an empty string where it is 0. The condition for such an expression must be a constant expression that can be interpreted as a logical value. Remember that variables only behave as constants *after* the `solve` statement in the model section. The output produced is the following:
+
+```
+Optimal Gain: 17.1
+Total Weight: 59.2
+A:
+B:
+C: SELECTED
+D:
+E: SELECTED
+F:
+G:
+H:
+I: SELECTED
+J: SELECTED
+```
+
+One might think of an easy and direct **heuristic** for the knapsack problem: arrange the items in descending order of their **gain/weight ratio** and select items in this order until the weight limit is reached. This **greedy strategy** seems promising because the weight limit acts as a fixed resource, and we want to maximize the gain obtained per unit of weight. The term "greedy" means that at each step, we make the most immediately beneficial choice according to some heuristic measure. Items with a larger gain/weight ratio represent a more efficient use of the weight limit.
+
+The only issue with this strategy is the **slack weight**. We may (and usually will) have some unused weight under the limit. However, we might achieve a better overall solution by sacrificing an item with a high gain/weight ratio in order to better fill the remaining weight limit with other items. This small difference is what prevents the straightforward heuristic from being optimal and is what makes the knapsack problem computationally difficult.
+
+Let's consider a **"relaxed" version** of the knapsack problem, where the items are actually fluids. This means we are allowed to select a **fraction** of an item into the knapsack, which gives us the same fraction of its weight and gain. For this relaxation, the binary variable can be replaced by a continuous one, as follows:
+
+```glp
+var select {i in Items}, >=0, <=1;
+```
+
+Note that this effect can also be achieved by running the original model with the `glpsol` solver and adding the `--nomip` option, like this:
+
+```bash
+glpsol -m knapsack.mod -d example.dat --nomip
+```
+
+Furthermore, we'll change the output method slightly. Instead of printing the word `SELECTED`, we'll print the actual value of the now continuous `select` variable:
+
+```glp
+for {i in Items}
+{
+printf "%s: %g\n", i, select[i];
+}
+```
+
+Solving the relaxed model with the exact same data gives the following results:
+
+```
+Optimal Gain: 17.7025
+Total Weight: 60
+A: 0.273292
+B: 0
+C: 1
+D: 0
+E: 1
+F: 0
+G: 0
+H: 1
+I: 1
+J: 0
+```
+
+We can observe that items C, E, and I are selected entirely, but instead of choosing J as the fourth and final item (as in the integer solution), the relaxed model chooses H completely and then item A in a **fractional ratio** (approximately $27.3\%$). This selection results in a perfect utilization of the weight limit (60) and a slightly better objective value of **17.7025** instead of 17.1. If we analyze the problem data further, it turns out that the items' decreasing order of **gain/weight ratio** is E, I, H, C, A, D, J, G, B, F. Therefore, the relaxed model performs exactly as the greedy heuristic dictates: it selects the first four items entirely and then the necessary fraction of the fifth (A) to fill the weight limit.
+
+In contrast, the optimal solution to the actual **integer programming problem** does not choose H. Instead, it chooses J, which is much lower in the gain/weight ratio order, but it better fills the weight limit because of its larger overall weight and gain.
+
+Now that we have seen the complications that can arise with an integer problem, let's consider another, similar problem: the **multi-way number partitioning problem** [19].
+
+
+
+
+
+**Problem 36.**
+
+Given a set of $N \ge 1$ **real numbers**, divide them **exhaustively** into exactly $K \ge 1$ **subsets** so that the difference between the **smallest** and **largest** sum of numbers in a subset is **minimal**.
+
+The **multi-way number partitioning problem** can be interpreted as a modified version of the **knapsack problem** where all $N$ **items** must be packed into any one of $K$ given **knapsacks**, and this distribution shall be as **balanced** as possible. There is no **gain value** in the multi-way number partitioning problem (or, it can be interpreted as being equal to the **weight** of the item).
+
+We will solve one example problem.
+
+-----
+
+**Problem 37.**
+
+**Distribute** the $N=10$ **items** described in Problem 35, the **knapsack example problem**, into $K=3$ **knapsacks** so that the difference between the **lightest** and the **heaviest** knapsack is **minimal**.
+
+Let's see how this can be **implemented** in **GNU MathProg**. First, there is an `Items` set and a `Weight` parameter, as before, but there is no `Gain` parameter. Instead, we **define** a single integer parameter `Knapsack_Count`, which refers to the **positive integer** $K$ in the problem description.
+
+```
+set Items;
+param Weight {i in Items}, >=0;
+param Knapsack_Count, integer;
+set Knapsacks := 1 .. Knapsack_Count;
+```
+
+We also introduced the set `Knapsacks`. However, instead of reading this set from the data section, we **denote** each knapsack by numbers from **1 to K**. The operator `..` defines a set by the **smallest** and **largest** integer element, **enlisting** all integers in between.
+
+Note that we require `Weight` to be **non-negative**; however, these parameters can be restricted to **integers** in general, or relaxed to take **real values**. The **model** is exactly the same in all cases.
+
+There are **more decisions** to be made than in the original knapsack problem. For each item, we don't only decide whether it **goes to the knapsack or not**, but we now decide **which knapsack it goes into**. This can be done by defining a **binary decision variable** `select` for each pair of an **item** and a **knapsack**, denoting whether the item goes into that particular knapsack or not. These decisions determine the situation well, but **auxiliary** and **other variables** are needed to express the **objective function concisely**. Therefore, we also introduce an **auxiliary variable** `weight` for each knapsack, denoting its **total weight**, and `min_weight` and `max_weight` for the **minimal** and **maximal** knapsack weight.
+
+```
+var select {i in Items, k in Knapsacks}, binary;
+var weight {k in Knapsacks};
+var min_weight;
+var max_weight;
+```
+
+There is only **one constraint** which establishes whether a decision about knapsacks is **feasible**: **each item must go exactly into one knapsack**, **not more and not less**. If we add some binary variables and set the sum equal to one, then its only feasible solution is when **one binary variable is 1 and all others are 0**. Therefore, the constraint is the following.
+
+```
+s.t. Partitioning {i in Items}:
+sum {k in Knapsacks} select[i,k] = 1;
+```
+
+We provide **three additional constraint statements** to express the calculation of the weight of each knapsack, a **lower limit** on all knapsack weights (`min_weight`), and an **upper limit** (`max_weight`), respectively.
+
+```
+s.t. Total_Weights {k in Knapsacks}:
+weight[k] = sum {i in Items} select[i,k] * Weight[i];
+s.t. Total_Weight_from_Below {k in Knapsacks}:
+min_weight <= weight[k];
+s.t. Total_Weight_from_Above {k in Knapsacks}:
+max_weight >= weight[k];
+```
+
+The **objective** can be the **difference** between the upper and lower limit.
+
+```
+minimize Difference: max_weight - min_weight;
+```
+
+This design had been used before for **minimizing errors in equations** (see Section 4.8), **maximizing minimum production volumes** (see Section 5.3), and some **cost functions** (see, for example, Sections 6.3 or 6.6). The key is that the solver is allowed **not** to assign the actual **minimum** and **maximum** weights to the variables `min_weight` and `max_weight` to obtain **feasible solutions**. It's just **not beneficial** to do so, and therefore, those solutions where these two bounds are not **strict** are **automatically ruled out**.
+
+Finally, we **print the contents of each knapsack** after the `solve` statement, and our model section is **ready**.
+
+```
+set Items;
+param Weight {i in Items}, >=0;
+param Knapsack_Count, integer;
+set Knapsacks := 1 .. Knapsack_Count;
+var select {i in Items, k in Knapsacks}, binary;
+var weight {k in Knapsacks};
+var min_weight;
+var max_weight;
+s.t. Partitioning {i in Items}:
+sum {k in Knapsacks} select[i,k] = 1;
+s.t. Total_Weights {k in Knapsacks}:
+weight[k] = sum {i in Items} select[i,k] * Weight[i];
+s.t. Total_Weight_from_Below {k in Knapsacks}:
+min_weight <= weight[k];
+s.t. Total_Weight_from_Above {k in Knapsacks}:
+max_weight >= weight[k];
+minimize Difference: max_weight - min_weight;
+solve;
+printf "Smallest difference: %g (%g - %g)\n",
+Difference, max_weight, min_weight;
+for {k in Knapsacks}
+{
+printf "%d:", k;
+for {i in Items: select[i,k]}
+{
+printf " %s", i;
+}
+printf " (%g)\n", weight[k];
+}
+end;
+```
+
+Solving the example **Problem 37** gives the following result.
+
+```
+Smallest difference: 2.5 (55.3 - 52.8)
+1: C F J (53.2)
+2: D E H I (55.3)
+3: A B G (52.8)
+```
+
+The **ten items** could be divided into **three subsets** of roughly **equal size**. The **largest knapsack** is the second, with a weight of **55.3**, and the **smallest** is the third, with **52.8**. Note that the **order of knapsacks** is **not important**. Because **all ten items are distributed**, it is **guaranteed** that the sum of the three knapsacks is a **constant**; therefore, their **average** is also **constant** and must be in between the two limits.
+
+Another similar, interesting, and **better-known problem** is the so-called **bin packing problem**, where all items are known, but the **knapsack sizes are fixed**. Therefore, the **number of knapsacks** (called **bins**) is to be **minimized** [20]. This could also be solved in **GNU MathProg**, but it is not detailed here.
+
+-----
+
+## 7.2 Tiling the Grid 
+
+The **knapsack** and **similar problems** require items to "fit" somewhere. "Fitting" means that each item has a **weight**, and the **sum of the weights** is under a **constraint**. But what happens when **fitting is more complex**? For instance, considering the **size** or **shape** of items and their **container** is also a **common real-world question** that can lead to much more **difficult optimization problems**.
+
+A **two-dimensional example** is the class of **tiling problems**, where copies of the **same shape** called **tiles** are used to **cover a region** in the plane. Tiles are usually **forbidden to overlap**, and the **cover** is often required to be **perfect**; that is, **all of the designated region is covered**. If we don't require **perfect covering**, then one may ask what is the **most area we can cover**, which is an **optimization problem**. Provided that there is a **single tile**, the **congruent copies** of which are used, the optimization problem simplifies to **maximizing the non-overlapping tiles** that can be put into the region.
+
+In this section, we **restrict tiling** to the **rectangular grid** of **unit squares**. The **tile**, its **all possible positions**, and the **region to be covered** all fit onto **unit squares** of the same grid. The tile will be the **simplest cross** consisting of **five squares**. For the sake of simplicity, the **region to be covered** is a **rectangular area** (see ). Tiles cannot cover area outside the region.
+
+ 
+
+
+**Problem 38.**
+
+Determine the **maximum number of non-overlapping crosses** that can be placed in an $N \times M$ grid.
+
+One might argue that this general problem is very specialized within the class of **tiling problems**. Indeed, many tiling problems cannot be effectively solved using mathematical programming tools. Here, the "general problem" refers to creating a general model section that can be applied to any problem instance.
+
+The data required for this problem is minimal: only the dimensions of the rectangular area need to be specified. Let's look at some examples.
+
+**Problem 39.**
+
+Solve **Problem 38**, the rectangle tiling problem with crosses, for the following rectangle sizes.
+
+**Figure 8:** Rectangular area imperfectly covered by some five-square cross tiles.
+
+  * $6 \times 4$
+  * $10 \times 10$
+  * $30 \times 30$
+
+This problem requires perhaps the shortest data sections we've seen so far. The following is for the smallest instance:
+
+```glp
+param Width := 6;
+param Height := 4;
+```
+
+We use the parameter names **`Width`** and **`Height`** for the dimensions of the rectangular region to be tiled. These must be positive integers. **`Height`** represents $N$, the number of rows, and **`Width`** represents $M$, the number of columns in the area. Rows are numbered from 1 to $N$, and columns are numbered from 1 to $M$. The set of all squares, or **cells**, in the rectangular grid is the Cartesian product of the sets of rows and columns, resulting in a size of $N \cdot M$. These are defined as shown below.
+
+```glp
+param Height, integer, >=1;
+param Width, integer, >=1;
+set Rows := 1 .. Height;
+set Cols := 1 .. Width;
+set Cells := Rows cross Cols;
+```
+
+At this point, the minimum data requirements are defined in the model, but a concise implementation will require a few more definitions. Let's first determine what kind of decisions we need to make to describe a tiling.
+
+First, we need to, "decide for all possible positions of a cross tile whether to put a tile there or not." This can be done using a **binary variable** introduced for each possible position:
+
+```glp
+var place {(r,c) in Tiles}, binary;
+```
+
+Here, the set **`Tiles`** refers to a set that hasn't been characterized yet, but it will list all possible placements of cross tiles. Decisions for this `place` variable will fully determine all the necessary properties of the tiling, but an **auxiliary variable** will also be useful.
+
+```glp
+var covered {(r,c) in Cells}, binary;
+```
+
+Here, `covered` is defined for each cell and determines whether that cell is covered by a placed tile. This helps us formulate constraints ensuring that each cell can only be covered **at most once** to prevent overlapping tiles.
+
+As is customary, a value of **1 means yes** and **0 means no** for all of these binary variables. For instance, a `place` variable is 1 if the tile is placed at that specific position, and a `covered` variable is 1 if that specific cell is covered by some tile.
+
+Before moving on, we must somehow characterize the set **`Tiles`** that describes all possible tile positions. Fortunately, the five-cell cross is **symmetric**: rotating or reflecting it does not result in a different orientation. This means the only difference between tile positions is their location (shifting). In short, we can refer to this simply as the **position**. Therefore, a binary variable is introduced for each possible position of the tile, and the set `Tiles` simply contains these positions.
+
+If we wanted to tile with **asymmetric shapes** where multiple orientations are possible, we would need to define different binary decision variables for each unique orientation and position. In that scenario, the `Tiles` set would require a third index dimension to denote orientation, in addition to the two dimensions for position. But since the cross only has a single orientation, that index dimension is omitted from our model, and `Tiles` is just a two-dimensional set listing positions.
+
+Finally, let's decide how two-dimensional coordinates will define the positioning of tiles. For this purpose, we define the **anchor point** of the cross tile as the **central cell** of the tile. The set `Tiles` will list all possible anchor points of correctly positioned tiles. This is valid because different tile positions have different anchor points.
+
+The selection of the anchor point relative to the tile can be arbitrary, but it must be consistent throughout the model. It could even be a cell outside the tile—for example, the corner cell of the $3 \times 3$ square containing the cross tile.
+
+The last remaining task is to determine the anchor points. We must consider all correctly positioned cross tiles in the rectangular grid. Clearly, because the anchor point is a cell *inside* the tile, the anchor point of a correctly positioned tile must also be within the rectangular grid. However, **not all cells** of the rectangular grid can be anchor points. For example, no cells along the edge of the rectangle are valid choices, as a cross centered there cannot fully cover itself without extending outside the region. Moreover, the corner cells of a rectangular grid cannot even be covered by *any* correctly positioned cross tiles.
+
+Based on an anchor $(r,c)$, we can define all the cells of the cross tile if placed at that anchor. This is done by the **`CellsOf`** set. Note that this set statement is itself indexed over all cells (i.e., all possible anchors), meaning that $N \times M$ different sets of 5 cells each are defined.
+
+```glp
+set CellsOf {(r,c) in Cells} :=
+{(r,c),(r+1,c),(r-1,c),(r,c+1),(r,c-1)};
+```
+
+The set **`Tiles`** of correct tile positions (anchor points) are those for which these 5 cells defined in `CellsOf` are all within the rectangular area.
+
+```glp
+set Tiles, within Cells :=
+setof {(r,c) in Cells: CellsOf[r,c] within Cells} (r,c);
+```
+
+Of course, we could have answered the question about correct anchor points right away: they are exactly the cells that are **not on the edges**. However, this approach is chosen for two reasons:
+
+  * Defining all cells of the placed tile and keeping only those positions that are entirely within the region to be tiled is a very **general approach**. It would work not only on arbitrary tiles but on arbitrary regions on a finite grid as well.
+  * The sets `CellsOf` provide us with a **shorter model formulation**, as we will see.
+
+The definitions for `CellsOf` and `Tiles` must be placed before the definition of the variable `place`.
+
+We need two things to be established by constraints. The first is the calculation of the auxiliary variable `covered` for each cell. The second is that each cell can only be covered at most once. Surprisingly, both can be done with a single constraint statement, as follows:
+
+```glp
+s.t. No_Overlap {(r,c) in Cells}: covered[r,c] =
+sum {(x,y) in Tiles: (r,c) in CellsOf[x,y]} place[x,y];
+```
+
+In plain terms, for each cell, we add the `place` variables of all the tiles that cover that cell. Since `place` is an integer variable, the sum exactly equals the number of tiles covering that specific cell. This number can only be zero or one; two or more is forbidden. The latter is implicitly ensured because the sum equals the single binary variable `covered[r,c]`, and since it is a binary variable, its value cannot exceed one.
+
+Note that, in fact, the variable `covered` doesn't even need to be explicitly formulated as **binary**. The constraint ensures that its value is an integer because it's obtained as a sum of integer variables. The only required property of the variable `covered` is its **upper bound, 1**.
+
+This insight can be useful when analyzing the complexity of the problem. Generally, the more binary variables a model has, the more difficult it is to solve. However, since `covered` doesn't necessarily have to be binary, it isn't expected to significantly increase complexity. The true integer nature and difficulty of the problem are based on the `place` variable, which denotes tile placements. Nevertheless, marking `covered` as binary might alter the solution algorithm's process.
+
+The objective is the total number of tiles placed.
+
+```glp
+maximize Number_of_Crosses:
+sum {(r,c) in Tiles} place[r,c];
+```
+
+After the `solve` statement, a useful way to print the solution is to visualize the tiling itself using character graphics.
+
+```glp
+for {r in Rows}
+{
+for {c in Cols}
+{
+printf "%s",
+if (!covered[r,c]) then "."
+else if ((r,c) in Tiles) then (if (place[r,c]) then "#" else "+")
+else "+";
+}
+printf "\n";
+}
+```
+
+Since the output is textual, we must print each row on a single line, and within a row, we print each cell denoted by the column. A single character is printed for each cell so that the entire rectangular area looks correctly aligned when viewed in a fixed-width font:
+
+  * If a cell is **not covered**, a **dot (`.`)** is placed there.
+  * If a cell is the anchor point of a **placed tile**, it is denoted by a **hash mark (`#`)**.
+  * Otherwise, if the cell is covered by a cross but is **not its center**, it is denoted by a **plus sign (`+`)**.
+
+Note the use of nested `if` operators to achieve the desired result. One might argue that an unnecessary `if` is present because both cases eventually result in a `+` sign. The key point is that we first check whether $(r,c)$ is a proper anchor point or not. Only if it is an anchor point do we then check the value of the `place[r,c]` variable. We do this because if `place[r,c]` is referenced for a non-anchor point $(r,c)$, an **"out of domain" error** would occur, as the `place` variable is only defined for anchor points (members of the set `Tiles`). Note that if an `else` value is omitted in MathProg, it is assumed to be zero.
+
+The model section for **Problem 38** is complete.
+
+```glp
+param Height, integer, >=1;
+param Width, integer, >=1;
+set Rows := 1 .. Height;
+set Cols := 1 .. Width;
+set Cells := Rows cross Cols;
+set CellsOf {(r,c) in Cells} :=
+{(r,c),(r+1,c),(r-1,c),(r,c+1),(r,c-1)};
+set Tiles, within Cells :=
+setof {(r,c) in Cells: CellsOf[r,c] within Cells} (r,c);
+var covered {(r,c) in Cells}, binary;
+var place {(r,c) in Tiles}, binary;
+s.t. No_Overlap {(r,c) in Cells}: covered[r,c] =
+sum {(x,y) in Tiles: (r,c) in CellsOf[x,y]} place[x,y];
+maximize Number_of_Crosses:
+sum {(r,c) in Tiles} place[r,c];
+solve;
+printf "Max. Cross Tiles (%dx%d): %g\n",
+Height, Width, Number_of_Crosses;
+for {r in Rows}
+{
+for {c in Cols}
+{
+printf "%s",
+if (!covered[r,c]) then "."
+else if ((r,c) in Tiles) then (if (place[r,c]) then "#" else "+")
+else "+";
+}
+printf "\n";
+}
+end;
+```
+
+Solving the model for the smallest instance, a $4 \times 6$ area, shows that no more than **two** cross tiles can fit in such a small area. One possible construction, reported by the model output, is shown below:
+
+```
+Max. Cross Tiles (4x6): 2
+....+.
+.+.+#+
++#+.+.
+.+....
+```
+
+The medium instance of a $10 \times 10$ area is still solved very quickly. A maximum of **13** cross tiles fit in the area, and the reported solution is:
+
+```
+Max. Cross Tiles (10x10): 13
+.+...+..+.
++#+.+#++#+
+.++..+.++.
+.+#+.++#+.
+..+++#+++.
+.++#++++#+
++#++.+#++.
+.++..++.+.
+.+#++#++#+
+..+..+..+.
+```
+
+The large instance of $30 \times 30$ cells was included to demonstrate what happens when the model becomes genuinely large and thus cannot be solved quickly. In such cases, the solver could take an unacceptably long time to complete. Therefore, a **time limit of 60 seconds** is provided. In the command line, this can be done by adding the `--tmlim 60` argument to `glpsol`:
+
+```bash
+glpsol -m tiling.mod -d example.dat --tmlim 60
+```
+
+If the time limit option is omitted, there is no time limit. Note that the limit set this way is not a strict bound on the running time available for the solver; `glpsol` tends to slightly exceed this limit, especially if preparatory steps are lengthy.
+
+Running `glpsol` with a one-minute time limit produced the following output:
+
+```
+GLPK Integer Optimizer, v4.65
+901 rows, 1684 columns, 5604 non-zeros
+1684 integer variables, all of which are binary
+Preprocessing...
+896 rows, 1680 columns, 4816 non-zeros
+1680 integer variables, all of which are binary
+Scaling...
+A: min|aij| = 1.000e+00 max|aij| = 1.000e+00 ratio = 1.000e+00
+Problem data seem to be well scaled
+Constructing initial basis...
+Size of triangular part is 896
+Solving LP relaxation...
+GLPK Simplex Optimizer, v4.65
+896 rows, 1680 columns, 4816 non-zeros
+*
+0: obj = -0.000000000e+00 inf = 0.000e+00 (784)
+Perturbing LP to avoid stalling [253]...
+Removing LP perturbation [1896]...
+* 1896: obj = 1.631480829e+02 inf = 0.000e+00 (0) 12
+OPTIMAL LP SOLUTION FOUND
+```
+
+Note that the original model contained a massive **1684 binary variables**. Preprocessing only removed four of them (likely the corner cells, as they can never be covered, but this is an unverified claim).
+
+After that, the **LP relaxation** of the MILP model is solved. The rows concerning "perturbation" indicate that the solver took countermeasures to avoid **stalling**, which is a possible infinite loop in the Simplex algorithm. The presence of this message suggests that the solved LP itself is difficult, very large, or has unusual properties. The last line shows that **163.15** was the optimal solution of the LP relaxation. This is valuable information because we now know that the optimal solution of the actual MILP model **cannot be greater than 163**. The solution algorithm uses the result of the LP relaxation to set an initial bound.
+
+```
+Integer optimization begins...
+Long-step dual simplex will be used
++ 1896: mip = not found yet <= +inf (1; 0)
++ 4865: mip = not found yet <= 1.630000000e+02 (44; 0)
++ 9025: mip = not found yet <= 1.630000000e+02 (102; 0)
++ 11252: >>>>> 1.380000000e+02 <= 1.630000000e+02 18.1% (176; 0)
++ 14948: mip = 1.380000000e+02 <= 1.620000000e+02 17.4% (200; 35)
++ 18811: mip = 1.380000000e+02 <= 1.620000000e+02 17.4% (266; 35)
++ 22402: mip = 1.380000000e+02 <= 1.620000000e+02 17.4% (330; 36)
++ 25362: mip = 1.380000000e+02 <= 1.620000000e+02 17.4% (384; 36)
++ 28609: mip = 1.380000000e+02 <= 1.620000000e+02 17.4% (457; 36)
++ 29844: >>>>> 1.400000000e+02 <= 1.620000000e+02 15.7% (484; 36)
++ 33482: mip = 1.400000000e+02 <= 1.620000000e+02 15.7% (492; 108)
++ 36688: mip = 1.400000000e+02 <= 1.620000000e+02 15.7% (557; 108)
++ 40050: mip = 1.400000000e+02 <= 1.620000000e+02 15.7% (639; 109)
++ 43326: mip = 1.400000000e+02 <= 1.620000000e+02 15.7% (687; 109)
+Time used: 60.0 secs. Memory used: 6.4 Mb.
++ 43866: mip = 1.400000000e+02 <= 1.620000000e+02 15.7% (698; 109)
+TIME LIMIT EXCEEDED; SEARCH TERMINATED
+Time used: 60.3 secs
+Memory used: 6.7 Mb (7071653 bytes)
+```
+
+The integer optimization begins afterward, which is generally executed using a **Branch and Bound** procedure. Branching is used to check different values of integer variables one by one, and bounding is used to eliminate branches before checking them.
+
+Output rows are printed regularly, either periodically or after an important event, such as finding a better solution.
+
+  * The numbers on the left, ending at 43866, denote the number of "steps" taken by the solution algorithm.
+  * The column to the right of it is the currently known **best integer solution** (or "MIP," Mixed-Integer Program). This solution can only improve (increase in a maximization problem) during the search.
+      * Initially, the solver had not found any integer solutions.
+      * The first solution found involved **138 tiles**.
+      * In 60 seconds, this was improved to **140 tiles**, at which point the optimization stopped due to the time limit.
+  * The column on the far right denotes the current **best bound**. This is an upper limit on the objective of any feasible solution. This value can only decrease during the search. In the example, it is initially 163 (based on the LP relaxation) and is slightly improved to 162.
+
+This means that even though the solution procedure didn't finish, there cannot be more than **162 tiles**.
+
+At any time, the optimal solution lies somewhere between the best solution and the best bound. The solver constantly tries to improve both values to close the difference between them. If they are equal, the optimal solution has been found. Sometimes the current best solution is called a **lower bound** because it is a lower bound for the final optimal solution. (Note that if the objective is minimized, the same concepts are used, but all relationships are reversed.)
+
+The relative difference between the best solution and the best bound is called the **integrality gap**, usually expressed as a percentage. The integrality gap is a measure of our certainty about the optimal solution. The solver aims to minimize the gap, eventually reaching zero.
+
+Concluding the results of the large case, we have a feasible solution of **140 tiles**, but the true optimal solution could be as large as **162**. The gap after one minute is **$15.7\%$**. It is possible that 140 is indeed the optimal solution, but the solver has not definitively proven it. Note that these results may vary slightly depending on the machine or the version of `glpsol` used.
+
+What options do we have for a large model that `glpsol` failed to solve optimally? The options depend on the exact situation, but it must be acknowledged that some problems are simply inherently very difficult and cannot be solved quickly.
+
+  * **Spend More Time Solving:** Unfortunately, improvement usually slows down after a certain point. Finishing the problem may take an unacceptably long time.
+  * **Formulate a Better Model:** We can try a wide range of techniques, including choosing different decision variables and applying **tightening constraints** (like cutting planes) that help the solver by eliminating parts of the search space, typically improving the model's relaxation. Sometimes, a better formulation can improve efficiency by orders of magnitude.
+  * **Choose a Different Solver or Machine:** There are more powerful LP/MILP solvers available than `glpsol`. Examples of free software include CBC and lpsolve, but even stronger commercial solvers exist. `glpsol` supports exporting the model into a commonly supported format like CPLEX-LP, which most MILP solvers can read. There can be surprising performance differences between solvers.
+  * **Adjust Solver Options:** Even `glpsol` has options that alter the solution algorithms and can be helpful, including enabling heuristics and non-default solution methods.
+
+We will now demonstrate the last option: running `glpsol` again, but with the following two heuristic configuration options enabled:
+
+  * **Feasibility Pumping** (`--fpump` option): This is a heuristic that aims to find good integer solutions early in the optimization procedure. This can help the solver later by eliminating branches with objective values that are too low.
+  * **Cuts** (`--cuts` option): This allows all available cuts known to `glpsol` to be used in the model. **Cuts** are constraints automatically added to the model to improve the solution algorithm by trimming the search space. The cuts enabled by this option are the Gomory, Mixed-Integer Rounding, Clique, and Mixed Cover cuts; each of these can be individually enabled or disabled.
+
+<!-- end list -->
+
+```bash
+glpsol -m tiling.mod -d example.dat --fpump --cuts
+```
+
+These heuristics often help solve the problem, sometimes dramatically. However, there are cases where they don't help, and the overhead might even slow down the solution process.
+
+The output produced by `glpsol` when solving the $30 \times 30$ instance with the `--fpump` and `--cuts` options is as follows:
+
+```
+Integer optimization begins...
+Long-step dual simplex will be used
+Gomory's cuts enabled
+MIR cuts enabled
+Cover cuts enabled
+Number of 0-1 knapsack inequalities = 784
+Clique cuts enabled
+Constructing conflict graph...
+Conflict graph has 896 + 1004 = 1900 vertices
++ 1896: mip = not found yet <= +inf (1; 0)
+Applying FPUMP heuristic...
+Pass 1
+Solution found by heuristic: 153
+Pass 1
+Pass 2
+Pass 3
+Pass 4
+Pass 5
+Cuts on level 0: gmi = 12; clq = 1;
++ 2759: mip = 1.530000000e+02 <= 1.620000000e+02 5.9% (15; 0)
++ 5134: mip = 1.530000000e+02 <= 1.620000000e+02 5.9% (44; 0)
++ 7111: mip = 1.530000000e+02 <= 1.620000000e+02 5.9% (73; 1)
++ 8009: mip = 1.530000000e+02 <= 1.620000000e+02 5.9% (89; 1)
++ 9294: mip = 1.530000000e+02 <= 1.620000000e+02 5.9% (106; 1)
++ 10509: mip = 1.530000000e+02 <= 1.620000000e+02 5.9% (124; 1)
++ 12685: mip = 1.530000000e+02 <= 1.620000000e+02 5.9% (141; 2)
++ 14071: mip = 1.530000000e+02 <= 1.620000000e+02 5.9% (160; 2)
++ 15544: mip = 1.530000000e+02 <= 1.620000000e+02 5.9% (181; 2)
++ 16909: mip = 1.530000000e+02 <= 1.620000000e+02 5.9% (195; 3)
++ 17875: mip = 1.530000000e+02 <= 1.620000000e+02 5.9% (211; 3)
+Time used: 60.2 secs. Memory used: 10.8 Mb.
++ 18551: mip = 1.530000000e+02 <= 1.620000000e+02 5.9% (225; 3)
+TIME LIMIT EXCEEDED; SEARCH TERMINATED
+Time used: 60.5 secs
+Memory used: 13.1 Mb (13730993 bytes)
+```
+
+We can see evidence of the preprocessing and intermediate work associated with some of the cuts. However, the most significant improvement came from the **feasibility pumping**, which found a feasible solution of **153 tiles**. This is substantially better than the 140 found previously. The integrality gap is also much smaller, at only **$5.9\%$** instead of $15.7\%$.
+
+Note that if we are uncertain about the complexity of our model, we can always omit time limits and simply terminate `glpsol` manually, as the current best solution is periodically reported in the output anyway. In this case, however, the best found solution itself is **not reported** because any subsequent printing work after the `solve` statement is skipped. In contrast, if `glpsol` stops on its own before finding the optimal solution (due to a time limit, for example), then the variables are all set according to the current best solution, and that specific solution will be printed. For example, this is the reported solution with **153 tiles** placed:
+
+```
+Max. Cross Tiles (30x30): 153
+..+....+.....+...+....+....+..
+.+#+.++#+.+.+#+++#+.++#+.++#+.
+..+++#++++#++++#++++#++++#+++.
+.++#++++#+++#+.+++#++++#++++#+
++#++++#+++..+.++#++++#++++#++.
+.+++#++++#+.++#++++#++++#+++..
+.+#++++#++++#++++#++++#++++#+.
+..+.+#++++#++++#++++#++++#+++.
+..+..+++#++++#++++#++++#++++#+
+.+#+++#++++#++++#++++#++++#++.
+.+++#++++#++++#++++#++++#+++..
++#+.+++#++++#++++#++++#++++#+.
+.++.+#++++#++++#++++#++++#+++.
+.+#+.+++#++++#++++#++++#++++#+
+..++.+#++++#++++#++++#++++#++.
+.++#+.+++#++++#++++#++++#+++..
++#++.++#++++#++++#++++#++++#+.
+.+.++#++++#++++#++++#++++#+++.
+.++#++++#++++#++++#++++#++++#+
++#++++#++++#++++#++++#++++#++.
+.+++#++++#++++#++++#++++#+++..
+.+#++++#++++#++++#++++#++++#+.
+..+++#++++#++++#++++#++++#+++.
+.++#++++#++++#++++#++++#++++#+
++#++++#++++#++++#++++#++++#++.
+.+++#++++#++++#++++#++++#++.+.
+.+#++++#++++#++.+#++++#+++.+#+
+..+++#++++#+++..++.+#++++#+++.
+..+#++.+#++.+#++#+..+.+#+++#+.
+...+....+....+..+......+...+..
+```
+
+We can observe that the inside of the $30 \times 30$ square is almost perfectly filled with cross tiles. The gap between the best-found solution (153) and the potential best (162) remains open for now.
+
+-----
+
+## 7.3 Assignment Problem 
+
+Another well-known optimization problem, the **assignment problem** [21], is presented in this section.
+
+-----
+
+ 
+
+
+**Problem 40.**
+
+Given $N$ workers and $N$ tasks. For each worker and each task, we know how well that particular worker can execute that particular task, which is described by a cost value for that pair.
+
+Assign each worker exactly one task so that the **total cost is maximized**.
+
+As usual, the general problem is demonstrated through an example.
+
+-----
+
+**Problem 41.**
+
+Solve Problem 40, the assignment problem, using the following data. There are $N = 7$ workers, named W1 to W7, the tasks are named T1 to T7, and the following matrix describes the costs that are incurred whenever a particular task is assigned to a particular worker.
+
+| | T1 | T2 | T3 | T4 | T5 | T6 | T7 |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **W1** | 9 | 6 | 10 | 10 | 8 | 7 | 11 |
+| **W2** | 7 | 12 | 6 | 14 | 10 | 5 | 5 |
+| **W3** | 8 | 9 | 7 | 11 | 10 | 15 | 6 |
+| **W4** | 4 | 10 | 2 | 10 | 6 | 4 | 7 |
+| **W5** | 10 | 11 | 7 | 12 | 14 | 9 | 10 |
+| **W6** | 5 | 9 | 8 | 9 | 13 | 3 | 8 |
+| **W7** | 7 | 12 | 7 | 7 | 11 | 10 | 9 |
+
+Defining the input sets and parameters and implementing the data section can be done in different ways. One possibility is to only read $N$, the number of workers and tasks, and use a fixed naming convention for them, for example, numbers from 1 to $N$. But now, we want to allow the naming of workers and tasks to come from the data section, and therefore two sets named `Workers` and `Tasks` are provided. The only requirement is that these sets must have the same size; otherwise, the assignment is impossible. This is established by a `check` statement.
+
+Next, we introduce the `Assignments` set for all possible assignments between workers and tasks. This helps in the formulation later. The `Cost` parameter is then defined for all possible assignments.
+
+```
+set Workers;
+set Tasks;
+check card(Workers)==card(Tasks);
+set Assignments := Workers cross Tasks;
+param Cost {(w,t) in Assignments};
+```
+
+Data for the example Problem 41 can be implemented as follows.
+
+```
+data;
+set Workers := W1 W2 W3 W4 W5 W6 W7;
+set Tasks := T1 T2 T3 T4 T5 T6 T7;
+param Cost:
+T1 T2 T3 T4 T5 T6 T7 :=
+W1 9 6 10 10 8 7 11
+W2 7 12 6 14 10 5 5
+W3 8 9 7 11 10 15 6
+W4 4 10 2 10 6 4 7
+W5 10 11 7 12 14 9 10
+W6 5 9 8 9 13 3 8
+W7 7 12 7 7 11 10 9
+;
+end;
+```
+
+-----
+
+
+There is only one kind of decision to be made in the model: for each assignment, decide whether we assign that particular task to the worker or not. This is a binary variable; we name it `assign`.
+
+```
+var assign {(w,t) in Assignments}, binary;
+```
+
+There are two rules we must obey when choosing assignments: each worker must have exactly one task, and each task must have exactly one worker assigned. These are implemented as follows.
+
+```
+s.t. One_Task_Per_Worker {w in Workers}:
+sum {t in Tasks} assign[w,t] = 1;
+s.t. One_Worker_Per_Task {t in Tasks}:
+sum {w in Workers} assign[w,t] = 1;
+```
+
+The objective is the total cost, which is obtained by adding each assignment variable multiplied by the associated cost.
+
+```
+minimize Total_Cost:
+sum {(w,t) in Assignments} assign[w,t] * Cost[w,t];
+```
+
+Finally, after the `solve` statement, we print the optimal total cost, and for each worker, the task assigned. The model section is ready.
+
+```
+set Workers;
+set Tasks;
+check card(Workers)==card(Tasks);
+set Assignments := Workers cross Tasks;
+param Cost {(w,t) in Assignments};
+var assign {(w,t) in Assignments}, binary;
+s.t. One_Task_Per_Worker {w in Workers}:
+sum {t in Tasks} assign[w,t] = 1;
+s.t. One_Worker_Per_Task {t in Tasks}:
+sum {w in Workers} assign[w,t] = 1;
+minimize Total_Cost:
+sum {(w,t) in Assignments} assign[w,t] * Cost[w,t];
+solve;
+printf "Optimal Cost: %g\n", Total_Cost;
+for {w in Workers}
+{
+printf "%s->", w;
+for {t in Tasks: assign[w,t]}
+{
+printf "%s (%g)\n", t, Cost[w,t];
+}
+}
+end;
+```
+
+Note that the task assigned to the worker is printed by a `for` loop iterating over all tasks. As each worker has exactly one task assigned, this loop is guaranteed to print exactly one task, as desired.
+
+The solution to the example problem is the following. The cost of each assignment is shown in parentheses.
+
+```
+Optimal Cost: 42
+W1->T2 (6)
+W2->T1 (7)
+W3->T7 (6)
+W4->T5 (6)
+W5->T3 (7)
+W6->T6 (3)
+W7->T4 (7)
+```
+
+Therefore, the smallest possible sum of assignments is 42. As usual, it is not guaranteed that the solution shown is the only optimal one.
+
+There are plenty of things we must note about the assignment problem.
+
+  * As we can see, the model formulation is relatively simple. The number of different feasible solutions for $N$ workers is exactly $N!$ (factorial), because the assignment of tasks to workers can be regarded as a permutation of the tasks (or the workers). For $N=7$, it is 5,040, which is not too much to check even by brute force. However, the factorial function quickly rises, in fact, quicker than exponentially. For 20 tasks, the number of solutions is $20! > 10^{18}$. Such a number of steps is not considered feasible for average computers using naive brute-force methods.
+  * With mathematical programming, we can solve assignment problems much larger in size. However, this is one of the few integer programming problems for which a polynomial-time algorithmic solution exists. The **Hungarian method** [22] is specifically designed for the assignment problem and is substantially faster than using a mathematical programming tool.
+  * The assignment problem also has a rare property: its Linear Programming (LP) relaxation yields the optimal result for the Mixed-Integer Linear Programming (MILP) model as well. Therefore, the integrality gap is guaranteed to be zero. This means that we do not even need binary variables; simple continuous variables with a lower bound of 0 and an upper bound of 1 suffice. The reasons behind this property are out of scope for this tutorial. Nevertheless, this is useful knowledge because the assignment problem can be solved by LP, for which the practical limits in size are usually much larger than for MILP models.
+  * The assignment problem is also closely related to the transportation problem. In fact, it can be interpreted as a transportation problem with $N$ sources and $N$ demands, each having an availability and requirement of 1, and the cost matrix for the transportation problem is the same as for the assignment problem. The only difference is that the 1 unit of material cannot be split over multiple connections. But this is not even beneficial: as we previously remarked, the LP relaxation of the problem is sufficient to provide the optimal solution.
+  * In general, the assignment problem can be part of more complex **optimization problems** where finding a bijection between two sets is part of the decisions. A **bijection**, also called a one-to-one correspondence, between two sets of the same size is when exactly one element from the other set is assigned to each element.
+  * Another interesting property is that we can add the same number to any row or any column of the cost matrix without altering the optimal solution. The only thing that changes is the optimal objective value, which is changed exactly by the number added to or subtracted from the row or column.
+  * This assignment problem shown here involves minimization, but maximization could also be a valid objective. These problems are equivalent. If costs are simply negated, we get the opposite problem, and the solution procedure remains the same.
+
+Now, we will show one interesting extension of the problem. What happens when some decisions about assignments have already been made?
+
+
+
+
+**Problem 42.**
+
+Solve Problem 40, the assignment problem, with the addition of **a priori decisions**: some possible assignments are explicitly declared to either be used or not used.
+
+This extension isn't unique to the assignment problem. Such considerations may arise for every real-world optimization problem. The technique we show here isn't specific either.
+
+Our primary goal is to support **a priori decisions** without compromising the already implemented functionality. That means old data files not containing any decisions should still work.
+
+First, we define a new parameter named **`Fixing`** to express these a priori decisions for all assignments.
+
+```
+param Fixing {(w,t) in Assignments}, in {0,1,2}, default 2;
+```
+
+This parameter has three possible values:
+
+  * The value **0** means we **exclude** the assignment from the possible choices.
+  * The value **1** means we **must use** this assignment in the solution.
+  * The value **2** means that we do not decide beforehand whether we want the assignment or not; this decision is rather **left as freedom for optimization**.
+
+Since the value 2 is set as the **default** for the parameter, if the `Fixing` variable is not mentioned at all in the data sections, the model assumes that there are **no a priori decisions**. This addresses **compatibility with old data files**.
+
+Next, we need these decisions to be enforced. For all `Fixing` values that are either 0 or 1, we explicitly set the assignment variable (`assign`) to the `Fixing` value. The indexing goes over all possible assignments, but those possible assignments that are left to be decided are filtered out and, therefore, not fixed.
+
+```
+s.t. Fixing_Constraints {(w,t) in Assignments: Fixing[w,t]!=2}:
+assign[w,t] = Fixing[w,t];
+```
+
+This completes our new model, which not only solves the assignment problem but supports a priori decisions to be made, and only optimizes over the restricted set of cases. We now demonstrate its usage with two alternative trials.
+
+-----
+
+**Trial 1: Prohibiting an Assignment**
+
+First, we set the assignment **W6 to T6 fixed as zero (excluded)**. This is the only assignment decided a priori. This case is related to the original example Problem 41, because its optimal solution involves this assignment. Therefore, prohibiting this assignment forces the solver to find another solution. The data section modifications and the results are shown below.
+
+```
+param Fixing :=
+W6 T6 0
+;
+```
+
+```
+Optimal Cost: 42
+W1->T2 (6)
+W2->T6 (5)
+W3->T7 (6)
+W4->T5 (6)
+W5->T3 (7)
+W6->T1 (5)
+W7->T4 (7)
+```
+
+It turns out that although the W6 to T6 assignment has a cost of 3 (the second smallest in the whole cost matrix), there is still an alternative solution with the objective **42** which omits it.
+
+-----
+
+**Trial 2: Mandating an Assignment**
+
+Now for the second trial, set the assignment **W4 to T3 as mandatory (1)**. This is the **cheapest possible assignment** in the whole matrix with a cost of 2, but was not included in either optimal solution previously reported. This is the only a priori decision in the second trial. The added data and results are the following.
+
+```
+param Fixing :=
+W4 T3 1
+;
+```
+
+```
+Optimal Cost: 43
+W1->T2 (6)
+W2->T7 (5)
+W3->T5 (10)
+W4->T3 (2)
+W5->T1 (10)
+W6->T6 (3)
+W7->T4 (7)
+```
+
+Surprisingly, including assigning W4 to T3 turns out to be a **poor idea**, as the optimal solution with this decision is only **43** now; 42 cannot be obtained anymore.
+
+Further than demonstrating the usage of a priori decisions made for a model, the results show that simple **greedy heuristics** like taking the smallest cost first do not work perfectly for the assignment problem.
+
+Finally, note that the implementation of a priori decisions by manipulating problem data—particularly for the assignment problem—is also possible:
+
+  * If a possible assignment is assigned a very large positive cost, like a positive **big-M**, then it is not beneficial for the solver to use. Therefore, that assignment is effectively excluded.
+  * If a possible assignment is assigned a very large negative cost, like a negative **big-M**, then the solver is effectively forced to use that assignment.
+
+A priori decisions can easily make the problem **infeasible** if those decisions are contradictory. In case we implement a priori decisions by very large negative and positive big-M costs, the model will not be infeasible. Instead, it tries to select as few forbidden and as many mandatory possible assignments as possible. Assignments in the solution despite their positive big-M costs, or assignments missing despite their negative big-M costs, indicate that the assignment is not possible as described by the a priori decisions. Nevertheless, the solver does its best to minimize the objective anyway.
+
+-----
+
+## 7.4 Graphs and Optimization
+
+Two basic problems from the field of **graph theory** are mentioned now which can be solved by MILP models. For readers interested in graph theory topics, we offer a good introductory book [23], but the definitions and theorems needed for the two problems are presented in this Tutorial.
+
+A **simple graph** has **nodes** and **undirected edges**, where each edge connects two different nodes, and any two nodes are connected by at most one edge. This is in contrast with **non-simple graphs** where loops and multiple edges are allowed, and with **directed graphs**, where edges are substituted by arcs directing from one node to another.
+
+Some further definitions are introduced that are required to understand the upcoming problem definitions:
+
+  * A **path** in a graph is a sequence of distinct nodes where the adjacent nodes in the sequence are connected by an edge. If the first and last member of a path are connected by an edge, then together with that edge, the path forms a **cycle** (see **Figure 9**).
+  * A graph is **connected** if any two of its nodes can be connected with a path. Otherwise, it is **disconnected** (see **Figure 10**). Informally, a connected graph is "one big component," and a disconnected graph consists of multiple components.
+  * A **tree** is a connected graph with no cycles.
+  * A **spanning subgraph** of a graph is another graph with all its nodes and the same or fewer edges.
+  * A **spanning tree** of a graph is a spanning subgraph which is a tree (see **Figure 11**). Spanning trees are obtained by erasing edges of the graph until it contains no more cycles but is still connected.
+
+Simple graphs are useful for representing the scheme of a network of connections, but sometimes the graph is extended by additional data. One common extension is **edge weight**, which is a number assigned to each edge. This leads to a **weighted simple graph**. From now on, we assume weights are positive. The two problems to be solved are the following.
+
+
+
+**Problem 43.**
+
+Solve the **shortest path problem** [24] on an arbitrary simple weighted graph, specified as follows: Given two nodes, find a path connecting these two nodes so that the **total weight of edges on the path is minimal**.
+
+-----
+
+**Problem 44.**
+
+Solve the **minimum weight spanning tree (MST)** [25] problem on an arbitrary simple weighted graph: find the spanning tree of the graph with the **minimal total edge weight**.
+
+-----
+
+**Understanding the Problems**
+
+In the **shortest path problem**, edge weights typically represent **distances** between two nodes. This is common in practice, for example, in navigation.
+
+In the **minimum weight spanning tree problem**, weights may represent **connection establishment costs**. This problem often arises in real-world situations where a **minimal-cost connected network** must be established between a set of nodes. This is because the minimal connected spanning subgraphs are always spanning trees—we omit the proof here. But this idea is a key observation: we are looking for the minimum weight connected graph on the set of nodes, and this eventually coincides with the minimum weight spanning tree problem.
+
+Before going on, we must note that these problems have **very efficient algorithms** that solve them in polynomial time:
+
+  * The shortest path problem is solved by **Dijkstra’s algorithm** [26].
+  * The minimum weight spanning tree problem is solved, for example, by **Kruskal’s algorithm** [27] or **Prim’s algorithm**.
+
+Other approaches are also available. Our aim here is to show how **MILP models can be utilized for graphs**. Although a specific algorithm can be superior in efficiency, a mathematical programming model can be much easier to formulate and to adapt to more complex problems if the problem definition changes.
+
+**Figure 12** shows an example of a simple weighted graph, which is used for demonstration.
+
+-----
+
+**Problem 45.**
+
+On the graph depicted in **Figure 12**, find the shortest path between nodes **A and I**, and find the minimum weight spanning tree.
+
+**Feasibility Analysis**
+
+First, we analyze the problems in terms of feasibility. If a graph is **disconnected**, then there are nodes that cannot be reached by moving along edges, and there is **no connecting path**. Disconnected graphs have **no spanning trees** either. On the other hand, if a graph is **connected**, there should be paths from any node to any other, and also a spanning tree. We omit proofs of these claims here.
+
+The graph in **Figure 12** is connected and clearly has paths and spanning trees, so feasibility is guaranteed.
+
+**Data Implementation for the Graph**
+
+The main idea about modeling graphs with mathematical programming tools is that edges are defined by pairs of nodes. Therefore, edges can be indexed by two-dimensional indices where both dimensions refer to the set of nodes.
+
+We first implement a data section describing the graph in question. The set of **`Nodes`** has two important elements: the two nodes between which the shortest path is to be found. We name these as **`Start`** and **`Finish`** nodes. Note that the two roles are interchangeable. Finally, a **`Weight`** parameter describes edge weights.
+
+```
+data;
+set Nodes := A B C D E F G H I;
+param Start := A;
+param Finish := I;
+
+param Weight :=
+A B 5
+B C 7
+A D 3
+B E 4
+C F 6
+D E 6
+E F 4
+D G 6
+E H 2
+F I 8
+G H 5
+H I 9
+B D 1
+C E 8
+E G 7
+F H 2
+;
+end;
+```
+
+The parameters **`Start`** and **`Finish`** have special characteristics. They do not take numeric values as parameters usually do, but values from the set **`Nodes`**. For this reason, we mark these parameters as **symbolic**. For safety reasons, we also add $\text{in Nodes}$ to the definitions so that the data section can only provide names from the `Nodes` set previously defined. Also, we assert that the two nodes are different, by a `check` statement.
+
+```
+set Nodes;
+param Start, symbolic, in Nodes;
+param Finish, symbolic, in Nodes;
+check Start!=Finish;
+```
+
+The notion of edges in a simple graph only allows a single, **undirected edge** between two nodes. That means edge AB and BA are the same. However, in mathematical programming, it is more convenient to refer to edges as **$(A, B)$ ordered pairs**, because it is easy to index: both $A$ and $B$ can be any node. There are two approaches to resolve this confusion:
+
+1.  **Allow only one direction of edges:** For example, we can make a convention that for each $X < Y$, $XY$ is considered an edge, but $YX$ is not. (Here $X < Y$ refers to some kind of ordering, like lexicographical.)
+2.  **Allow all ordered pairs (directed arcs):** We work with directed arcs instead of undirected edges. Later we can identify two arcs as the same edge if needed, using constraints.
+
+We choose the latter option for two reasons. First, only allowing specific node orders for edges would complicate the data to be provided, as we cannot exchange the two nodes in the description of an edge. Second, and more importantly, **edge direction will be used in the model implementation anyway**.
+
+A parameter **`Infty`** is introduced to serve as a very high edge cost. In both the shortest path and the minimum weight spanning tree problem, if an edge has such a cost, it is not beneficial for the solver to select. This effectively eliminates those edges from the search.
+
+For this reason, we set $\text{Infty}$ as the default value for the **`Weight`** parameter. This makes edges not mentioned in the data section automatically excluded from the search by their very large cost.
+
+```
+param Infty, default 99999;
+param Weight {a in Nodes, b in Nodes}, >0, default Infty;
+param W {a in Nodes, b in Nodes} := min(Weight[a,b],Weight[b,a]);
+```
+
+Finally, a parameter **`W`** is introduced for the weight of an edge used in the model, which will be used in the model formulation. The $\text{min}$ operator ensures the following for all edges $XY$:
+
+  * If neither $XY$ nor $YX$ have data provided, the weight $W$ is $\text{Infty}$; therefore, the edge is practically excluded.
+  * If only one of $XY$ or $YX$ has data provided, then $W$ will be equal to that given weight. Therefore, we only have to mention each edge once in the data section, in an arbitrary order of the two nodes it connects.
+  * If both $XY$ and $YX$ have data provided, then the minimum of these weights is used for both. (Note that this is not an intended functionality; we should not provide both weights in the data. This could also be asserted by a check statement.)
+
+**Solving the Shortest Path Problem**
+
+The main idea for the shortest path problem is to imagine a single **"droplet" of material** placed into the **`Start`** node. It will flow through the arcs of the graph to finally reach the **`Finish`** node. We expect the droplet to draw the path we are looking for. This is where the usage of arcs is more convenient than the usage of edges, because the **direction of flow is very important**.
+
+A binary variable **`flow`** is introduced for each possible arc $(a, b)$, denoting whether the droplet flows through that arc from $a$ to $b$ or not. This variable must be binary, as the droplet cannot split.
+
+```
+var flow {a in Nodes, b in Nodes}, binary;
+```
+
+No more variables are needed, not even auxiliary ones. The question is what property the arcs must satisfy to actually form a path between the starting and finishing node?
+
+It is a basic idea to check the **material balance** at each node of a graph with flows. In short, material balance ensures the connection between the total amount of material coming in and going out.
+
+Now let us see how the material balance works for a single droplet. The quantity under investigation is the times the droplet **enters** the node, minus the times it **leaves**; we will call this the **balance** at the node:
+
+  * From the starting node ($\text{Start}$), the droplet must go out. Therefore, the balance at the starting node is $\mathbf{-1}$.
+  * To the ending node ($\text{Finish}$), the droplet must arrive. Therefore, the balance at the ending node is $\mathbf{1}$.
+  * For any other nodes, the droplet must arrive and leave the same number of times. Therefore, the balance in any other node is $\mathbf{0}$.
+
+With a single `s.t.` statement, we establish these balances with the following code:
+
+```
+subject to Path_Balance {x in Nodes}:
+sum {a in Nodes} flow[a,x] - sum {b in Nodes} flow[x,b] =
+if (x==Start) then -1 else if (x==Finish) then 1 else 0;
+```
+
+This single constraint ensures that the model works. If a set of arcs is selected by these balance rules, these arcs will form some directed graph inside the original one. The balance constraints ensure that a **feasible trail** (a sequence of nodes connected by arcs, where nodes can be revisited) exists between the Start and Finish nodes.
+
+The objective is the total weight of the selected arcs:
+
+```
+minimize Total_Weight:
+sum {a in Nodes, b in Nodes} flow[a,b] * W[a,b];
+```
+
+Note that there are two discrepancies between the path to be found and the set of arcs selected in the model:
+
+  * The balance constraint only ensures an existing trail, but more arcs are allowed to be selected.
+  * The trail is not necessarily a path, as trails may visit the same node multiple times (cycles).
+
+However, as we have seen many times before, **optimization will eventually rule out these differences and will find an actual path**. First, it is not beneficial to select additional edges because of their positive weight. Second, trails can be trimmed to paths by cutting out cycles.
+
+We print out the used arcs after the solve statement, and our model is now ready.
+
+```
+set Nodes;
+param Start, symbolic, in Nodes;
+param Finish, symbolic, in Nodes;
+check Start!=Finish;
+param Infty, default 99999;
+param Weight {a in Nodes, b in Nodes}, >0, default Infty;
+param W {a in Nodes, b in Nodes} := min(Weight[a,b],Weight[b,a]);
+var flow {a in Nodes, b in Nodes}, binary;
+subject to Path_Balance {x in Nodes}:
+sum {a in Nodes} flow[a,x] - sum {b in Nodes} flow[x,b] =
+if (x==Start) then -1 else if (x==Finish) then 1 else 0;
+minimize Total_Weight:
+sum {a in Nodes, b in Nodes} flow[a,b] * W[a,b];
+solve;
+printf "Distance %s-%s: %g\n", Start, Finish, Total_Weight;
+for {a in Nodes, b in Nodes: flow[a,b]}
+{
+printf "%s->%s (%g)\n", a, b, W[a,b];
+}
+end;
+```
+
+Now, let us find the shortest path from **A to I** in the given graph. We get the following result.
+
+```
+Distance A-I: 19
+A->D (3)
+B->E (4)
+D->B (1)
+E->H (2)
+H->I (9)
+```
+
+This means the shortest path is **19**, and the path itself is **A-D-B-E-H-I**. The arcs show the direction of the path from A to I well, but unfortunately, the arcs are not in order.
+
+The path can be seen in **Figure 13**.  We can observe that the shortest path is not the path with the minimal number of edges, and does not always go in the "cheapest" direction.
+
+Two additional notes on the shortest path problem:
+
+  * We could impose stricter constraints to only allow at most one incoming and outgoing arc at each node. This would eliminate trails visiting nodes multiple times, but would not eliminate unnecessary arcs (like cycles between unrelated nodes).
+  * The shortest path problem in this form has the same nice property as the assignment problem: the **LP relaxation of the problem yields the optimal solution**. So the model could be a pure LP instead of an MILP. This is not surprising: if the droplet is split, all of its pieces shall still go simultaneously on the shortest path to travel the minimal distance in total.
+
+-----
+
+**Solving the Minimum Weight Spanning Tree (MST) Problem**
+
+Now let us solve the minimum weight spanning tree problem on the same graph. We start with the strategy:
+
+Recall the note that the minimal connected spanning subgraph is always a tree. Therefore, the optimization has nothing to do with cycles and tree definitions. The objective should be the **total weight of selected edges**, and the constraints shall only ensure that the graph is **connected**. Optimization will then find the minimum weight connected spanning subgraph, which eventually will be a tree.
+
+The real question is how we can ensure by constraints that some edges form a connected graph of the nodes. We again use the idea of flows. Let us put a single droplet in **each node**, and these droplets may flow through the edges of the graph, eventually arriving into a single designated **sink node**.
+
+  * If the graph formed by the selected edges is connected, then droplets can reach all nodes from any.
+  * If the graph is disconnected, then only part of the nodes is reachable, and the flow is infeasible.
+
+Now let us start implementing the model based on this idea. The data section can be almost the same; the only difference is that we do not define a Start and Finish node, only a single **`Sink`**. The selection of the Sink node is arbitrary; we choose **A** as the Sink node.
+
+```
+param Sink := A;
+```
+
+Edge weights are determined exactly the same way as for the shortest path problem.
+
+```
+set Nodes;
+param Sink, symbolic, in Nodes;
+param Infty, default 99999;
+param Weight {a in Nodes, b in Nodes}, >0, default Infty;
+param W {a in Nodes, b in Nodes} := min(Weight[a,b],Weight[b,a]);
+```
+
+We use **two kinds of decision variables** this time.
+
+  * Variable **`use`** is defined for each arc and denotes whether the edge is selected, and points towards the Sink node (**binary**).
+  * Variable **`flow`** is **continuous** and denotes how much material (eventually, how many droplets) flow through that arc.
+
+<!-- end list -->
+
+```
+var use {a in Nodes, b in Nodes}, binary;
+var flow {a in Nodes, b in Nodes};
+```
+
+Without proof, we note that edges of a spanning tree can be uniquely directed towards any one of its nodes. The variable `use` will denote if the edge is selected, and it points towards the Sink node.
+
+The following constraint ensures that for a single edge, flow in one direction is the negative of the flow in the opposite direction.
+
+```
+subject to Flow_Direction {a in Nodes, b in Nodes}:
+flow[a,b] + flow[b,a] = 0;
+```
+
+A **positive flow** of droplets is only allowed in the arcs selected by the `use` variable. This is established by a big-M constraint. Note that the coefficient is the **number of nodes minus one** ($\text{card(Nodes)} - 1$). This is the maximum number of droplets in motion, as the droplet put directly on the Sink node does not need to move.
+
+```
+subject to Flow_On_Used {a in Nodes, b in Nodes}:
+flow[a,b] <= use[a,b] * (card(Nodes) - 1);
+```
+
+Finally, establish the material balance of the droplets, which is the following at each node:
+
+  * If the node is the $\text{Sink}$, then it shall **receive** the number of nodes minus one droplets. The balance is $\mathbf{1 - \text{card(Nodes)}}$.
+  * For any other node, it must **send one** droplet. The balance is $\mathbf{1}$.
+
+<!-- end list -->
+
+```
+subject to Material_Balance {x in Nodes}:
+sum {a in Nodes} flow[a,x] - sum {b in Nodes} flow[x,b] =
+if (x==Sink) then (1-card(Nodes)) else 1;
+```
+
+It can be proven that the arc and flow selection satisfying the balance constraints provide a **connected graph**. The logic is similar to the case of the shortest paths: we can start trails at each node and move through positive flows until reaching the Sink. The sink is the only node where trails can end. Therefore, all nodes must be connected to the Sink, and consequently to each other as well.
+
+The objective is the total weight of arcs where the flow is positive. This minimizes the arcs to be selected, resulting in a spanning tree, with all its edges directed towards the Sink.
+
+```
+minimize Total_Weight:
+sum {a in Nodes, b in Nodes} use[a,b] * W[a,b];
+```
+
+The full model is presented below.
+
+```
+set Nodes;
+param Sink, symbolic, in Nodes;
+param Infty, default 99999;
+param Weight {a in Nodes, b in Nodes}, >0, default Infty;
+param W {a in Nodes, b in Nodes} := min(Weight[a,b],Weight[b,a]);
+var use {a in Nodes, b in Nodes}, binary;
+var flow {a in Nodes, b in Nodes};
+subject to Flow_Direction {a in Nodes, b in Nodes}:
+flow[a,b] + flow[b,a] = 0;
+subject to Flow_On_Used {a in Nodes, b in Nodes}:
+flow[a,b] <= use[a,b] * (card(Nodes) - 1);
+subject to Material_Balance {x in Nodes}:
+sum {a in Nodes} flow[a,x] - sum {b in Nodes} flow[x,b] =
+if (x==Sink) then (1-card(Nodes)) else 1;
+minimize Total_Weight:
+sum {a in Nodes, b in Nodes} use[a,b] * W[a,b];
+solve;
+printf "Cheapest spanning tree: %g\n", Total_Weight;
+for {a in Nodes, b in Nodes: use[a,b]}
+{
+printf "%s<-%s (%g)\n", a, b, W[a,b];
+}
+end;
+```
+
+Solving the example with Sink node **A** gives the following results, also visible in **Figure 14**.
+
+```
+Cheapest spanning tree: 31
+A<-D (3)
+B<-E (4)
+D<-B (1)
+E<-H (2)
+F<-C (6)
+F<-I (8)
+H<-F (2)
+H<-G (5)
+```
+
+The minimum weight spanning tree has a total weight of **31**.  We can observe that all directed paths unambiguously lead to the designated Sink node A. If another Sink was selected, then the solution graph could be the same (or another one with exactly the same objective), but the direction of the arcs would be different.
+
+Note that droplets may be split as flows are not integers, but it is not beneficial and therefore not happening in the optimal solution. This is a similarity to the shortest path problem. However, in this case, the MILP model **cannot be relaxed into an LP**, because the selection of the arcs (`use`) is a mandatory integer part. It does not matter whether only a single or all droplets travel through an edge; its full weight must be calculated. Therefore, variable `use` needs to remain binary.
+
+One final note about these MILP formulations: **loops** (edges of the form $(a, a)$) are silently present throughout all of the formulation. We can verify that loops are either not beneficial to be used, or using them does not make a difference, in all instances they are present.
+
+-----
+
+## 7.5 Traveling Salesman Problem
+
+A well-known and notoriously difficult optimization problem and its GNU MathProg model implementation is presented here. This is the **Traveling Salesman Problem (TSP)** [28].
+
+
+
+**Problem 46.**
+
+Given a set of **nodes** and the **distances** between every two of them, find the **shortest cycle** that **visits all nodes**.
+
+The goal of the **Traveling Salesperson Problem (TSP)** is to find the route an agent must take to visit a set of targets in the **least amount of time** or by traveling the **least distance**, and then return to the **starting point**. The most optimal route will be a cycle. Note that a cycle that visits all nodes of a graph is also called a **Hamiltonian cycle**. The starting node in TSP can be **arbitrary** since the cycle visits all nodes regardless.
+
+Comparing TSP to the **knapsack problem**, while both are **NP-hard** in general, the knapsack problem tends to be solvable for a much larger number of items than the number of nodes in a TSP.
+
+In general, the distances between two nodes can be different depending on the direction of travel, but we will assume they are **equal** throughout this section.
+
+For simplicity, we will solve the TSP problem for nodes situated on a **plane** (see Figure 15), and an **arbitrary starting point** is also determined. The distances used are **Euclidean**, which is the ordinary definition of the distance between two points on a plane.
+
+-----
+
+**Problem 47.**
+
+Find the **shortest route** starting and ending at the **green node** and visiting all **red nodes** depicted in Figure 15.
+
+For this specific problem, instead of calculating a **distance matrix**, we'll implement a model that accepts the **planar positions** of the nodes and calculates the **Euclidean distances** accordingly. Because of this, a new type of data section formulation is introduced: the nodes and their positions are listed in a single set statement named **Node\_List**.
+
+Another parameter, **Start**, is for the arbitrary starting node. Its role is similar to the arbitrary sink node in the minimum weight spanning tree problem (see Section 7.4)—it could be avoided, but it makes the implementation easier.
+
+```
+data;
+set Node_List :=
+P00 0 0
+P08 0 8
+P15 1 5
+P22 2 2
+P23 2 3
+P28 2 8
+P29 2 9
+P31 3 1
+P34 3 4
+P40 4 0
+P56 5 6
+P60 6 0
+P61 6 1
+P69 6 9
+P73 7 3
+P90 9 0
+P93 9 3
+P94 9 4
+P97 9 7
+;
+param Start := P23;
+end;
+```
+
+Let's see how such a data format can be implemented in the model file. First, we need a **three-dimensional set** called **Node\_List**. Note that here we must add `dime n 3` to the definition to indicate that each element of this set has three coordinates: the name of the node, its **X** coordinate, and its **Y** coordinate in the plane, respectively.
+
+```
+set Node_List, dimen 3;
+set Nodes := setof {(name,x,y) in Node_List} name;
+check card(Nodes)==card(Node_List);
+param X {n in Nodes} := sum {(n,x,y) in Node_List} x;
+param Y {n in Nodes} := sum {(n,x,y) in Node_List} y;
+```
+
+After this, the set **Nodes** is **derived** from the list by picking each name mentioned there. Node names must be **unique** in the data section. This can be asserted by a **check statement** confirming that the **Nodes** set has the same size as **Node\_List**. If there are duplicates, the **Nodes** set will be smaller.
+
+The numeric parameters **X** and **Y** denote the planar coordinates of the nodes. Technically, this is obtained by a `sum`. Since each node name appears in the list exactly once, the sum will result in selecting the corresponding coordinate of that particular node. The **Node\_List** set is no longer needed.
+
+The arbitrary **Start** can be any node from the **Nodes** set.
+
+```
+param Start, symbolic, in Nodes;
+```
+
+The parameter **W** denoting the **Euclidean distances** is calculated based on the **X** and **Y** parameters. The formula for the Euclidean distance between two points $P_1 (x_1 , y_1 )$ and $P_2 (x_2 , y_2 )$ is the following. The implementation in GNU MathProg uses the `sqrt` built-in function and the operator `^` for exponentiation.
+
+$$P_1 P_2 = \sqrt{(x_1 - x_2 )^2 + (y_1 - y_2 )^2}$$
+
+```
+param W {a in Nodes, b in Nodes} := sqrt((X[a]-X[b])^2+(Y[a]-Y[b])^2);
+```
+
+We now have all the required data defined in the model. Next, the solution strategy and appropriate decision variables must be determined.
+
+First, observe that **TSP** is closely related to the **assignment problem** (see Section 7.3). For each node in the TSP, we must decide the **next node** in the cycle. Therefore, the solution of the TSP is an assignment from the set of nodes to itself.
+
+The **variable `use`** for each arc and the two constraints ensure that each node has exactly one "next" and one "previous" neighbor.
+
+```
+var use {a in Nodes, b in Nodes}, binary;
+subject to Path_In {b in Nodes}:
+sum {a in Nodes} use[a,b] = 1;
+subject to Path_Out {a in Nodes}:
+sum {b in Nodes} use[a,b] = 1;
+```
+
+Applying the logic of **shortest paths**, we can start a trail and follow the direction of the only selected outgoing arc, obtaining a sequence $A_0 A_1 A_2 . . .$ of nodes. For each $i \geq 1$, the arc going *into* $A_i$ is $A_{i-1} A_i$, and the arc going *out* is $A_i A_{i+1}$. Therefore, it's impossible for the sequence to run from $A_i$ into an already visited node $A_j$, $1 \leq j < i$, because $A_j$ only has one incoming arc, $A_{j-1} A_j$, not $A_i A_j$. This means the only way the trail can end is by running into $A_0$ and closing the cycle. Ideally, we would obtain a **single cycle** of all the nodes this way (see Figure 16).
+
+Unfortunately, this simple solution is **not sufficient**. The mistake in the above reasoning is that the cycle starting from and ending at the **Start** node does **not necessarily include all nodes**. The assignment of nodes to other nodes could potentially form not a single Hamiltonian cycle, but **two or several smaller cycles** (see Figure 17).
+
+To prevent the case of **more than one cycle**, we must ensure **connectivity** of the graph. This is where the technique shown for the **minimum weight spanning tree** (see Section 7.4) is reused: a single "droplet" is placed at each node, and these must **flow** through the selected arcs into the **Start** node. This is possible if and only if the assignment is a **single cycle**.
+
+Note that the resulting graph is not a tree, but the new **variable `flow`** and the corresponding constraints only guarantee **connectivity**, just as they did for the minimum weight spanning tree problem.
+
+```
+var flow {a in Nodes, b in Nodes};
+subject to Flow_Direction {a in Nodes, b in Nodes}:
+flow[a,b] + flow[b,a] = 0;
+
+subject to Flow_On_Used {a in Nodes, b in Nodes}:
+flow[a,b] <= use[a,b] * (card(Nodes) - 1);
+subject to Material_Balance {x in Nodes}:
+sum {a in Nodes} flow[a,x] - sum {b in Nodes} flow[x,b] =
+if (x==Start) then (1-card(Nodes)) else 1;
+```
+
+The objective is the **total weight** of the selected arcs.
+
+```
+minimize Total_Weight:
+sum {a in Nodes, b in Nodes} use[a,b] * W[a,b];
+```
+
+We have finished the model implementation. As we can see, the **TSP model** is simply a **"combination"** of the assignment problem and the minimum weight spanning tree problem. The optimization procedure does not result in a spanning tree, but a **Hamiltonian cycle** because of the assignment rules. Note that because the assignment problem can be solved by a **Linear Program (LP)**, the assignment problem can be used as a **relaxation** of the TSP problem. Solution techniques for TSP can exploit this fact.
+
+We can once again print out the used edges one by one after the `solve` statement, though likely not in their correct order.
+
+```
+printf "Shortest Hamiltonian cycle: %g\n", Total_Weight;
+for {a in Nodes, b in Nodes: use[a,b]}
+{
+printf "%s->%s (%g)\n", a, b, W[a,b];
+}
+```
+
+Solving example **Problem 47** yields the following result.
+
+```
+Shortest Hamiltonian cycle: 44.5948
+P00->P31 (3.16228)
+P08->P15 (3.16228)
+P15->P34 (2.23607)
+P22->P00 (2.82843)
+P23->P22 (1)
+P28->P29 (1)
+P29->P08 (2.23607)
+P31->P40 (1.41421)
+P34->P23 (1.41421)
+P40->P60 (2)
+P56->P28 (3.60555)
+P60->P61 (1)
+P61->P90 (3.16228)
+P69->P56 (3.16228)
+P73->P93 (2)
+P90->P73 (3.60555)
+P93->P94 (1)
+P94->P97 (3)
+P97->P69 (3.60555)
+```
+
+Note that although there are only **19 nodes**, it still takes some time to solve. The output of `glpsol` clearly shows how the solution was **gradually improved** to optimality.
+
+```
+Integer optimization begins...
+Long-step dual simplex will be used
++
+545: mip =
+not found yet >=
++ 1859: >>>>>
+5.969014627e+01 >=
++ 4111: >>>>>
+4.777953551e+01 >=
++ 7223: >>>>>
+4.576632755e+01 >=
++ 15676: >>>>>
+4.459475467e+01 >=
++ 39752: mip =
+4.459475467e+01 >=
++ 52815: mip =
+4.459475467e+01 >=
+INTEGER OPTIMAL SOLUTION FOUND
+Time used:
+9.4 secs
+Memory used: 4.7 Mb (4954539 bytes)
+```
+
+```
+-inf
+2.300457897e+01
+2.623268810e+01
+2.722682823e+01
+3.434024294e+01
+4.136099600e+01
+tree is empty
+```
+
+```
+(1; 0)
+61.5% (48; 1)
+45.1% (75; 7)
+40.5% (90; 32)
+23.0% (154; 77)
+7.3% (501; 612)
+0.0% (0; 2407)
+```
+
+The optimal cycle length is **44.59**. Our manual output provides all the details about the solution but is **difficult to interpret**. Instead, a **visualization** is produced, this time by the model section itself. We will print the solution in **Scalable Vector Graphics (SVG) format** [29].
+
+SVG is a **vector-graphical image representation format**. Instead of storing pixels, the **primitives** that make up the image are described. SVG relies on the **XML data format**. Therefore, we only need to print properly formatted XML containing the grid, the nodes, and the found TSP solution. This entire process happens **after the `solve` statement**.
+
+Producing SVG with GNU MathProg has more spectacular public demonstrations available [30]. We are essentially using the cited approach here. The syntax of neither SVG nor XML will be explained in this Tutorial.
+
+First, for this particular TSP, **Problem 47**, the $\mathbf{X}$ and $\mathbf{Y}$ coordinates range from $\mathbf{0}$ to $\mathbf{9}$. Therefore, the image would fit in a **500 x 500 image** with a **50-pixel distance** between grid lines, and the edges are padded by **25 pixels**. In the SVG to be produced, we reference **x** and **y** coordinates from the **top left corner**, increasing to the right and down. First, we **translate coordinates** in the TSP problem into coordinates in the SVG image as follows.
+
+```
+param PX {n in Nodes} := 25 + 50 * X[n];
+param PY {n in Nodes} := 475 - 50 * Y[n];
+```
+
+We also define an **SVGFILE parameter** to contain the name of the SVG file to be produced. This defaults to `solution.svg` but can be overridden in a data section.
+
+```
+param SVGFILE, symbolic, default "solution.svg";
+```
+
+We first print an **empty string** using `printf`. However, this is not printed to the `glpsol` result but to the file we specify by adding `>SVGFILE` at the end of the `printf` statement. If we want to **append** to the end of the file instead, we should write `>>SVGFILE`, similar to redirection in the command line.
+
+```
+printf "" >SVGFILE;
+```
+
+The first `>SVGFILE` **erases the file** if it was present, but all subsequent `printf` statements must end with `>>SVGFILE` to keep the content written previously.
+
+SVG is an XML file, and a properly formatted **header** is needed.
+
+```
+printf "<?xml version=""1.0"" standalone=""no""?>\n" >>SVGFILE;
+printf "<!DOCTYPE svg PUBLIC ""-//W3C//DTD SVG 1.1//EN"" " >>SVGFILE;
+printf """http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"">\n" >>SVGFILE;
+```
+
+Note that GNU MathProg does not allow overly long symbolic names and character strings in code (not more than 100 characters); therefore, the work is separated into multiple `printf` statements.
+
+Afterward, **XML tags** will be inserted. The SVG content starts with the opening of an **svg tag**, including the **width and height** of the image. Note that we have to use many `"` characters in the SVG code. These must be **escaped** as `""` if we want to print such characters with `printf` in GNU MathProg.
+
+```
+printf "<svg width=""500"" height=""500"" version=""1.0"" " >>SVGFILE;
+printf "xmlns=""http://www.w3.org/2000/svg"">\n" >>SVGFILE;
+```
+
+First, a **"canvas"** is printed, which is a rectangle the same size as the entire image, providing a **uniform pale yellow background**. We can use the `&` operator in GNU MathProg to **concatenate strings** together, separating a single string into multiple lines.
+
+```
+printf "<rect x=""0"" y=""0"" width=""500"" height=""500"" " &
+"stroke=""none"" fill=""rgb(255,255,208)""/>\n" >>SVGFILE;
+```
+
+First, the **grid is drawn**, consisting of **10 vertical** and **10 horizontal**, narrow black lines at the appropriate positions.
+
+```
+for {i in 0..9}
+{
+printf "<line x1=""%g"" y1=""%g"" x2=""%g"" y2=""%g"" " &
+"stroke=""black"" stroke-width=""1""/>\n",
+25+50*i, 475, 25+50*i, 25 >>SVGFILE;
+printf "<line x1=""%g"" y1=""%g"" x2=""%g"" y2=""%g"" " &
+"stroke=""black"" stroke-width=""1""/>\n",
+25, 25+50*i, 475, 25+50*i >>SVGFILE;
+}
+```
+
+Next, the **TSP solution is drawn**. A **wide, blue line segment** is placed between each pair of nodes that appear in the optimal cycle. The direction is not represented, as it does not matter anyway.
+
+```
+for {a in Nodes, b in Nodes: use[a,b]}
+{
+printf "<line x1=""%g"" y1=""%g"" x2=""%g"" y2=""%g"" " &
+"stroke=""blue"" stroke-width=""3""/>\n",
+PX[a], PY[a], PX[b], PY[b] >>SVGFILE;
+}
+```
+
+Finally, the **nodes are printed** on top of the grid and the blue cycle. All nodes except **Start** are printed as **small black circles with red fill**.
+
+```
+for {n in Nodes: n!=Start}
+{
+printf "<circle cx=""%g"" cy=""%g"" r=""%g"" " &
+"stroke=""black"" stroke-width=""1.5"" fill=""red""/>\n",
+PX[n], PY[n], 8 >>SVGFILE;
+}
+```
+
+The **Start** node is a **small black rectangle with green fill**.
+
+```
+printf "<rect x=""%g"" y=""%g"" width=""16"" height=""16"" " &
+"stroke=""black"" stroke-width=""1.5"" fill=""green""/>\n",
+PX[Start]-8, PY[Start]-8 >>SVGFILE;
+```
+
+Note that the **order of elements** to be printed is **important**, as it determines how they cover each other in the result. Finally, the **svg tag is closed**.
+
+```
+printf "</svg>\n" >>SVGFILE;
+```
+
+By running `glpsol` to solve TSP, **Problem 47**, we get not only the textual output but also the **SVG image file**, which shows the drawing (see Figure 18).
+
+Note that the TSP problem has **more effective implementations** than the one shown here, and even this one could be significantly improved to find solutions faster for larger TSP problem instances. The focus here was on the **relation to the assignment problem** and the **connectivity constraints**.
+
+Here, we show the **full model section**. Note that the **MILP model logic** is almost as large as the code responsible for the textual and SVG output.
+
+```
+set Node_List, dimen 3;
+set Nodes := setof {(name,x,y) in Node_List} name;
+check card(Nodes)==card(Node_List);
+param X {n in Nodes} := sum {(n,x,y) in Node_List} x;
+param Y {n in Nodes} := sum {(n,x,y) in Node_List} y;
+param Start, symbolic, in Nodes;
+param W {a in Nodes, b in Nodes} := sqrt((X[a]-X[b])^2+(Y[a]-Y[b])^2);
+var use {a in Nodes, b in Nodes}, binary;
+var flow {a in Nodes, b in Nodes};
+subject to Path_In {b in Nodes}:
+sum {a in Nodes} use[a,b] = 1;
+subject to Path_Out {a in Nodes}:
+sum {b in Nodes} use[a,b] = 1;
+subject to Flow_Direction {a in Nodes, b in Nodes}:
+flow[a,b] + flow[b,a] = 0;
+subject to Flow_On_Used {a in Nodes, b in Nodes}:
+flow[a,b] <= use[a,b] * (card(Nodes) - 1);
+subject to Material_Balance {x in Nodes}:
+sum {a in Nodes} flow[a,x] - sum {b in Nodes} flow[x,b] =
+if (x==Start) then (1-card(Nodes)) else 1;
+minimize Total_Weight:
+sum {a in Nodes, b in Nodes} use[a,b] * W[a,b];
+solve;
+printf "Shortest Hamiltonian cycle: %g\n", Total_Weight;
+for {a in Nodes, b in Nodes: use[a,b]}
+{
+printf "%s->%s (%g)\n", a, b, W[a,b];
+}
+param PX {n in Nodes} := 25 + 50 * X[n];
+param PY {n in Nodes} := 475 - 50 * Y[n];
+param SVGFILE, symbolic, default "solution.svg";
+printf "" >SVGFILE;
+printf "<?xml version=""1.0"" standalone=""no""?>\n" >>SVGFILE;
+printf "<!DOCTYPE svg PUBLIC ""-//W3C//DTD SVG 1.1//EN"" " >>SVGFILE;
+printf """http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"">\n" >>SVGFILE;
+printf "<svg width=""500"" height=""500"" version=""1.0"" " >>SVGFILE;
+printf "xmlns=""http://www.w3.org/2000/svg"">\n" >>SVGFILE;
+printf "<rect x=""0"" y=""0"" width=""500"" height=""500"" " &
+"stroke=""none"" fill=""rgb(255,255,208)""/>\n" >>SVGFILE;
+for {i in 0..9}
+{
+printf "<line x1=""%g"" y1=""%g"" x2=""%g"" y2=""%g"" " &
+"stroke=""black"" stroke-width=""1""/>\n",
+25+50*i, 475, 25+50*i, 25 >>SVGFILE;
+printf "<line x1=""%g"" y1=""%g"" x2=""%g"" y2=""%g"" " &
+"stroke=""black"" stroke-width=""1""/>\n",
+25, 25+50*i, 475, 25+50*i >>SVGFILE;
+}
+for {a in Nodes, b in Nodes: use[a,b]}
+{
+printf "<line x1=""%g"" y1=""%g"" x2=""%g"" y2=""%g"" " &
+"stroke=""blue"" stroke-width=""3""/>\n",
+PX[a], PY[a], PX[b], PY[b] >>SVGFILE;
+}
+for {n in Nodes: n!=Start}
+{
+printf "<circle cx=""%g"" cy=""%g"" r=""%g"" " &
+"stroke=""black"" stroke-width=""1.5"" fill=""red""/>\n",
+PX[n], PY[n], 8 >>SVGFILE;
+}
+printf "<rect x=""%g"" y=""%g"" width=""16"" height=""16"" " &
+"stroke=""black"" stroke-width=""1.5"" fill=""green""/>\n",
+PX[Start]-8, PY[Start]-8 >>SVGFILE;
+printf "</svg>\n" >>SVGFILE;
+end;
+```
+
+-----
+
+## 7.6 MILP Models – Summary
+
+Several optimization problems were presented where **Mixed-Integer Linear Programming (MILP)** models are an appropriate solution technique, while further capabilities of the GNU MathProg language were demonstrated.
+
+  * The **knapsack problem** and the **multi-way number partitioning problem** are easy examples of models involving **discrete decisions** and requiring **integer variables**.
+  * **Tiling** can also be addressed by MILP approaches, provided that our choices for tile placement are finite. This was demonstrated on the tiling of an arbitrary rectangle with cross-shaped tiles. Specific **set and parameter definitions** allowed for a more concise model formulation.
+  * The **assignment problem** is a well-known optimization problem and was implemented as an MILP model, turning out to be no more difficult than its **Linear Program (LP) relaxation**. The functionality of making **a priori decisions** for a model was demonstrated with the assignment problem.
+  * Some problems on **weighted graphs** were also addressed. The **shortest path problem** and the **minimum weight spanning tree problem** were both formulated as an MILP model using similar techniques. The core idea was the **management of imaginary material flows** through the edges of the graph.
+  * Finally, the **Traveling Salesperson Problem** was solved as a combination of the **assignment problem** and the **connectivity constraints** from the minimum weight spanning tree problem. **Visual output** was also produced by the GNU MathProg code itself, in **SVG format**.
+
+The examples shown here included some of the most common **linear programming techniques** and their possible implementations. These can be part of more complex, real-world optimization problems. **Integer programming techniques** make a much wider range of problems solvable than pure LP models, but at the cost of **exploding computational complexity**.
+
+
+
+

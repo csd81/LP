@@ -1,0 +1,937 @@
+# Chapter 4: Equation Systems
+
+In this chapter, we present the basic capabilities of the GNU MathProg language using an example modeling problem: the general solution of linear equation systems. The aim is to navigate from a straightforward initial implementation to the use of indexing and separated model and data sections.
+
+With this knowledge, code maintenance and solving the model with different instances (different data) become very easy, provided the model is correctly implemented in the first place. This is the standard approach we intend to use for future models.
+
+Note that solving linear systems of equations is considered a routine task. There are plenty of capable software tools available, either standalone or embedded. A well-known algorithm is Gaussian elimination [10]. However, we are currently interested in modeling rather than solution algorithms—specifically, GNU MathProg implementation techniques.
+
+---
+
+## 4.1 Example System
+
+Let’s begin by solving a small system of equations using GNU MathProg.
+
+**Problem 4.**
+Solve the following system of equations in the real domain.
+
+$$
+\begin{aligned}
+2 (x - y) &= -5 \\
+y - z &= w - 5 \\
+1 &= y + z \\
+x + 2w &= 7y - x
+\end{aligned}
+$$
+
+(8)
+
+Although not explicitly stated in the problem description, there are four variables: $x$, $y$, $z$, and $w$. The "real domain" means that all of these can independently take arbitrary real values. Our goal is to find values for these four variables such that all four equations are true.
+
+If a complete analysis of the problem were required, the goal would be not only to find a single solution but to find *all* of them. If there were infinitely many solutions, we would need to characterize this infinite set and prove that no other solutions exist. However, for the sake of simplicity, we currently only want to find a single solution to the system of equations without determining if others exist.
+
+Therefore, this is a feasibility problem, meaning only a single feasible solution needs to be found. There is no need for an objective function to optimize, as there are no better or worse solutions.
+
+It can be observed that Problem 4 describes a linear system of equations. This becomes apparent after we arrange the equations into the following format:
+
+$$
+\begin{aligned}
+2x - 2y - w &= -5 \\
+y - z - w &= -5 \\
+y + z &= 1 \\
+2x - 7y + 2w &= 0
+\end{aligned}
+$$
+
+(9)
+
+The point is that this arrangement can be obtained from the original system by simplifying each equation individually: removing parentheses and adding or merging terms on both sides. In this way, the arranged system is equivalent to the original. On the left-hand side (LHS) of each equation, there is a linear expression of the variables (each multiplied by a constant and then added), and on the right-hand side (RHS), there is a constant. Therefore, all equations are linear.
+
+If we further add zero terms and emphasize the coefficients in each column of the arranged format, we get the following equivalent form of the same system:
+
+$$
+\begin{aligned}
+(+2) \cdot x + (-2) \cdot y + 0 \cdot z + 0 \cdot w &= -5 \\
+0 \cdot x + (+1) \cdot y + (-1) \cdot z + (-1) \cdot w &= -5 \\
+0 \cdot x + (+1) \cdot y + (+1) \cdot z + 0 \cdot w &= 1 \\
+(+2) \cdot x + (-7) \cdot y + 0 \cdot z + (+2) \cdot w &= 0
+\end{aligned}
+$$
+
+(10)
+
+Although this representation is less readable, it represents more generally what a system of linear equations actually means. For each equation, there is a constant right-hand side and a linear expression on the left-hand side, for which we only need to know the coefficients for each variable. Thus, this whole problem can be represented in a matrix of coefficients, where the rows correspond to equations and the columns correspond to variables—except for the rightmost column, which corresponds to the right-hand side. 
+
+This is very close to what we call the standard form of a Linear Programming problem. The standard form also includes $\ge 0$ bounds for all variables, consists of $\le$ inequalities instead of equations, and, of course, has a linear objective function. This matrix-like form is important because it inspires solution algorithms. However, we will not go into the details of solution algorithms here, neither for systems of equations nor for LP problems.
+
+Instead, the representation shown in Equation System 10 will be useful for understanding the general scheme behind systems of linear equations and for implementing a separated GNU MathProg MILP model. For this model, a data section describing an arbitrary system of linear equations can be provided and solved.
+
+Now, let's see what the code looks like in GNU MathProg. First, the most straightforward implementation is shown, without arranging the equations.
+
+```
+var x;
+var y;
+var z;
+var w;
+s.t. Eq1: 2 * (x - y) = -5;
+s.t. Eq2: y - z = w - 5;
+s.t. Eq3: 1 = y + z;
+s.t. Eq4: x + 2 * w = 7 * y - x;
+solve;
+
+printf "x = %g\n", x;
+printf "y = %g\n", y;
+printf "z = %g\n", z;
+printf "w = %g\n", w;
+end;
+```
+
+As we can see here, GNU MathProg allows the use of parentheses and basic operations, provided that the constraints—now named Eq1, Eq2, Eq3, and Eq4—simplify into an equality (or non-strict inequality) between two linear expressions.
+
+If we solve the model file above, the solution $x = 0.5$, $y = 3$, $z = -2$, and $w = 10$ is obtained. This solution is unique, so all solution methods should end up with this exact result. We can also manually verify that all four equations are satisfied with the resulting variable values. The code itself helps us by printing the values of the four variables to the solver output.
+
+Now, if we were to implement the aligned version, we would get the following:
+
+```
+s.t. Eq1: 2 * x + (-2) * y +    0 * z +    0 * w = -5;
+s.t. Eq2: 0 * x +    1 * y + (-1) * z + (-1) * w = -5;
+s.t. Eq3: 0 * x +    1 * y +    1 * z +    0 * w = 1;
+s.t. Eq4: 2 * x + (-7) * y +    0 * z +    2 * w = 0;
+```
+
+As we can see, whitespace characters can be freely used in GNU MathProg to improve readability. Also, zero-coefficient terms can be eliminated from the expressions and padded with whitespace instead. The rest of the model file can remain unchanged. The result of solving this arranged model file should be the same.
+
+---
+
+## 4.2 Modifications in Code
+
+Now that we have a working model file that solves a particular system of linear equations, let's try to solve another one obtained by making slight modifications to the original. The problem description is as follows:
+
+
+
+**Problem 5.**
+
+Take the equations defined by Equation system (8) as the initial system, using its aligned form described in either Equation system (9) or (10). Then, obtain another system by applying the following modifications:
+
+1.  Change the coefficient of **x** everywhere from $2$ to $4$.
+2.  Add **z** to Eq1 with a coefficient of $3$.
+3.  Delete **y** from Eq2 (zero out its coefficient).
+4.  Change the RHS of Eq3 to $1.5$.
+5.  Add a fifth variable **v**, with no bounds.
+6.  Add the equation $x + 3v + 0.5 = -2z$ as Eq5.
+7.  Introduce **v** in Eq4 with a coefficient of $5$.
+8.  Print out the newly introduced variable **v** after the `solve` statement, just like the others.
+
+These modifications can be done one-by-one in a straightforward way until the following model is obtained.
+
+```
+var x;
+var y;
+var z;
+var w;
+var v;
+s.t. Eq1: 4 * x + (-2) * y + 3 * z + 0 * w + 0 * v = -5;
+s.t. Eq2: 0 * x + 0 * y + (-1) * z + (-1) * w + 0 * v = -5;
+s.t. Eq3: 0 * x + 1 * y + 1 * z + 0 * w + 0 * v = 1.5;
+s.t. Eq4: 4 * x + (-7) * y + 0 * z + 2 * w + 5 * v = 0;
+s.t. Eq5: 1 * x + 0 * y + 2 * z + 0 * w + 3 * v = -0.5;
+solve;
+printf "x = %g\n", x;
+printf "y = %g\n", y;
+printf "z = %g\n", z;
+printf "w = %g\n", w;
+printf "v = %g\n", v;
+end;
+```
+
+The solution to the new system is $x = 2$, $y = 3.5$, $z = -2$, $w = 7$, and $v = 0.5$. Although it is not proven here, this solution is unique.
+
+Now, observe the types of modifications we had to implement in the code to achieve these results. The first four tasks were simply replacing, introducing, or erasing coefficients from the corresponding equations. In these cases, one must find the corresponding constraints, locate the corresponding variable within the constraint, and apply the changes.
+
+However, introducing the new variable requires more work than just declaring `v` as a variable with no bounds. If we wanted to maintain the arrangement of the equations, all existing equations must be expanded with an extra column for **v**'s coefficients. These coefficients are initially zero, indicating the variable is not yet used. Then, in Eq4 and Eq5, we can insert a nonzero coefficient for **v** afterward. We also needed to manually modify the printing code after the `solve` statement to include **v**.
+
+Inserting the new equation, Eq5, also requires additional work. Again, if we wanted to keep the code easy to read and maintain the arrangement, the new code line for Eq5 must be formatted accordingly.
+
+Although this was still a small problem, we can sense that modifying a system of equations to accommodate another problem might be frustrating. This difficulty worsens if the number of variables and equations increases—note that several thousands of both are still considered a problem of reasonable size.
+
+One problem is that the model code includes some **redundancy**—we have to maintain the arrangement to preserve readability, even though this is not feasible for very large problems. However, the greatest drawback is that we have to understand and **tamper with model code**, even though we only intend to change the actual problem data, which is still just a system of linear equations.
+
+It would be wise to somehow **separate the modeling logic** of linear equation systems from the **actual data** of the linear equations to be solved (that is, the number of variables, equations, coefficients, and right-hand side constants). This is exactly what we will do in the next sections. Afterward, we only need to alter the data, and the model can remain unchanged, which helps us reuse code in the future and implement problems with large data sets.
+
+-----
+
+## 4.3 Parameters
+
+The first step we take to separate problem data from the model logic is the introduction of **parameters**. In this case, the modified problem is to be implemented. We only change the code, not the underlying problem.
+
+Parameters can be introduced with the **`param`** statement. Its syntax is similar to the `var` statement used for introducing variables. However, the `param` statement defines **constant values** that can be used in the model formulation. Parameters are numeric values by default and are used here as such, but note that they can also represent symbolic values (like strings).
+
+The fundamental difference is that **variables** are the values the optimization procedure must find to satisfy all constraints and optimize a given objective function. From an implementation perspective, variable values are only available **after** the `solve` statement. **Parameters**, on the other hand, are constant values that are initially **given**, and they are typically used to formulate the model itself.
+
+Note that parameters defined by the `param` statement, similar to variables defined in the `var` statement, must have a **unique name**, and they can only be used in the model file **after** they have been defined. Hence, in any expression, we can only refer to parameters defined earlier in the code. For this reason, parameter definitions typically precede constraint and even variable definitions.
+
+First, we only introduce parameters for the right-hand side (RHS) values of the equations, as follows:
+
+```
+var x;
+var y;
+var z;
+var w;
+var v;
+param Rhs1 := -5;
+param Rhs2 := -5;
+param Rhs3 := 1.5;
+param Rhs4 := 0;
+param Rhs5 := -0.5;
+s.t. Eq1: 4 * x + (-2) * y + 3 * z + 0 * w + 0 * v = Rhs1;
+s.t. Eq2: 0 * x + 0 * y + (-1) * z + (-1) * w + 0 * v = Rhs2;
+s.t. Eq3: 0 * x + 1 * y + 1 * z + 0 * w + 0 * v = Rhs3;
+s.t. Eq4: 4 * x + (-7) * y + 0 * z + 2 * w + 5 * v = Rhs4;
+s.t. Eq5: 1 * x + 0 * y + 2 * z + 0 * w + 3 * v = Rhs5;
+solve;
+printf "x = %g\n", x;
+printf "y = %g\n", y;
+printf "z = %g\n", z;
+printf "w = %g\n", w;
+printf "v = %g\n", v;
+end;
+```
+
+From now on, if we need to modify the RHS of an equation, we do not need to modify the code of the constraint describing that equation. Instead, we only need to replace the definition of the given RHS parameter.
+
+In the same manner, we can also introduce parameters for the coefficients of the equations. Because there are coefficients for all 5 equations and all 5 variables, a total of **25 additional parameters** are needed.
+
+```
+var x;
+var y;
+var z;
+var w;
+var v;
+param Rhs1 := -5;
+param Rhs2 := -5;
+param Rhs3 := 1.5;
+param Rhs4 := 0;
+param Rhs5 := -0.5;
+param c1x:=4; param c1y:=-2; param c1z:= 3; param c1w:= 0; param c1v:= 0;
+param c2x:=0; param c2y:= 0; param c2z:=-1; param c2w:=-1; param c2v:= 0;
+param c3x:=0; param c3y:= 1; param c3z:= 1; param c3w:= 0; param c3v:= 0;
+param c4x:=4; param c4y:=-7; param c4z:= 0; param c4w:= 2; param c4v:= 5;
+param c5x:=1; param c5y:= 0; param c5z:= 2; param c5w:= 0; param c5v:= 3;
+s.t. Eq1: c1x * x + c1y * y + c1z * z + c1w * w + c1v * v = Rhs1;
+s.t. Eq2: c2x * x + c2y * y + c2z * z + c2w * w + c2v * v = Rhs2;
+s.t. Eq3: c3x * x + c3y * y + c3z * z + c3w * w + c3v * v = Rhs3;
+s.t. Eq4: c4x * x + c4y * y + c4z * z + c4w * w + c4v * v = Rhs4;
+s.t. Eq5: c5x * x + c5y * y + c5z * z + c5w * w + c5v * v = Rhs5;
+solve;
+printf "x = %g\n", x;
+printf "y = %g\n", y;
+printf "z = %g\n", z;
+printf "w = %g\n", w;
+printf "v = %g\n", v;
+end;
+```
+
+Note that `param` statements can be placed on a single line for readability and to preserve the arrangement of the equations. After the total of **30 parameters** are introduced, the implementation of the equations can be considered final. With the sole modification of the parameter statements in the model file, we can solve arbitrary systems of linear equations with 5 variables and 5 equations.
+
+Note that the solution of either of these two models is exactly the same as before, as the system of equations itself did not change, only its implementation.
+
+-----
+
+## 4.4 Data Blocks
+
+We have successfully separated the coefficients and RHS values from the equations they are in, but we still need to modify the `param` statements within the model file to alter the problem. We have used a single model file each time so far. Now we introduce the concept of the **model section** and the **data section**, with which we can separate the model logic from the problem data entirely.
+
+Parameter values in GNU MathProg can be determined in two ways:
+
+  * A parameter value is **explicitly given** where it is defined: as a constant value, or some expression involving other constant values, other parameters, and built-in functions and operators of the GNU MathProg language.
+  * A parameter value is **not given** in the model section but in a **separate data section**.
+
+Now let us see how we can modify the model file to obtain separate model and data sections. In the case where only the RHS parameters were introduced, the complete separation is as follows:
+
+```
+var x;
+var y;
+var z;
+var w;
+var v;
+param Rhs1;
+param Rhs2;
+param Rhs3;
+param Rhs4;
+param Rhs5;
+s.t. Eq1: 4 * x + (-2) * y + 3 * z + 0 * w + 0 * v = Rhs1;
+s.t. Eq2: 0 * x + 0 * y + (-1) * z + (-1) * w + 0 * v = Rhs2;
+s.t. Eq3: 0 * x + 1 * y + 1 * z + 0 * w + 0 * v = Rhs3;
+s.t. Eq4: 4 * x + (-7) * y + 0 * z + 2 * w + 5 * v = Rhs4;
+s.t. Eq5: 1 * x + 0 * y + 2 * z + 0 * w + 3 * v = Rhs5;
+solve;
+printf "x = %g\n", x;
+printf "y = %g\n", y;
+printf "z = %g\n", z;
+printf "w = %g\n", w;
+printf "v = %g\n", v;
+data;
+param Rhs1 := -5;
+param Rhs2 := -5;
+param Rhs3 := 1.5;
+param Rhs4 := 0;
+param Rhs5 := -0.5;
+end;
+```
+
+We can observe that the parameters are only **defined** in the model section, without a value given. Then, after the model construction and the post-processing procedures (here, printing the variables out), there is a **`data`** statement. There can be a single `data` statement at the end of a model file, which denotes the end of the model section and the start of the data section. The data section contains the actual values of parameters that were defined in the model without a value provided there.
+
+This can also be done for the full parameterization example:
+
+```
+var x;
+var y;
+var z;
+var w;
+var v;
+param Rhs1;
+param Rhs2;
+param Rhs3;
+param Rhs4;
+param Rhs5;
+param c1x; param c1y; param c1z; param c1w; param c1v;
+param c2x; param c2y; param c2z; param c2w; param c2v;
+param c3x; param c3y; param c3z; param c3w; param c3v;
+param c4x; param c4y; param c4z; param c4w; param c4v;
+param c5x; param c5y; param c5z; param c5w; param c5v;
+s.t. Eq1: c1x * x + c1y * y + c1z * z + c1w * w + c1v * v = Rhs1;
+s.t. Eq2: c2x * x + c2y * y + c2z * z + c2w * w + c2v * v = Rhs2;
+s.t. Eq3: c3x * x + c3y * y + c3z * z + c3w * w + c3v * v = Rhs3;
+s.t. Eq4: c4x * x + c4y * y + c4z * z + c4w * w + c4v * v = Rhs4;
+s.t. Eq5: c5x * x + c5y * y + c5z * z + c5w * w + c5v * v = Rhs5;
+solve;
+printf "x = %g\n", x;
+printf "y = %g\n", y;
+printf "z = %g\n", z;
+printf "w = %g\n", w;
+printf "v = %g\n", v;
+data;
+param Rhs1 := -5;
+param Rhs2 := -5;
+param Rhs3 := 1.5;
+param Rhs4 := 0;
+param Rhs5 := -0.5;
+param c1x:=4; param c1y:=-2; param c1z:= 3; param c1w:= 0; param c1v:= 0;
+param c2x:=0; param c2y:= 0; param c2z:=-1; param c2w:=-1; param c2v:= 0;
+param c3x:=0; param c3y:= 1; param c3z:= 1; param c3w:= 0; param c3v:= 0;
+param c4x:=4; param c4y:=-7; param c4z:= 0; param c4w:= 2; param c4v:= 5;
+param c5x:=1; param c5y:= 0; param c5z:= 2; param c5w:= 0; param c5v:= 3;
+end;
+```
+
+The solution obtained by solving these model files is exactly the same in all the parameterization examples, because the system of linear equations is still the same. But now, if one wants to solve an arbitrary system of 5 linear equations with 5 variables, then only the **data section** of this model file must be modified accordingly.
+
+There are more complex data sections required for more complex models. However, the syntax for data sections is generally **more permissive** than in the model section. That means, even if we only want to implement a single model and only solve it with a single problem instance, it is still a good choice to write its data to a separate data section rather than hard-coding parameter values into the model section. The more permissive syntax also allows for shorter and more readable data representation.
+
+One feature that makes data sections useful is that they can be implemented in a **separate data file**. A data file is simply a data section written in a separate file. Its content would be all the code between the `data` and `end` statements. Note that both statements are optional in this case, but they increase readability.
+
+The model file should only contain the full model section and no data sections. Suppose we had a model file named `equations.mod`, and we write the data section for the actual system of equations into the file `eq-example.dat`. Then, the solution using the `glpsol` command line tool can be obtained with the following command:
+
+```
+glpsol -m equations.mod -d eq-example.dat
+```
+
+Unlike in the model section where referring to model elements defined afterward is illegal, the statements in the data section can be in **arbitrary order**. Moreover, multiple data files can be solved with a single model file, allowing us to further separate problem data. This does not mean we are solving different problems at the same time, but a single problem instance where its different parameters are separated into different data files.
+
+For example, if we have $n$ different variations for the value of a given parameter and $k$ different variations for the value of another parameter, we can implement these as $n + k$ data files. We actually have $nk$ different problem instances, all of which can be solved with the same single model file by providing `glpsol` the corresponding two variations for the two parameters.
+
+One important property of parameters in GNU MathProg that should be kept in mind is that parameter values are only calculated if they are actually **required**—for example, to define model elements (like constraints, variable bounds, objectives), to print them out, or if they are required in the calculation of other parameters which are themselves required. This might cause, for instance, an erroneously defined parameter value to be reported as a modeling error only when the constraint it first appears in is reached in the model file. Note that basic syntax checking is still performed by `glpsol` even in this case; only the substitution of parameter values is "lazy."
+
+One particular example of this is when we do not give a value for a parameter and use it afterward. It is legal in GNU MathProg to define a parameter without a value—for example, when we want to assign a value to it in the data section after the whole model section, or even in a separate file. If the parameter is not actually used at all in the model, then it is not an error. However, if the parameter **is used** and there is no value at definition or in any data sections, an error is generated.
+
+To demonstrate this, erase the statement `param c3z := 1;` from the data section of the model and try to solve it with `glpsol` as before. The following error message is shown:
+
+```
+Generating Eq1...
+Generating Eq2...
+Generating Eq3...
+eqsystem-data-blocks-full.mod:21: no value for c3z
+MathProg model processing error
+```
+
+We can see that the first two equations, Eq1 and Eq2, were generated successfully. However, Eq3 utilized the parameter `c3z` in its definition, but there was no value given for that particular parameter: neither in the model section nor in the data section (or any data sections). The model could not be generated and solved.
+
+Note that it is also illegal to provide a parameter value twice (in the model and in a data section, or in any two data sections). However, there is a way we can "optionally" provide parameter values in data files by providing default values in the model file. More on that later.
+
+-----
+
+## 4.5 Indexing
+
+At this point, we are able to completely separate the model logic and the problem data—at least for the case of systems of linear equations. However, one might argue that this did not actually help much. While the model section including all the constraints does not need to be touched, the parameter definition part of the model, and also their values in a data section, require even *more* code to be written. Modifying the problem data is still very complicated.
+
+Not to mention that the number of variables and the number of equations cannot be altered solely by redefining parameters. A new variable or a new equation would require many additional parameters.
+
+However, we can understand the logic behind systems of linear equations: we know the exact way a system with any number of variables and any number of equations can be implemented. The model formulation is redundant: model elements are defined very similarly, and much of the code can be copy-pasted. It seems the model implementation does not exploit the underlying logic of systems of linear equations.
+
+First, let us try to express how the solution of a system of linear equations generally works:
+
+1.  There are **variables**. The number of variables is not known. These are all reals with no bounds.
+2.  There are **equations**. The number of equations is not known.
+3.  All equations have a single **right-hand side value**. This means there exists a parameter for all equations that defines these RHS constants.
+4.  All the equations have a **left-hand side** where we add all the variables up, each with a single **coefficient**, which is a parameter. This means there exists a parameter for all equations **AND** all variables that defines the coefficients. Note that here "AND" means for all pairs of equations and variables. That implies, if there are $n$ equations and $k$ variables, there are a total of $nk$ parameters.
+5.  After the `solve` statement, we simply write a `printf` statement individually for all variables to print their values found by the solution algorithm.
+
+We can see that the **"for all"** parts of the logic are where the redundancy is introduced into the model file and the data section. The reason is that in these cases, code must be reused many times. We need a uniform way to tell the solver that we actually want to do many similar things at once. For example, to write `var` and `printf` statements for all variables in the system; `s.t.` statements and `param` statements denoting RHS constants for all equations in the system. Also, to define `param` statements for all equations and variables that describe the coefficients, and to appropriately implement each of these constraints that involve summing up a particular coefficient multiplied by the particular variable, for all variables.
+
+In GNU MathProg, this can be achieved by **indexing expressions**, which also requires the concept of **sets**.
+
+**Sets** contain many different elements (possibly zero, in which case we have an empty set). There are many ways sets can be defined in the language. Note that there are also literals that denote sets. For example, `1..10` denotes the set of integers from 1 to 10. However, in this example, we define our own sets with the **`set`** statement.
+
+There are two sets needed in our model. One is for the variables, and one is for the equations:
+
+```
+set UnknownValues;
+set Equations;
+```
+
+The set **`UnknownValues`** corresponds to the variables of the system of linear equations. In our previous example, they were $x, y, z, w,$ and $v$. The set **`Equations`** corresponds to the equations in the system; they were Eq1, Eq2, Eq3, Eq4, and Eq5.
+
+We used the name `UnknownValues` to differentiate the variables of the system of linear equations to be solved (these are the "unknown values") from the variables defined in the GNU MathProg model by a `var` statement. These are in a one-to-one correspondence in this particular model: for each unknown value in the system of equations, there will be exactly one GNU MathProg model variable defined. Just remember that these are different concepts.
+
+At this point, the contents of the sets are **not defined**. The reason is exactly the same as when parameters are only given values in the data section. The actual content of the sets is not part of the model logic, as the set of unknown values and equations may both vary. The procedure for assigning values to sets is the same as for parameters defined by the `param` statement. They can be given a value at definition or only afterward in a data section. In this case, we choose the latter.
+
+Now, let us define the parameters in our model with the following code:
+
+```
+param Rhs {e in Equations};
+param Coef {e in Equations, u in UnknownValues};
+```
+
+This is the first time we use **indexing expressions**. They are denoted by the curly braces. In the first example, `Equations` is the set providing the possible indices for the parameter `Rhs`. The line literally means that we define a parameter named `Rhs` for all $e$, where $e$ is an element of the `Equations` set. This means that whatever the number of equations is, there is an individual parameter for each of these equations.
+
+Note that we could also legally provide a value for the parameter `Rhs`, just like we did for the individual parameters before. We do not want that now, as the constants at the RHS are not part of the model logic; they are represented in the data section. Note that we have much more freedom regarding indexing expressions, which we will not mention for now; refer to the GNU MathProg language manual for the possibilities.
+
+The parameter **`Coef`** is defined similarly, but there are **two indices** separated by a comma. This literally means that a parameter is defined for all $(e, u)$ ordered pairs, where $e$ is an equation and $u$ is an unknown value. In other words, we define a parameter for each element in the **Cartesian product** of the two sets. There can be many indices in an indexing expression; the maximum is currently 20. They always mean the same: the index set is obtained by all possible combinations of the individual indices. We also call the number of indices the **number of dimensions** of a set. The parameter `Rhs` has a one-dimensional index, while `Coef` has a two-dimensional index.
+
+Now we can define the variables in the model:
+
+```
+var value {u in UnknownValues};
+```
+
+There is only one variable in this model, introducing the "unknown values" to be found in the system of linear equations. We define each model variable to be found, for each unknown value in the system of equations. The name of the model variable will be **`value`**.
+
+Note that index names like $u$ for `UnknownValues` can be arbitrary each time we refer to the same set, but it is strongly recommended that they are consistent throughout the model section for readability purposes. Here we use $e$ for equations and $u$ for unknown values.
+
+Also note that the variables fortunately have consistently no bounds; they all can take arbitrary real values.
+
+Now that we have defined the required parameters and variables in the model, we can express the constraints:
+
+```
+s.t. Cts {e in Equations}:
+   sum {u in UnknownValues} Coef[e,u] * value[u] = Rhs[e];
+```
+
+Now let us look at the parts of this implementation one-by-one. Whitespace characters, including newlines, are used for better readability. Note that this is a **single constraint statement** in GNU MathProg, named `Cts`, but due to the indexing, it will generate a **set of individual equations** in the model.
+
+First, there must be exactly one constraint written for each equation in the system. This is established by the first indexing expression before the colon, **`e in Equations`**. This not only determines the number of equation constraints to be generated, but it also introduces $e$ as a constant that we can refer to in the definition part.
+
+The **RHS** of the constraint is simpler, as it is the `Rhs` parameter itself. But here we can see how indexing works for parameters. When `Rhs` was defined, it was defined for all equations. That means, for example, if there are three equations in the system, named Eq1, Eq2, and Eq3, then exactly one parameter is defined in the model for each of these. They can be referred to as `Rhs['Eq1']`, `Rhs['Eq2']`, and `Rhs['Eq3']`, respectively. Remember that these are three different parameters. However, we do not write something like `Rhs['Eq1']` in the model section because the exact equation name is not part of the model logic; it is rather arbitrarily given in a data section. Instead, we refer to **`Rhs[e]`**. Remember that $e$ denotes the current element of the `Equations` set we are writing a constraint for. The result is that in each constraint, the RHS is the `Rhs` parameter for the corresponding equation.
+
+The **LHS** of the constraint is more complicated because it contains a summation of an undetermined number of terms. Note that the logic is that for each unknown value, we multiply the variable by the corresponding coefficient of the system, and these terms are added up. The **`sum` operator** does exactly this job for us. It involves an indexing expression, where we denote that we want to sum up terms for all unknown values $u$, and the term to be summed follows. The `sum` operator in GNU MathProg has lower precedence than multiplication, so there is no need to use parentheses. `Coef[e,u] * value[u]` is the term that is summed up for all $u$. Each of these terms refers to the variable of the corresponding unknown value $u$, which is `value[u]`. The term also refers to **`Coef[e,u]`**, which is the coefficient parameter for the equation $e$ and the unknown value $u$.
+
+Note that inside the scope of the `sum` operator, the $u$ index is also available, just as $e$ is available inside the whole indexed constraint. However, $u$ would not be available outside the `sum`, for example, in the RHS. It would not even make sense because $u$ is introduced only to define the terms of the sum.
+
+Now that we have a single `s.t.` constraint statement describing the model of systems of linear equations, the `solve` statement may come, after which we can print the values of the variables. Again, we do not know the exact set of variables, but indexing can be used to do something for all variables:
+
+```
+for {u in UnknownValues}
+{
+   printf "%s = %g\n", u, value[u];
+}
+```
+
+The **`for` statement** requires an indexing expression and effectively repeats the statements written inside the block following it, throughout the given index set. Note that the statements allowed in a `for` block are limited, but they include `printf` and another `for`, which are enough for very complex tasks to be implemented simply. The `for` statement cannot be used to define model elements like parameters, variables, constraints, or the objective, but it is useful for displaying information.
+
+Now, for each $u$ unknown value, we want to print out the corresponding value in the solution of the system of equations. Therefore, the `printf` statement refers to $u$ itself, the name of the variable of the system of equations, and its value, which is `value[u]`.
+
+At this point, we are ready with the model section. That means, any system of linear equations can be translated into a data section, and if done with correct syntax, can be solved without altering the model file. Now, let us translate the previous problem instance into a well-formed data section.
+
+```
+data;
+set UnknownValues := x y z w v;
+set Equations := Eq1 Eq2 Eq3 Eq4 Eq5;
+```
+
+The sets are assigned values here. That means, the names of the unknown values and equations are given one-by-one. Note that in the data section, there is **no need for apostrophes**. If we wanted to hard-code a set definition into the model section, we would need apostrophes or quotation marks to denote string constraints.
+
+One of the parameters that requires values to be given is the RHS constants.
+
+```
+param Rhs :=
+Eq1 -5
+Eq2 -5
+Eq3 1.5
+Eq4 0
+Eq5 -0.5
+;
+```
+
+There are multiple ways parameter data can be provided; refer to the GNU MathProg language manual for more details [1]. The simplest is shown here. The index and value pairs are simply enumerated, delimited by whitespace. One row for each pair is just a recommendation for readability. Note that here we must refer to the equation names we gave for the `Equations` set.
+
+This similar format can also be applied if the index has more dimensions, as with `Coef`.
+
+```
+param Coef :=
+Eq1 x 4
+Eq1 y -2
+Eq1 z 3
+Eq1 w 0
+Eq1 v 0
+Eq2 x 0
+Eq2 y 0
+Eq2 z -1
+Eq2 w -1
+Eq2 v 0
+Eq3 x 0
+Eq3 y 1
+Eq3 z 1
+Eq3 w 0
+Eq3 v 0
+Eq4 x 4
+Eq4 y -7
+Eq4 z 0
+Eq4 w 2
+Eq4 v 5
+Eq5 x 1
+Eq5 y 0
+Eq5 z 2
+Eq5 w 0
+Eq5 v 3
+;
+```
+
+The scheme is the same. Pairs of indices and their corresponding values are enumerated. However, each such pair now actually consists of three elements, because the first part of the index is for the equation and the second is for the unknown variable. Again, here we must refer to the names we provided in the set definitions in the data block.
+
+And now we are ready. The model section has attained its most general form. From now on, the solution of any system of linear equations can be done solely by writing a well-formed data section. This data section may come after the model section in the model file itself, or, more practically, it can be put in a separate file. Typically, each problem instance (in this case, each system of linear equations to be solved) can be implemented in a single data file, containing the data section.
+
+The complete model file and one possible data section are the following. The solution is again exactly the same as before: $x = 2$, $y = 3.5$, $z = -2$, $w = 7$, and $v = 0.5$.
+
+```
+set UnknownValues;
+set Equations;
+param Rhs {e in Equations};
+param Coef {e in Equations, u in UnknownValues};
+var value {u in UnknownValues};
+s.t. ImplementingEquations {e in Equations}:
+   sum {u in UnknownValues} Coef[e,u] * value[u] = Rhs[e];
+solve;
+for {u in UnknownValues}
+{
+   printf "%s = %g\n", u, value[u];
+}
+end;
+```
+
+```
+data;
+set UnknownValues := x y z w v;
+set Equations := Eq1 Eq2 Eq3 Eq4 Eq5;
+param Rhs :=
+Eq1 -5
+Eq2 -5
+Eq3 1.5
+Eq4 0
+Eq5 -0.5
+;
+param Coef :=
+Eq1 x 4
+Eq1 y -2
+Eq1 z 3
+Eq1 w 0
+Eq1 v 0
+Eq2 x 0
+Eq2 y 0
+Eq2 z -1
+Eq2 w -1
+Eq2 v 0
+Eq3 x 0
+Eq3 y 1
+Eq3 z 1
+Eq3 w 0
+Eq3 v 0
+Eq4 x 4
+Eq4 y -7
+Eq4 z 0
+Eq4 w 2
+Eq4 v 5
+Eq5 x 1
+Eq5 y 0
+Eq5 z 2
+Eq5 w 0
+Eq5 v 3
+;
+end;
+```
+
+-----
+
+## 4.6 Other Options for Data
+
+Although we now have a single model file suitable for all possible systems of linear equations regardless of variable and equation count, there are other tricks in GNU MathProg that further help us by allowing shorter and/or more readable implementation of data sections. Two of these options are presented here: **default values** and **matrix data format**. A common modeling error, the **out of domain error**, is also demonstrated here.
+
+We have already mentioned that parameters (and also sets) used in the model need a value to be provided. This value is either calculated on the spot or not given in the model at all so that it can be provided separately in a data section. If a parameter has a calculated value hard-coded in the model, then providing data for it is forbidden, but if it is not hard-coded, there must be a value in the data sections.
+
+However, we see that many of the coefficients in the system of linear equations can be zero. This is actually a kind of default behavior: an equation might only refer to a subset of the variables. If an equation does not refer to a variable, then it still has a zero coefficient due to the modeling logic. But we do not want to provide these zero parameters for all variables each time we write a new equation. Instead, we want to only provide those parameter values that are **different than this default zero**.
+
+This can be achieved by indicating a **default value** for a given parameter in the model section. In this case, the model parameter does not have a hard-coded calculated value, but a given default value instead. If there is a value provided in a data section, that value is used. If no value is provided, then the default value is used. Note that default values can also be given for sets. However, they cannot be given for variables, as variables are determined by the optimization procedure, so it does not make sense to provide default values for them.
+
+To add a default value to a parameter, we must do the following:
+
+```
+param Coef {e in Equations, u in UnknownValues}, default 0;
+```
+
+Note that the default value in this example is zero, but in general, it could be any expression that can be calculated on the spot. For instance, it can depend on $e$ and $u$, the indices of the parameter.
+
+After the default value of zero is given for `Coef`, all entries in the data section that indicate a value of zero can be omitted, significantly trimming the size of the data section.
+
+```
+param Coef :=
+Eq1 x 4
+Eq1 y -2
+Eq1 z 3
+Eq2 z -1
+Eq2 w -1
+Eq3 y 1
+Eq3 z 1
+Eq4 x 4
+Eq4 y -7
+Eq4 w 2
+Eq4 v 5
+Eq5 x 1
+Eq5 z 2
+Eq5 v 3
+;
+```
+
+Note that, while maintaining the code of this data section, care must be taken when adding a new index to a parameter data set, as it may already be there. Duplicate indices are forbidden in the data section, as common sense dictates.
+
+Another trick that may help in designing shorter and more readable data sections is the **matrix data format**. It works in many situations where two-dimensional data must be provided—like in this case. Values for parameter `Coef` can be implemented in matrix format in the following way:
+
+```
+param Coef: x y z w v :=
+Eq1 4 -2 3 . .
+Eq2 . . -1 -1 .
+Eq3 . 1 1 . .
+Eq4 4 -7 . 2 5
+Eq5 1 . 2 . 3
+;
+```
+
+Note that the colon (`:`) and the assignment operator (`:=`) denote the matrix data format; whitespace indentation is optional. It is recommended for readability that the data is indented similarly to the way shown. The rows of the matrix correspond to the values of the first index, while the columns correspond to the second index. Each entry in the matrix gives a value for the parameter identified by the row and the column.
+
+Note that in such a matrix, we do not have to mention all possible rows and columns. Those parameter indices for which we do not give a value will be defaulted. Also, using the period character (`.`) instead of a value in the matrix makes that particular value be defaulted.
+
+If one wants to refer to the first indices by the columns and the second indices by the rows, it is also possible: it is called the **transposed matrix format**, and it is simply obtained by inserting `(tr)` before the colon.
+
+There are more advanced data description formats in GNU MathProg, which are not mentioned here. For example, it is possible to give multi-dimensional data by describing several different matrices one after another.
+
+An important issue about indexing is the **out of domain error**. For all parameters and variables that are indexed, there is a well-described index set. If at any time, a parameter or variable is referred to with an index that is **not** in its defined index set, then—not surprisingly—an error occurs.
+
+Let us demonstrate this by changing the $u$ and $e$ indices in the constraint where the `Coef` parameter is indexed. The following message is obtained, and the model cannot be processed:
+
+```
+Generating Cts...
+eqsystem-indexing-matrix-ERROR-outofdomain.mod:10: Coef[x,Eq1] out of domain
+MathProg model processing error
+```
+
+This is an error because the correct indexing would be `Coef[Eq1,x]`, not `Coef[x,Eq1]`. The latter is not a valid index for parameter `Coef`, because neither $x$ is in the set `Equations` nor Eq1 is in the set `UnknownValues`. The same error message may be reported if we do not use the indices properly in the data section.
+
+This example suggests an important source of error: **indexing must be done properly**. In this case, the out of domain error is raised, and the mistake could be corrected easily. However, the situation can be much worse; for example, if a wrong indexing would actually mean a valid index in the index set. In that case, the error remains unnoticed, and the wrong model is solved. This is especially dangerous if the two indices are from the same set, as they can be switched by mistake. For example, in a directed graph of vertices A, B, and C, the arc AB is different from BA, but both describe an arc and are valid if implemented in GNU MathProg.
+
+In our example, the two indices are from two different sets, so it is unlikely that a wrong indexing is not reported. However, it may be the case if the two sets have common elements. For example, if both the variables are labeled from 1 to 5, and all the equations are labeled also from 1 to 5, there is nothing that forbids this. The correspondingly edited data section is the following:
+
+```
+data;
+set UnknownValues := 1 2 3 4 5;
+set Equations := 1 2 3 4 5;
+param Rhs :=
+1 -5
+2 -5
+3 1.5
+4 0
+5 -0.5
+;
+param Coef: 1 2 3 4 5 :=
+1 4 -2 3 . .
+2 . . -1 -1 .
+3 . 1 1 . .
+4 4 -7 . 2 5
+5 1 . 2 . 3
+;
+end;
+```
+
+Now, if this is the data section, and it is paired with the wrongly indexed model section we presented before, there are **no out of domain errors**, as all wrong indices are actually valid. So a wrong model is solved now, which has a substantially different result than the original: $4.8$, $-20.6$, $-67.5$, $-10.3$, and $17$. Remember that the original result was $2, 3.5, -2, 7, 0.5$. Conclusion: always pay special care for indexing, use meaningful and unique names even in the data sections, and always validate the result of model solution.
+
+A valid question arises: what was the problem that the wrongly indexed model had solved? We leave it up to the reader, with a small hint: if the two indices are switched, then we effectively **transpose the data matrix**.
+
+-----
+
+## 4.7 General Columns
+
+We have seen some capabilities of the GNU MathProg language with which we can make compact and more readable data sections. Now we will show how the already available techniques can be utilized to further decrease the redundancy in a data section.
+
+There is still a bit of redundancy in the rows of the equations. The RHS of the equations is provided as a separate parameter where all the equation names must appear. The coefficient matrix for the system of equations is described by another parameter, now in matrix format, but the rows must start with the equation names again. It would be nice if these two kinds of data could appear in a single data matrix.
+
+We can easily solve this in GNU MathProg. Now, a common **`EqConstants`** parameter is introduced which works as follows. Its indices are the **columns of the problem in general**. Each column can correspond to a variable (unknown value) in the system of equations, or the RHS of the equation. We can implement this with the following code:
+
+```
+set UnknownValues;
+set Equations;
+set Columns := UnknownValues union {'RHS'};
+param EqConstants {e in Equations, u in Columns}, default 0;
+```
+
+Note that `Columns` is a set just like `UnknownValues` and `Equations`. However, this set is not provided by a data section but instead calculated on the spot. `Columns` is the set `UnknownValues`, with the string `'RHS'` added to it.
+
+```
+var value {u in UnknownValues};
+s.t. ImplementingEquations {e in Equations}:
+   sum {u in UnknownValues} EqConstants[e,u] * value[u]
+   = EqConstants[e,'RHS'];
+```
+
+The rest of the model is basically the same, but instead of the `Rhs` parameter, we refer to the **`EqConstants`** parameter with either the index of an unknown value $u$ to access the coefficients, or the string `'RHS'` to access the RHS constant in the given equation.
+
+The data section is the following. The only parameter is `EqConstants`. Note that the solution shall be exactly the same as before; the modifications only affected the format of the data section, but the data content remained the same.
+
+```
+data;
+set UnknownValues := x y z w v;
+set Equations := Eq1 Eq2 Eq3 Eq4 Eq5;
+param EqConstants: x y z w v RHS :=
+Eq1 4 -2 3 . . -5
+Eq2 . . -1 -1 . -5
+Eq3 . 1 1 . . 1.5
+Eq4 4 -7 . 2 5 0
+Eq5 1 . 2 . 3 -0.5
+;
+end;
+```
+
+Note that this implementation does not work in one extreme situation: where one of the unknown values is named `'RHS'`, in which case it is interchangeable with the string `'RHS'` denoting the right-hand side column instead of ordinary variables in the system. So, for this model, the usage of the keyword `'RHS'` is forbidden for unknown values in the data section. But this restriction is a fair trade for the more compact data section we got instead.
+
+We can make our model foolproof by establishing this rule with a **`check` statement**. It works like an assertion: a logical expression is evaluated, and if the result is false, the model generation is aborted.
+
+In this example, we state that `UnknownValues` shall not contain the string `'RHS'`. In other words, no variables in the system of equations shall be named `RHS`. The statement is best positioned soon after the definition of the `UnknownValues` set.
+
+```
+check 'RHS' !in UnknownValues;
+```
+
+Note that the `check` statement can also be indexed, which is an effective way of testing multiple logical statements at once.
+
+The evaluation of a `check` statement is also reported in the output generated by `glpsol` as follows:
+
+```
+Checking (line 4)...
+```
+
+Checking is used to rule out wrong data by reporting it. Identifying bugs caused by unreported data errors can be substantially more difficult.
+
+-----
+
+## 4.8 Minimizing Error
+
+After implementing a model for arbitrary systems of linear equations, let us consider a slightly different problem: solving a system of equations **"as well as we can."**
+
+Although we do not focus on mathematical proofs here, it is worth mentioning that a system of linear equations may have 0, 1, or infinitely many different solutions. This is related to the number of variables and equations in the system in the following way. Note these rules are not general, as there are important exceptions that can be precisely characterized, but they are typical if the coefficients and RHS values in the equations are random or unrelated:
+
+  * **Infinitely many solutions** is the typical case when there are **fewer equations than variables**.
+  * A **unique solution** is typically caused by having the **same number of equations and variables**. Note that this was the case in all of the previous examples in this section.
+  * If there are **more equations than variables**, the system is **overspecified**, and the resulting problem is usually **infeasible**. This can be demonstrated as follows.
+
+  
+
+**Problem 6.**
+
+Append a sixth equation, $x + y + z + w + v = 0$, to Problem 5 and solve it.
+
+Now that we have the complete model, Problem 6 can be implemented in a single data section. A new element, `Eq6`, is added to the set `Equations`, and the corresponding RHS and coefficients are also introduced. Note that the original model and data section format is used, where parameters `Rhs` and `Coef` are not merged.
+
+```
+data;
+set UnknownValues := x y z w v;
+set Equations := Eq1 Eq2 Eq3 Eq4 Eq5 Eq6;
+param Rhs :=
+Eq1 -5
+Eq2 -5
+Eq3 1.5
+Eq4 0
+Eq5 -0.5
+Eq6 0
+;
+param Coef: x y z w v :=
+Eq1 4 -2 3 . .
+Eq2 . . -1 -1 .
+Eq3 . 1 1 . .
+Eq4 4 -7 . 2 5
+Eq5 1 . 2 . 3
+Eq6 1 1 1 1 1
+;
+end;
+```
+
+We already know the original solution for Problem 5 with the system of just the first five equations: $x = 2$, $y = 3.5$, $z = -2$, $w = 7$, and $v = 0.5$. This literally means that the first five equations imply that the sum $x+y+z+w+v$ equals $2 + 3.5 + (-2) + 7 + 0.5 = 11$. The result, $11$, contradicts the sixth equation, $x + y + z + w + v = 0$, in Problem 6. In short, if the first five equations hold true, the sixth cannot. Not surprisingly, the overspecified model turns out to be **infeasible**.
+
+Here is the solver output:
+
+```
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+-m eqsystem-original.mod -d eqsystem-overspecified.dat --log
+→ eqsystem-overspecified-original.log
+Reading model section from eqsystem-original.mod...
+21 lines were read
+Reading data section from eqsystem-overspecified.dat...
+30 lines were read
+Generating Cts...
+Model has been successfully generated
+GLPK Simplex Optimizer, v4.65
+6 rows, 5 columns, 19 non-zeros
+Preprocessing...
+6 rows, 5 columns, 19 non-zeros
+Scaling...
+A: min|aij| = 1.000e+00 max|aij| = 7.000e+00 ratio = 7.000e+00
+Problem data seem to be well scaled
+Constructing initial basis...
+Size of triangular part is 4
+0: obj = 0.000000000e+00 inf = 8.500e+00 (2)
+1: obj = 0.000000000e+00 inf = 3.667e+00 (1)
+LP HAS NO PRIMAL FEASIBLE SOLUTION
+glp_simplex: unable to recover undefined or non-optimal solution
+Time used: 0.0 secs
+Memory used: 0.1 Mb (118495 bytes)
+```
+
+However, there is still an interesting question when faced with an overspecified system of equations: Instead of finding a perfect solution, can we find a solution for which the error in the equations is kept **minimal**? More precisely, the **maximum of the errors**.
+
+-----
+
+**Problem 7.**
+
+Given a system of linear equations, find a solution that minimizes the maximum error across all equations. The error for a specific equation is defined as the absolute value of the difference between the Left-Hand Side (LHS) and the Right-Hand Side (RHS).
+(The LHS of the equation consists of the sum of the variables multiplied by their coefficients, while the RHS is a constant. Use the same data description method as before.)
+
+This is no longer a feasibility problem. To be precise, all possible variable values now provide a feasible solution; strictly speaking, the objective value (maximum error) simply varies between solutions. Therefore, this is an optimization problem.
+
+Solving this efficiently requires a modeling trick: minimizing the maximum objective. This can be considered a "design pattern" in mathematical programming.
+
+The first part of this concept involves introducing the objective—the maximum error itself—into the model as an individual variable, as follows:
+
+```
+var maxError;
+minimize maxOfAllErrors: maxError;
+```
+
+At this point, the objective is simply an independent variable that can be set freely. Our goal is to find a way to enforce this `maxError` variable to effectively represent the maximum error of the equations.
+
+Suppose that $L$ and $R$ are the left-hand side and right-hand side values of an equation for certain variable values. Ideally, $L = R$, and the error is zero. Otherwise, the error is $|L - R|$, which is not a linear function of the variables. Even if it were, finding the maximum of these values would still be problematic because the "maximum" function itself is not linear.
+
+This leads to our second idea. Instead of representing the errors themselves in the model, we use an upper bound for the error. Suppose that $E$ is a valid upper bound for the error between $L$ and $R$, meaning $|L - R| \le E$. This can now be expressed as linear constraints as follows:
+
+```
+L - R <= E
+L - R >= -E           (11)
+```
+
+Note that $E$ must be nonnegative, as the errors themselves are nonnegative. Alternatively, we could state $R - E \le L \le R + E$. In any case, these represent two linear inequalities.
+
+Now, what would be a good candidate for an upper bound on the error in any equation? Naturally, the maximum of the errors, which is denoted by `maxError`. Therefore, we define two constraints so that the two sides of the equations differ at most by the value of `maxError`.
+
+```
+s.t. Cts_Error_Up {e in Equations}:
+  sum {u in UnknownValues} Coef[e,u] * value[u]
+  <= Rhs[e] + maxError;
+
+s.t. Cts_Error_Down {e in Equations}:
+  sum {u in UnknownValues} Coef[e,u] * value[u]
+  >= Rhs[e] - maxError;
+```
+
+This is achieved by duplicating the original constraint and including `maxError`. The constraints must have unique names; here, `Cts_Error_Up` and `Cts_Error_Down` were chosen.
+
+Surprisingly, our model is complete. Let us now try to understand what happens when it is solved.
+Due to the constraints, `maxError` is forced to act as a valid upper bound for the errors of all equations simultaneously. Meanwhile, `maxError` is an objective to be minimized. Consequently, these factors combined will effectively find the smallest possible `maxError` value for which all equations can be satisfied.
+
+Below is the full model section, with some `printf` statements added to provide meaningful output.
+
+```
+set UnknownValues;
+set Equations;
+param Rhs {e in Equations};
+param Coef {e in Equations, u in UnknownValues}, default 0;
+var value {u in UnknownValues};
+var maxError;
+
+s.t. Cts_Error_Up {e in Equations}:
+  sum {u in UnknownValues} Coef[e,u] * value[u]
+  <= Rhs[e] + maxError;
+
+s.t. Cts_Error_Down {e in Equations}:
+  sum {u in UnknownValues} Coef[e,u] * value[u]
+  >= Rhs[e] - maxError;
+
+minimize maxOfAllErrors: maxError;
+
+solve;
+
+printf "Optimal error: %g\n", maxError;
+printf "Variables:\n";
+for {u in UnknownValues}
+{
+  printf "%s = %g\n", u, value[u];
+}
+
+printf "Equations:\n";
+for {e in Equations}
+{
+  printf "%5s: RHS=%10f, actual=%10f, error=%10f\n",
+  e, Rhs[e],
+  sum {u in UnknownValues} Coef[e,u] * value[u],
+  abs(sum {u in UnknownValues} Coef[e,u] * value[u] - Rhs[e]);
+}
+end;
+```
+
+If we solve it, we get the following results:
+
+```
+Optimal error: 0.478261
+Variables:
+x = -3.42029
+y = -1.21884
+z = 2.24058
+w = 3.23768
+v = -0.36087
+Equations:
+Eq1: RHS= -5.000000, LHS= -4.521739, error= 0.478261
+Eq2: RHS= -5.000000, LHS= -5.478261, error= 0.478261
+Eq3: RHS=  1.500000, LHS=  1.021739, error= 0.478261
+Eq4: RHS=  0.000000, LHS= -0.478261, error= 0.478261
+Eq5: RHS= -0.500000, LHS= -0.021739, error= 0.478261
+Eq6: RHS=  0.000000, LHS=  0.478261, error= 0.478261
+```
+
+If we manually investigate the results, we can verify that all the variables are multiples of $1/690$; they are not trivial values.
+
+It is interesting to note that the error is the same for all six equations. Perhaps this is a general rule when the number of equations is one greater than the number of variables? This leads to another mathematical problem.
+
+## 4.9 Equation Systems – Summary
+
+We have learned the basic skills in GNU MathProg required to implement linear mathematical models: using parameters, separating the model and data sections, and, most importantly, indexing expressions. We also solved a simple yet non-trivial optimization problem regarding minimizing errors in equations.
+
+Note that the coding effort was minimal in GNU MathProg—and mathematical programming in general—compared to solution algorithms we would otherwise have to implement ourselves.
+
+From now on, it is recommended that for each subsequent optimization problem, you implement a single general model file containing the model section but no problem data. Each problem instance for which the model needs to be solved can be implemented in a separate data file containing the entire data section. Therefore, there should be as many data files as there are problem instances.
+
+
+

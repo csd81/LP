@@ -1,0 +1,236 @@
+# Chapter 3: GNU MathProg
+
+This chapter aims to briefly introduce GNU MathProg and demonstrate how it can be used to implement and solve mathematical programming models in the LP or MILP class. A short example problem is presented with implementation, solution, and results, showing some of the most frequently used features of the language.
+
+-----
+
+## 3.1 Prerequisites for Programming
+
+GNU MathProg, also referred to as the **GNU Mathematical Programming Language** (GMPL), is a modeling language used for designing and solving LP and MILP problems. The **GNU Linear Programming Kit (GLPK)** provides free software for both parsing implemented models and solving them to report the optimal solution. GLPK is available under the General Public License version 3.0 or later [6].
+
+There are other software tools available for solving MILP models; some are available with a free license, like CBC or lpsolve. These mentioned tools can be much faster than GLPK. Commercial software can be even better, with some options available through academic licenses. However, we selected GNU MathProg and the solver **`glpsol`** from GLPK because they are relatively easy to use and include both the language and the model-solving tools.
+
+Installing GLPK depends on the operating system. On Linux, you can visit the official GLPK website, where installation packages, source codes, and sample GNU MathProg problems can be found. On some distributions, installation can be done with a single command, as follows:
+
+```
+sudo apt-get install glpk-utils
+```
+
+If the installation is successful, the program **`glpsol`** should be available in the command line. Throughout this manual, we will use this tool in the command line to parse and solve models.
+
+On Windows, it is possible to obtain the command-line solver as well. However, a more convenient option is a desktop application called **GUSEK** [9], which is a simple Integrated Development Environment (IDE) with a text editor specifically for the GNU MathProg language. The `glpsol` solver is available with all of its functionalities there. With GUSEK, no command line is needed, although managing multiple files requires some attention.
+
+A reference manual for the GNU MathProg modeling language, including usage of the `glpsol` software, is publicly available (see reference [1]).
+
+-----
+
+## 3.2 "Hello World\!" Program
+
+After successful installation, we can try the program with a very simple LP problem. This will be our first GNU MathProg program, much like a "Hello World\!" example.
+
+```
+var x >= 0;
+var y >= 0;
+var z >= 0;
+s.t. Con1: x + y <= 3;
+s.t. Con2: x + z <= 5;
+s.t. Con3: y + z <= 7;
+maximize Sum: x + y + z;
+solve;
+printf "Optimal (max) sum is: %g.\n", Sum;
+printf "x = %g\n", x;
+printf "y = %g\n", y;
+printf "z = %g\n", z;
+end;
+```
+
+GNU MathProg is designed to be easily readable and for its mathematical meaning to be simple to understand. The language consists of commands ending with a semicolon (;), which are called **statements**. There are six distinct statements in this file: `var`, `s.t.`, `maximize`, `solve`, `printf`, and `end`. The meanings of most are self-explanatory, as we will see.
+
+```
+var x >= 0;
+var y >= 0;
+var z >= 0;
+```
+
+First of all, this is an LP problem, where all three variables $x$, $y$, and $z$ can take real values. They also have **bounds** defined: each must be non-negative. Note that this is the most common bound for variables.
+
+```
+s.t. Con1: x + y <= 3;
+s.t. Con2: x + z <= 5;
+s.t. Con3: y + z <= 7;
+```
+
+In the problem, there are three **constraints**, separate from the bounds, which are treated differently in the language. The constraints are named `Con1`, `Con2`, and `Con3`, respectively. The names are preceded by **"s.t."**, which is an abbreviation for "subject to," but it has several aliases and can even be omitted entirely. The constraints state that the sum of any two of the three variables cannot be greater than the given constants, which are 3, 5, and 7, respectively.
+
+```
+maximize Sum: x + y + z;
+```
+
+The goal of the optimization is to **maximize** the objective titled "Sum," which is, of course, the sum of the three variables. A model file can contain at most one `maximize` or `minimize` statement.
+
+At this point, the LP problem is fully defined. This is a relatively easy linear problem; however, its optimal solution might not be immediately obvious.
+
+It should be noted that the objective function can be omitted entirely from a GNU MathProg model formulation. In that case, the only task is to find any **feasible solution** for the problem.
+
+```
+solve;
+printf "Optimal (max) sum is: %g.\n", Sum;
+printf "x = %g\n", x;
+printf "y = %g\n", y;
+printf "z = %g\n", z;
+end;
+```
+
+There is a **`solve`** statement in the file. This denotes the point where the solver software should finish reading all the data, then construct and solve the model. After the `solve` statement, there may still be other statements in the file to report valuable information about our solution. In this case, the objective value and our three variables are printed with the values obtained by the optimization procedure. The **`printf`** statement works similarly to the `printf()` function from the C programming language but supports fewer format specifiers. We prefer the `%g` format because it can print both integers and fractional values in a compact form. In some cases, a fixed-precision number is more appropriate, like `%.3f`.
+
+An **`end`** statement denotes the end of the model description, although it is optional.
+
+We can use any text editor we like, but some offer syntax highlighting options. GUSEK on Windows has its own text editor specifically designed for modeling. On Linux, we can use `gedit`. It does not have built-in syntax highlighting for GNU MathProg by default, but one can be obtained from the internet.
+
+Let's name this file `helloworld.mod`. On some systems, the file extension `.mod` can be recognized as a video format by the file browser. This might cause a "double-click" action to try opening the file as a video instead of a text file. For this reason, it is recommended to set the file's opening method to the text editor we prefer, such as `gedit`. Alternatively, we can simply use a different file extension, like `.m` or simply `.txt`; it does not matter from the perspective of `glpsol`, although it may matter if we use an IDE like GUSEK.
+
+The file `helloworld.mod` is a **model file** because it contains the business logic of the problem we want to solve. It is sufficient on its own for defining a problem. Later on, we will split our problem formulations into a single model file and one or more **data files**. The model file encapsulates the problem's logic, while the data file(s) provide the actual data the problem will be solved with. This separation is useful because if the data for the real-world problem changes, we do not need to modify the model itself. In other words, a user who wants to solve a model for a particular problem does not need to know the model; they only need to correctly implement a data file, which is much easier and less error-prone.
+
+Use `glpsol` to solve the model file with the following command:
+
+```
+glpsol -m helloworld.mod
+```
+
+Something similar to the following output is obtained:
+
+```
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+-m helloworld.mod
+
+Reading model section from helloworld.mod...
+20 lines were read
+Generating Con1...
+Generating Con2...
+Generating Con3...
+Generating Sum...
+Model has been successfully generated
+GLPK Simplex Optimizer, v4.65
+4 rows, 3 columns, 9 non-zeros
+Preprocessing...
+3 rows, 3 columns, 6 non-zeros
+Scaling...
+A: min|aij| = 1.000e+00 max|aij| = 1.000e+00 ratio =
+Problem data seem to be well scaled
+Constructing initial basis...
+Size of triangular part is 3
+* 0: obj = -0.000000000e+00 inf =   0.000e+00 (3)
+* 3: obj =   7.500000000e+00 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.1 Mb (102283 bytes)
+Optimal (max) sum is: 7.5.
+x = 0.5
+y = 2.5
+z = 4.5
+Model has been successfully processed
+```
+
+This is a small problem, so the result is almost instantaneous. Let's look at what information can be read from the output.
+
+```
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+-m helloworld.mod
+Reading model section from helloworld.mod...
+18 lines were read
+Generating Con1...
+Generating Con2...
+Generating Con3...
+Generating Sum...
+Model has been successfully generated
+```
+
+The first section of the output is printed during the **model generation procedure**. Note that if the model has bad syntax, it will be noted here. Only the first error is displayed. It can also be observed that the constraints and the objective are the model elements that must be "generated."
+
+```
+GLPK Simplex Optimizer, v4.65
+4 rows, 3 columns, 9 non-zeros
+Preprocessing...
+3 rows, 3 columns, 6 non-zeros
+Scaling...
+A: min|aij| = 1.000e+00 max|aij| = 1.000e+00 ratio =
+Problem data seem to be well scaled
+Constructing initial basis...
+Size of triangular part is 3
+* 0: obj = -0.000000000e+00 inf =   0.000e+00 (3)
+* 3: obj =   7.500000000e+00 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.1 Mb (102283 bytes)
+```
+
+The solution procedure for an LP problem, from the constraints themselves to the final, optimal solution, is an interesting subject in Operations Research. However, we do not focus on the underlying solution algorithms themselves. Still, basic knowledge about them will help us with debugging later. First, all LP problems are represented in a **matrix of coefficients**, where the rows correspond to constraints (and the objective), the columns correspond to variables, and the matrix entries are the coefficients of a given variable in a given constraint.  Some preprocessing steps are performed on this matrix, and then the main algorithm is launched.
+
+There are two rows in this output that show a "current" result. The first one shows an objective of 0; the second shows the objective $7.5$, which is actually the final optimal solution. The row "OPTIMAL LP SOLUTION FOUND" indicates that the solver successfully solved the problem and now knows the optimal solution and the corresponding values of the variables. If there are multiple optimal solutions, one of them is chosen.
+
+With more complex problems, the solution can take a significant amount of time, and the current best solutions are regularly displayed. The solution procedure may end before reaching the optimal solution, in which case the best feasible solution found so far is reported. This happens, for example, when a time limit is set for `glpsol` and that limit is exceeded during the procedure.
+
+```
+Optimal (max) sum is: 7.5.
+x = 0.5
+y = 2.5
+z = 4.5
+Model has been successfully processed
+```
+
+Finally, we can see the result of the `printf` statements that we added at the end. We can see that the optimal solution is $x = \frac{1}{2} = 0.5$, $y = \frac{5}{2} = 2.5$, $z = \frac{9}{2} = 4.5$, and the objective function value is $x + y + z = \frac{15}{2} = 7.5$. This result means we cannot choose values for the variables to obtain a larger sum unless at least one of the constraints (or bounds) is violated. Note that `printf` statements are also valid before the `solve` statement, that is, during the model construction procedure. However, before the `solve` statement, variables and the objective are not available, as they have not yet been calculated. The final "Model has been successfully processed" message suggests that the solver call was successful.
+
+We should also note that the `glpsol` command-line tool has many other options available. For example, we can automatically print a solution file using the `-o` option. We can also save the program's output with the `--log` option. Additionally, the constructed model can be exported to formats that other MILP solvers can use. For instance, with the `--wlp` option, we can export to CPLEX-LP matrix format, which is supported by many other solver software. Perhaps we don't want to use `glpsol` to solve the model; we only need it to translate the model to another format. In that case, the `--check` option ensures that the model is only parsed, but not solved. It is also possible to manipulate the solution procedure in many ways.
+
+Now that we have successfully formulated, solved, and analyzed the output for our first LP problem implemented in GNU MathProg, let's make a slight change in the model file. Add the **integer restriction** to all three variables, as follows. The modified file is now saved as `helloworld-int.mod`.
+
+```
+var x >= 0, integer;
+var y >= 0, integer;
+var z >= 0, integer;
+```
+
+From now on, this is no longer an LP model but a **Mixed-Integer Linear Programming (MILP)** model because some (in this case, all) of the variables must take integer values. Solving the model with `glpsol` is the same:
+
+```
+glpsol -m helloworld-int.mod
+```
+
+The solver identifies the model as MILP, and there are some changes in the generated output.
+
+```
+Solving LP relaxation...
+GLPK Simplex Optimizer, v4.65
+3 rows, 3 columns, 6 non-zeros
+* 0: obj = -0.000000000e+00 inf =   0.000e+00 (3)
+* 4: obj =   7.500000000e+00 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Integer optimization begins...
+Long-step dual simplex will be used
++     4: mip =   not found yet <=     +inf        (1; 0)
++     6: >>>>>   7.000000000e+00 <=   7.000000000e+00   0.0% (2; 0)
++     6: mip =   7.000000000e+00 <=   7.000000000e+00   0.0% (0; 3)
+tree is empty
+INTEGER OPTIMAL SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.1 Mb (124952 bytes)
+Optimal (max) sum is: 7.
+x = 1
+y = 2
+z = 4
+Model has been successfully processed
+```
+
+We can observe that a so-called **LP relaxation** is solved first, the output for which appears to be the same as the output for our initial LP problem. This is actually the nature of the solution algorithm: it is first solved as if all the integer restrictions were removed, as an LP problem. Then, the actual MILP model is solved, and we find that the optimal solution is only $7.0$ instead of the LP's optimal solution, which was $7.5$.
+
+This is not surprising. The only difference between the two models is that the integer problem is more restrictive regarding the variables. This means any solution to the MILP is also a solution to the LP. But the opposite is not true, as the optimal solution of the LP, $x = 0.5$, $y = 2.5$, $z = 4.5$, was eliminated by the integer restrictions. The LP relaxation is an important concept in solving MILP models—for example, it can be used as a good initial solution when trying to make all variables obtain integer values. Also, if the integer variables all happen to have integer values in the LP relaxation, it is guaranteed to be an optimal solution for the MILP as well, because the MILP is the more restricted problem.
+
+In this model, the solver needed a little extra work for the MILP and found the solution $x = 1$, $y = 2$, and $z = 4$. Note that this is an optimal solution, but not the only one. $x = 0$, $y = 3$, $z = 4$ and $x = 0$, $y = 2$, $z = 5$ are also feasible and optimal solutions with the same objective value of $7.0$.
+
+As we might suspect, the algorithmic procedure behind the MILP can be substantially more complex than that of an LP. However, the difference in the formulation is only the integer restrictions on the variables.
+
+We should keep in mind that solvers can handle a large number of variables and constraints in an LP model, but they can usually only handle a **limited number of integer variables** in an MILP model. The exact limit for integer variables strongly depends on the model itself; it can range from dozens to thousands.
+
+

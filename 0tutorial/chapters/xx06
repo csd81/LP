@@ -1,0 +1,1256 @@
+# Chapter 6: Transportation Problem 
+
+We'll introduce another common **optimization problem**, known as the **transportation problem**.
+
+Given a set of **supply points** with a known amount of available resources and a set of **demand points** with a known resource requirement, the objective is to organize the transportation of the resource between these supplies and demands.
+
+It's worth noting that this problem has very fast algorithmic solution techniques [15]. However, we're primarily focused on the **modeling techniques**. As we'll see, an LP (Linear Programming) or MILP (Mixed-Integer Linear Programming) formulation can be easily adjusted if the problem definition changes. This can be significantly harder to do with specific solution algorithms.
+
+This chapter also presents some additional capabilities of **GNU MathProg**. The goal is to demonstrate how to handle different cost functions while keeping the model within the class of LP and sometimes MILP models. Finally, we'll add an extra layer of transportation to the problem to show how separately modeled parts of a system can be incorporated into a single, cohesive model.
+
+-----
+
+## 6.1 Basic Transportation Problem
+
+The basic transportation problem can be described generally as follows:
+
+**Problem 21.**
+
+Given a **single material**, a set of **supply points**, and a set of **demand points**. Each supply point has a nonnegative **availability**, and each demand point has a nonnegative **requirement** for the material. The material can be transported from any supply point to any demand point, in any amount. The **unit cost** for transportation is known for each specific pair. The task is to find the transportation amounts such that the following conditions are met:
+
+  * **Available amounts** at supply points are not exceeded.
+  * **Required amounts** at demand nodes are satisfied.
+  * The **total transportation cost** is minimal.
+
+For simplicity, we'll simply call the supply points and demand points **supplies** and **demands**. Note that the term "material" can be replaced by any other resource, such as electricity, water, funds, or manpower.
+
+The network connecting the supplies and demands can be represented by a **directed graph** (see Figure 1), where the nodes are the supplies and demands, and the arcs represent the connections between them. The direction of an arc shows the direction of material flow, which always goes from a supply to a demand.
+
+**Figure 1:** Graph representing the original transportation problem.
+
+Similar to the production problem, we'll provide an example for the transportation problem. The following data will be used throughout this chapter.
+
+**Problem 22.**
+
+There are four supplies, labeled **S1** through **S4**, and six demands, labeled **D1** through **D6**. The amount of materials available at each supply, required at each demand, and the unit transportation costs between each supply-demand pair are summarized in the following table.
+
+| | **D1** | **D2** | **D3** | **D4** | **D5** | **D6** | **Available** |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **S1** | 5 | 10 | 3 | 9 | 5 | 12 | 100 |
+| **S2** | 1 | 2 | 6 | 1 | 2 | 6 | 250 |
+| **S3** | 6 | 5 | 1 | 6 | 4 | 8 | 190 |
+| **S4** | 9 | 10 | 6 | 8 | 9 | 7 | 210 |
+| **Required** | 120 | 140 | 170 | 90 | 110 | 120 | |
+
+(The numbers in the last row and column refer to material amounts; all other numbers refer to the cost per unit of material transported.)
+
+The goal is to transport materials from the supplies to the demands to satisfy requirements at the **minimal cost**.
+
+As discussed in Section 5.6, the first step in mathematical programming is to determine the appropriate **decision variables**. However, in GNU MathProg, we can start by implementing the parameters and sets for the problem data.
+
+In this problem, there are two sets of arbitrary size: the set of **supplies** and the set of **demands**. There are three kinds of numeric parameters that define the transportation problem:
+
+  * The **availability**, provided for each supply.
+  * The **requirement**, provided for each demand.
+  * The **unit transportation cost**, provided for each supply-demand pair.
+
+Therefore, the implementation can be written as follows. Note that all parameters are specified as nonnegative to prevent incorrect data from being supplied. The names of the sets and parameters are self-explanatory.
+
+```glp
+set Supplies;
+set Demands;
+param Available {s in Supplies}, >=0;
+param Required {d in Demands}, >=0;
+param Cost {s in Supplies, D in Demands}, >=0;
+```
+
+The decisions to be made in a transportation problem are the **exact transportation amounts**. This amount must be determined for each supply-demand pair, and these decisions are independent. For example, the problem above has 4 supplies and 6 demands, meaning 24 individual decisions must be made about the amounts transported between them. Each of these decisions corresponds to a single variable in the model. Using indexing, this can be expressed in a single `var` statement. The variable name is `tran`.
+
+```glp
+var tran {s in Supplies, D in Demands}, >=0;
+```
+
+Transportation amounts must be **nonnegative**. A negative amount would model a backward transportation (i.e., from a demand to a supply). While this might be valid in some practical applications, it is explicitly prohibited here.
+
+We can see that the transportation amounts fully describe the situation. Based on these amounts, we can easily calculate the total activity at each supply and demand node, check whether the availability and required amounts are violated, and calculate the total costs. Therefore, no additional decision variables are needed.
+
+Now, we formulate the constraints for the model. Not all possible nonnegative real values for the transportation amounts will result in a feasible solution in reality, because there are two restrictions we must account for.
+
+First, the total amount transported **from** a supply **cannot exceed** the availability at that supply. This is a constraint for each supply. Note that the summation is over all demands, as material can be transported to all demands from a specific supply.
+
+```glp
+s.t. Availability_at_Supply_Points {s in Supplies}:
+sum {d in Demands} tran[s,d] <= Available[s];
+```
+
+Similarly, the total amount transported **to** a demand **cannot be less than** the requirement at that demand. This constraint is for each demand, and the summation is now over all supplies, as material can be transported to a specific demand from all supplies.
+
+```glp
+s.t. Requirement_at_Demand_Points {d in Demands}:
+sum {s in Supplies} tran[s,d] >= Required[d];
+```
+
+The **objective** is to minimize the **total cost**. Each transportation amount must be multiplied by the unit cost for that particular connection, and then summed over all connections between supplies and demands.
+
+```glp
+minimize Total_Costs:
+sum {s in Supplies, d in Demands} tran[s,d] * Cost[s,d];
+```
+
+At this point, let's consider whether the problem even has a solution. Two quantities are of special interest: the **total amount of available supply**, which we'll denote as $S$, and the **total amount of required demand**, which we'll denote as $D$. There are three possible scenarios:
+
+  * If $S < D$, the problem is **infeasible**, as there is simply not enough supply available to meet all demands.
+  * If $S = D$, the problem is **feasible**, but all supply must be used, and each demand must receive exactly the required amount—no more.
+  * If $S > D$, the problem is **feasible**. There can (and will) be leftover material at the supplies, or excess deliveries at the demands, or both.
+
+Without actually solving the model, we can check the problem data to ensure it's feasible. This check statement is ideally placed after the parameters but before the variable and constraint definitions. This check is useful because it provides a dedicated error message referring to the `check` statement if a problem is infeasible.
+
+```glp
+check sum {s in Supplies} Available[s] >= sum {d in Demands} Required[d];
+```
+
+Note that in our current model formulation, we allow both leftover materials at supplies (via the $\le$ constraint) and excess deliveries at demands (via the $\ge$ constraint). If these were not allowed, the corresponding two constraints would have to be specified as equations ($\text{=}$) instead. It's worth pointing out that if the transport costs are positive, there's no benefit to transporting more than the demand requires, so the optimization process will eliminate that case anyway.
+
+In some formulations of the transportation problem, $S = D$ is an assumption. Note that in a problem where $S > D$, we can introduce a **dummy demand** with a requirement of $S - D$ and zero transportation costs from all supplies. The purpose of this dummy demand is to receive all the leftover amounts. Therefore, this new problem is equivalent to the original one but has equal total supplies and demands. In conclusion, the $S > D$ case is essentially no more general than the $S = D$ case.
+
+The model description for Problem 21, the transportation problem, is now complete. The model section can be enhanced with `printf` statements to display the result once it's found. We'll only show transportation amounts that are greater than zero. The full model section is as follows:
+
+```glp
+set Supplies;
+set Demands;
+param Available {s in Supplies}, >=0;
+param Required {d in Demands}, >=0;
+param Cost {s in Supplies, D in Demands}, >=0;
+check sum {s in Supplies} Available[s] >= sum {d in Demands} Required[d];
+var tran {s in Supplies, D in Demands}, >=0;
+s.t. Availability_at_Supply_Points {s in Supplies}:
+sum {d in Demands} tran[s,d] <= Available[s];
+s.t. Requirement_at_Demand_Points {d in Demands}:
+sum {s in Supplies} tran[s,d] >= Required[d];
+minimize Total_Costs:
+sum {s in Supplies, d in Demands} tran[s,d] * Cost[s,d];
+solve;
+printf "Optimal cost: %g.\n", Total_Costs;
+for {s in Supplies, d in Demands: tran[s,d] > 0}
+{
+printf "From %s to %s, transport %g amount for %g (unit cost: %g).\n",
+s, d, tran[s,d], tran[s,d] * Cost[s,d], Cost[s,d];
+}
+end;
+```
+
+For completeness, we also show the **data section** corresponding to **Problem 22**.
+
+```glp
+data;
+set Supplies := S1 S2 S3 S4;
+set Demands := D1 D2 D3 D4 D5 D6;
+param Available :=
+S1 100
+S2 250
+S3 190
+S4 210
+;
+param Required :=
+D1 120
+D2 140
+D3 170
+D4 90
+D5 110
+D6 120
+;
+param Cost:
+D1 D2 D3 D4 D5 D6 :=
+S1
+5 10
+3
+9
+5 12
+S2
+1
+2
+6
+1
+2
+6
+S3
+6
+5
+1
+6
+4
+8
+S4
+9 10
+6
+8
+9
+7
+;
+end;
+```
+
+Solving the problem with `glpsol` yields the following result:
+
+```
+Optimal cost: 2700.
+From S1 to D1, transport 10 amount for 50 (unit cost: 5).
+From S1 to D5, transport 90 amount for 450 (unit cost: 5).
+From S2 to D1, transport 110 amount for 110 (unit cost: 1).
+From S2 to D2, transport 140 amount for 280 (unit cost: 2).
+From S3 to D3, transport 170 amount for 170 (unit cost: 1).
+From S3 to D5, transport 20 amount for 80 (unit cost: 4).
+From S4 to D4, transport 90 amount for 720 (unit cost: 8).
+From S4 to D6, transport 120 amount for 840 (unit cost: 7).
+```
+
+The results of the transportation problem can be fitted back into the original data table by substituting the unit costs with the decided transportation amounts. Zero amounts can be omitted entirely.
+
+| | **D1** | **D2** | **D3** | **D4** | **D5** | **D6** | **Available** |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **S1** | 10 | | | | 90 | | 100 |
+| **S2** | 110 | 140 | | | | | 250 |
+| **S3** | | | 170 | | 20 | | 190 |
+| **S4** | | | | 90 | | 120 | 210 |
+| **Required** | 120 | 140 | 170 | 90 | 110 | 120 | |
+
+This representation better clarifies the elements of the model. The **decisions** are represented by the inner cells, while the **constraints** are represented by the rightmost column and the bottom row. Each supply constraint dictates that the sum in that row must be at most the number on the right. Each demand constraint dictates that the sum in that column must be at least the number at the bottom. Since the total supply and total demand are equal in this example, all constraints can only hold true as an **equation** ($\text{=}$). This is exactly the case throughout the table.
+
+Examining the results, we can see that the optimal solution attempts to use the **cheapest unit costs** whenever possible, but not always. For instance, the transport from **S4 to D4** is chosen despite not being the absolute cheapest method, either from supply S4 or to demand D4. However, it proves to be a good choice because the remaining transportation can then be done more cheaply. Note that based on this single run of the model, we cannot be certain that this is the only optimal solution.
+
+There are many other examples of the transportation problem publicly available; see, for example, [16].
+
+-----
+
+## 6.2 Connections as an Index Set
+
+Based on the complete solution presented in Section 6.1, we will now slightly enhance the implementation. As mentioned previously, in GNU MathProg, we can introduce additional parameters and sets to simplify the model formulation. These can either be defined on the spot, read from a separate data section outside the model, or allow both as a default value.
+
+Notice that the indexing expression `s in Supplies, d in Demands` appears in four different contexts:
+
+  * In the `Cost` parameter, as it is defined for all such pairs.
+  * In the `tran` variable, as it is defined for all such pairs.
+  * In the objective function, as it is a sum over all such pairs.
+  * In the post-processing work, because transport amounts are printed for all such pairs. (In this case, there is a filter that only allows nonzero amounts to be reported.)
+
+It would be a serious error to make a mistake in this indexing—for example, by switching the order of `Supplies` and `Demands`, which would result in a modeling error. To avoid such errors and slightly reduce redundancy in the model formulation, we can introduce a two-dimensional set of these pairs to be used later. Each supply and each demand are considered to be part of a **connection**. Thus, the transportation problem involves deciding on transportation amounts for each connection. The set `Connections` can be introduced as follows:
+
+```glp
+set Connections := setof {s in Supplies, d in Demands} (s,d);
+```
+
+We are using a new GNU MathProg operator here: `setof`. This is a general method for defining sets based on data previously defined in the model section. The `setof` operator is followed by an indexing expression, then by a simple expression. The resulting set is formed by evaluating the final expression for all possible indices in the indexing expression. It's similar to `sum`, but instead of adding elements up, it forms a set of them. Note that the indexing expression in `setof` can be filtered, which gives us fine control over the set being defined. Since the result is a set, duplicates are removed, and the result can also be empty if everything is filtered out; however, neither of these is the case here.
+
+In fact, this usage of `setof` is quite simple: it just collects all possible pairs formed by the two sets. The set `Connections` is a **Cartesian product** of the sets `Supplies` and `Demands`. There is another built-in operator called `cross` for the Cartesian product of two sets, which allows for a simpler definition of the set `Connections` as follows. Either definition can be used, as they are equivalent.
+
+```glp
+set Connections := Supplies cross Demands;
+```
+
+The dimension of the sets `Supplies` and `Demands` is 1 because they contain simple elements, whereas the dimension of `Connections` is 2 because it contains pairs (or 2-tuples). In GNU MathProg, a set can have as many as 20 dimensions. If a set contains $n$-tuples, then its dimension is $n$. Sets with different dimensions **cannot be mixed** together with set operations like `union`, `inter`, or `diff`. Even a one-dimensional empty set is considered different from a two-dimensional empty set.
+
+The dimension of a set determines how it can be used in indexing expressions. One-dimensional sets are indexed by a single introduced symbol, like `s in Supplies` or `d in Demands`. However, two- (and higher-) dimensional sets are indexed by a tuple element, like `(s,d) in Connections`. In general, an indexing expression may contain many sets with different dimensions, each one introducing one or more new index symbols that can be referenced.
+
+In short, everywhere we see `s in Supplies, d in Demands` in an indexing expression, we can now write `(s,d) in Connections`, as shown in the complete model below.
+
+```glp
+set Supplies;
+set Demands;
+param Available {s in Supplies}, >=0;
+param Required {d in Demands}, >=0;
+set Connections := Supplies cross Demands;
+param Cost {(s,d) in Connections}, >=0;
+check sum {s in Supplies} Available[s] >= sum {d in Demands} Required[d];
+var tran {(s,d) in Connections}, >=0;
+s.t. Availability_at_Supply_Points {s in Supplies}:
+sum {d in Demands} tran[s,d] <= Available[s];
+s.t. Requirement_at_Demand_Points {d in Demands}:
+sum {s in Supplies} tran[s,d] >= Required[d];
+minimize Total_Costs:
+sum {(s,d) in Connections} tran[s,d] * Cost[s,d];
+solve;
+printf "Optimal cost: %g.\n", Total_Costs;
+for {(s,d) in Connections: tran[s,d] > 0}
+{
+printf "From %s to %s, transport %g amount for %g (unit cost: %g).\n",
+s, d, tran[s,d], tran[s,d] * Cost[s,d], Cost[s,d];
+}
+end;
+```
+
+The resulting new model file is **equivalent** to the original one; therefore, solving the same data file describing **Problem 22** should yield the exact same result.
+
+To illustrate how explicitly introducing an index set like `Connections` in the model can be beneficial, consider the following new problem...
+
+ 
+
+ 
+
+**Problem 23.**
+
+Solve **Problem 22**, the original example transportation problem, with one modification: only those connections are allowed for transportation whose unit costs are **no greater than 7**.
+
+We introduce a parameter to denote the unit cost limit.
+
+```
+param Max_Unit_Cost, default 7;
+```
+
+Note that by providing a default value of **7** instead of setting the parameter equal to **7**, we allow the possibility to **alter** `Max_Unit_Cost` by providing a value in the data section, if we ever want to choose a different limit.
+
+One possible solution is to express a new constraint that explicitly finds each prohibited connection and sets the transported amount there to zero, effectively excluding the connection from the model.
+
+```
+s.t. Connections_Prohibited
+{s in Supplies, d in Demands: Cost[s,d] > Max_Unit_Cost}: tran[s,d] = 0;
+```
+
+However, in this case, we use many variables in the model just to fix them at zero. It's possible **not to include** those variables in the model formulation at all, and this can be done by introducing a **filter** in the `setof` expression defining the **`Connections`** set.
+
+```
+set Connections :=
+setof {s in Supplies, d in Demands: Cost[s,d] <= Max_Unit_Cost} (s,d);
+```
+
+With this filter, we only include those connections in the **`Connections`** set that are allowed. Therefore, without modifying other parts of the model, the exclusion is implemented—the indexing expressions `(s,d)` in `Connections` just iterate over a **smaller set** in the background.
+
+Note that **care must be taken** with this method, because now the following constraint would cause an **out-of-domain error**:
+
+```
+s.t. Availability_at_Supply_Points {s in Supplies}:
+sum {d in Demands} tran[s,d] <= Available[s];
+```
+
+The problem is that `tran[s,d]` is iterated over **all pairs** of `s` in **`Supplies`** and `d` in **`Demands`**, but the variable is simply **not defined** for all such pairs now. This is in strong contrast with the first approach where they **are defined**, but explicitly set to zero. We must now ensure that the sum only considers **allowed connections**, which can be done as follows:
+
+```
+s.t. Availability_at_Supply_Points {s in Supplies}:
+sum {(s,d) in Connections} tran[s,d] <= Available[s];
+```
+
+In this case, the role of $s$ and $d$ are different in the sum operator. Despite being used as an index, $s$ is a **constant value**. But $d$ is introduced **inside** the indexing expression, so it can be freely chosen by the sum. The meaning of the indexing expression is that all $(s,d)$ pairs are selected for which $s$ is a given value. This effectively sums over all demands that are allowed to be connected to the particular $s$, and the constraint works as desired.
+
+The point is that an $n$-tuple index in an indexing expression can have **constant coordinates** as long as it contains **at least one new, free symbol** for a coordinate. In the GNU MathProg language documentation, an index symbol that is introduced by an indexing expression is called a **dummy index**. Dummy indices are **freely selected** by the indexing expression in all possible ways and can be used as constants afterward in the expression. Here, $s$ is a dummy index from the indexing of the constraint, whereas $d$ is a dummy index from the indexing expression of the sum operator, but **both** can be referred to in the operand of the sum, which is `tran[s,d]` now.
+
+The model contains another constraint for the demands; this must also be updated similarly, by replacing `s in Supplies` with `(s,d) in Connections`, and our model section for the new problem is ready.
+
+Solving it with the original problem data reports an optimal solution of **2790**, slightly worse than the original solution of **2700**. This isn't surprising, as the original solution used a unit cost of **8**. By excluding it, it's theoretically possible to obtain the same objective another way, but that's not the case here. The moral of the story is that, contrary to first thought, excluding connections that are too expensive can be a **disadvantage** in the transportation problem.
+
+Note that although the transportation problem has feasible (and optimal) solutions if the total supplies are **no less** than the total demands, this is **no longer guaranteed** if certain connections are prohibited.
+
+-----
+
+## 6.3. Increasing Unit Costs
+
+So far, a **linear transportation cost** was assumed at each connection. The amount is simply multiplied by a constant to obtain the cost. The relationship between the total amount transported and the total cost incurred can be schematically represented as in Figure 2. The red line represents the calculated total costs, but the area above that curve can be regarded as "feasible" too.  The logic behind this is that we're allowed to pay more than needed; it just doesn't make sense.
+
+The term **proportional cost** is also widely used. Proportional cost means a cost or its component for which the ratio of total amounts and costs is a **parameter constant**.
+
+In practice, the total cost or effort to be paid for some resource is **not always proportional** to the amount of resource actually used. A few common examples are shown in this and the following sections, which can be modeled as a **Linear Program (LP)** or at least as a **Mixed-Integer Linear Program (MILP)** model.
+
+The first example is when the unit cost is a constant, but after some threshold amount is reached, it **increases** to a higher constant value. This is common in practice, and the phenomenon is called the **law of diminishing returns**. This means that if we spend an additional unit for costs, we get **less and less return**. This is equivalent to having a unit price that **increases** with the total amount already obtained.
+
+ 
+
+**Problem 24.**
+
+Solve Problem 21, the **transportation problem**, with one modification: there are two **unit costs** for transportation—one for amounts **below** a given **threshold** and a higher unit cost for **surplus amounts above** that threshold.
+
+-----
+
+**Problem 25.**
+
+Solve Problem 22, the original example transportation problem, with one modification: the given unit costs are only for transportation amounts **below 100 units**. Above that limit, costs are **increased by 25%** per material unit transported.
+
+Schematically, the **cost function** (in contrast with the simple linear case) can be represented as in **Figure 3**. Again, the region above the red curve denoting the **total costs** can be termed as **feasible** because we can pay more if we want; it's just not advantageous and, therefore, will never happen.
+
+In the example problem, all thresholds and increased costs are **uniform** across the connections. Note that this isn't necessarily always the case. In other problem definitions, each connection may have **unique thresholds**, basic, and increased unit costs.
+
+The first step is to define the **data** in the model needed to calculate the alternative cost function. Two parameters are introduced: **`CostThreshold`** is the amount over which the unit costs increase, and **`CostIncPercent`** denotes the rate of increase, in **percent**. Note that the increase must be positive.
+
+```
+param CostThreshold, >=0;
+param CostIncPercent, >0;
+```
+
+In the particular example, Problem 25, to be solved, the following values can be given in the **data** section.
+
+```
+param CostThreshold := 100;
+param CostIncPercent := 25;
+```
+
+We introduce another parameter, **`CostOverThreshold`**, which calculates the increased unit cost using the following formula. Note that the original unit cost is `Cost[s,d]`.
+
+```
+param CostOverThreshold {(s,d) in Connections} :=
+Cost[s,d] * (1 + CostIncPercent / 100);
+```
+
+At this point, we have all the required data defined in the model. The question is how we can **implement the correct calculation of total costs**, regardless of whether the amount is below or above the threshold.
+
+First, we can simply introduce two variables, **`tranBase`** for the amounts below and **`tranOver`** for the amounts above the threshold.
+
+```
+var tranBase {(s,d) in Connections}, >=0, <=CostThreshold;
+var tranOver {(s,d) in Connections}, >=0;
+```
+
+Note that both quantities are **nonnegative**. The amount to be transported over the threshold for the increased cost (`tranOver`) is **unlimited**; however, we can only transport a **limited amount** at the original cost (`tranBase`). Therefore, `tranBase` gets an **upper bound**: the threshold itself. Note that the decision of transported amounts is **individual for each connection**; therefore, all these variables are defined for each connection.
+
+The amounts represented by `tranBase` and `tranOver` are simply a **separation of the total amount** represented by `tran`. Therefore, a **constraint** is provided to ensure that the sum of the former two equals `tran` for each connection.
+
+```
+s.t. Total_Transported {(s,d) in Connections}:
+tran[s,d] = tranBase[s,d] + tranOver[s,d];
+```
+
+Instead of using `tran` in the objective, we can refer to the **`tranBase` and `tranOver` parts separately** and multiply these amounts by their corresponding unit costs, which are `Cost` and `CostOverThreshold`.
+
+```
+minimize Total_Costs: sum {(s,d) in Connections}
+(tranBase[s,d] * Cost[s,d] + tranOver[s,d] * CostOverThreshold[s,d]);
+```
+
+Our model is ready, but consider one thing. Now, the `tranBase` and `tranOver` amounts can be set **freely**. For example, if the threshold is **100**, then transporting **130 units** in total can be done as $\text{tranBase}=100$ and $\text{tranOver}=30$, but also, for example, as $\text{tranBase}=50$ and $\text{tranOver}=80$. In the latter case, the total cost is not calculated correctly in the objective, but it is **still allowed by the constraints**.
+
+But the model still works because the unit cost above the threshold is **strictly higher** than the cost below it. Therefore, the optimal solution would **not attempt** transporting any amounts over the threshold unless all possible amount is transported below it (i.e., $\text{tranBase}=100$ in the example). Spending more is allowed as **feasible solutions** in the model, but these cases are **eliminated by the optimization procedure**. Consequently, in the optimal solution, there is either **zero amount above the threshold**, or the **full amount below it**, for each connection. The costs are calculated correctly in both scenarios.
+
+-----
+
+The full model section for the transportation problem with increasing rates is shown here.
+
+```
+set Supplies;
+set Demands;
+param Available {s in Supplies}, >=0;
+param Required {d in Demands}, >=0;
+set Connections := Supplies cross Demands;
+param Cost {(s,d) in Connections}, >=0;
+param CostThreshold, >=0;
+param CostIncPercent, >0;
+param CostOverThreshold {(s,d) in Connections} :=
+Cost[s,d] * (1 + CostIncPercent / 100);
+check sum {s in Supplies} Available[s] >= sum {d in Demands} Required[d];
+var tran {(s,d) in Connections}, >=0;
+var tranBase {(s,d) in Connections}, >=0, <=CostThreshold;
+var tranOver {(s,d) in Connections}, >=0;
+s.t. Availability_at_Supply_Points {s in Supplies}:
+sum {d in Demands} tran[s,d] <= Available[s];
+s.t. Requirement_at_Demand_Points {d in Demands}:
+sum {s in Supplies} tran[s,d] >= Required[d];
+s.t. Total_Transported {(s,d) in Connections}:
+tran[s,d] = tranBase[s,d] + tranOver[s,d];
+minimize Total_Costs: sum {(s,d) in Connections}
+(tranBase[s,d] * Cost[s,d] + tranOver[s,d] * CostOverThreshold[s,d]);
+solve;
+printf "Optimal cost: %g.\n", Total_Costs;
+for {(s,d) in Connections: tran[s,d] > 0}
+{
+printf "From %s to %s, transport %g=%g+%g " &
+"amount for %g (unit cost: %g/%g).\n",
+s, d, tran[s,d], tranBase[s,d], tranOver[s,d],
+(tranBase[s,d] * Cost[s,d] + tranOver[s,d] * CostOverThreshold[s,d]),
+Cost[s,d], CostOverThreshold[s,d];
+}
+```
+
+Solving the model with a value of **100** for `CostThreshold` and **25** for `CostIncPercent`, we get the following result.
+
+```
+Optimal cost: 2772.5.
+From S1 to D5, transport 100=100+0 amount for 500 (unit cost: 5/6.25).
+From S2 to D1, transport 120=100+20 amount for 125 (unit cost: 1/1.25).
+From S2 to D2, transport 130=100+30 amount for 275 (unit cost: 2/2.5).
+From S3 to D2, transport 10=10+0 amount for 50 (unit cost: 5/6.25).
+From S3 to D3, transport 170=100+70 amount for 187.5 (unit cost: 1/1.25).
+From S3 to D5, transport 10=10+0 amount for 40 (unit cost: 4/5).
+From S4 to D4, transport 90=90+0 amount for 720 (unit cost: 8/10).
+From S4 to D6, transport 120=100+20 amount for 875 (unit cost: 7/8.75).
+```
+
+The **optimal solution is 2,772.5 units**, and in some cases, the thresholds are **surpassed**. The objective is slightly worse than the original 2,700. This is not surprising because the current and original problems only differ due to the **increased costs**. If we look closely at the transportation amounts, we can observe that the increased unit costs over the **100 threshold** not only change the pricing but also affect the **optimal transportation decisions**.
+
+-----
+
+## 6.4 Economy of Scale
+
+The previous **Section 6.3** deals with the case of **increased unit costs**, but what happens when the unit costs do not increase, but **decrease above the threshold**?
+
+The case where larger amounts provide **lower unit prices** is called the **economy of scale**. This is also common in practice. In production environments, if more products are processed, the same investment and/or operating costs can be **shared** among more products. Therefore, the **cost per product decreases**, making production in larger volumes **cost-efficient**. In trade, it is possible to get a **discount** if we purchase in a larger volume.
+
+Here, the simplest case of **economy of scale** is presented, where unit costs simply decrease above a threshold. As usual, we provide a general problem definition and an example problem.
+
+
+
+**Problem 26.**
+
+Solve Problem 21, the **transportation problem**, with one modification: there are two **unit costs** for transportation—one for amounts **below** a given **threshold** and a **lower** unit cost for **surplus amounts above** that threshold.
+
+-----
+
+**Problem 27.**
+
+Solve Problem 22, the original example transportation problem, with one modification: the given unit costs are only for transportation amounts **below 100 units**. Above that limit, costs are **decreased by 25%** per amount transported.
+
+Note that the only difference between this problem and the previous one is that the unit costs above the threshold are now **lower**, not higher. Even the threshold of 100 and the rate of 25% remain the same. Therefore, it is tempting to address this problem by only slightly modifying our code to calculate with decreasing costs instead. The parameter `CostIncPercent` is renamed to **`CostDecPercent`**, and the `CostOverThreshold` is calculated accordingly.
+
+```
+param CostDecPercent, >0, <=100;
+param CostOverThreshold {(s,d) in Connections} :=
+Cost[s,d] * (1 - CostDecPercent / 100);
+```
+
+However, if we solve the model, the results **do not reflect reality**.
+
+```
+Optimal cost: 2025.
+From S1 to D1, transport 10=0+10 amount for 37.5 (unit cost: 5/3.75).
+From S1 to D5, transport 90=0+90 amount for 337.5 (unit cost: 5/3.75).
+From S2 to D1, transport 110=0+110 amount for 82.5 (unit cost: 1/0.75).
+From S2 to D2, transport 140=0+140 amount for 210 (unit cost: 2/1.5).
+From S3 to D3, transport 170=0+170 amount for 127.5 (unit cost: 1/0.75).
+From S3 to D5, transport 20=0+20 amount for 60 (unit cost: 4/3).
+From S4 to D4, transport 90=0+90 amount for 540 (unit cost: 8/6).
+From S4 to D6, transport 120=0+120 amount for 630 (unit cost: 7/5.25).
+```
+
+The optimal solution is **2,025**, which is much better than the original 2,700. There is nothing wrong with this so far, because the costs have decreased. But the details show that there are **zero transportation amounts below the threshold** ($\text{tranBase}=0$), meaning the total amount is being transported at the lower price (using $\text{tranOver}$) for amounts above the threshold. This is clearly **not allowed**, as we can only use the lower unit costs *after* we have filled the amounts below the threshold first, paying the higher unit cost for the base amount.
+
+In the case where the cost above the threshold was **higher**, the model worked perfectly. Now, when the cost above the threshold is **lower**, the model is incorrect. What causes this difference?
+
+  * If the unit costs **increase** above the threshold, the amounts below the threshold ($\text{tranBase}$) are filled first, and then we can optionally transport additional amounts above the threshold ($\text{tranOver}$). We (and the model) are *allowed* to transport above the threshold first, but it doesn't provide any benefit. Therefore, these non-optimal approaches are **ruled out by the optimization procedure**.
+  * If the unit costs **decrease** above the threshold, however, the optimization **prefers using the amounts above the threshold** ($\text{tranOver}$) because of the lower cost. However, this lower cost is not a "free option," but a "**right**" that must be earned: we can only use the lower unit cost if we have **filled the amounts below the threshold first**. This is **not enforced by the constraints**, and therefore the reported optimal solution is **infeasible in reality**.
+
+To better understand the difference, observe the slightly modified schematic representation of the economy of scale (see **Figure 4**). One might argue that the only difference is that the curve is going downward, not upward, but observe the **feasible region**.
+
+One property of **Linear Programming (LP)** problems is that their search space is always **convex**. This means if we have two feasible solutions, and we take a **convex combination** of these, the result is also a feasible solution. For example, if $x_1 = 3, y_1 = 1$ is one feasible solution, and $x_2 = 7, y_2 = 9$ is another, let's obtain a convex combination of these with weights $\frac{3}{4}$ and $\frac{1}{4}$. We get $x_3 = \frac{3}{4} x_1 + \frac{1}{4} x_2 = 4$ and $y_3 = \frac{3}{4} y_1 + \frac{1}{4} y_2 = 4$, which is guaranteed to be also feasible. If we investigate what general constraints are allowed in LP models, the convexity of the feasible region can be easily verified.
+
+However, if we look at the schematic representation in **Figure 4**, the feasible region is **not convex**. Moreover, we cannot make it convex by cutting parts from it. The reason is that we must allow feasibility on both of the two red line segments, but their **convex combinations fall into the infeasible region** that must be prohibited by model constraints. We can see why this wasn't a problem in the case of increasing unit costs: because the convex combinations of the two red line segments fell into the **feasible region**—those cases didn't make sense in reality, but the model still included them, and overall the problem could be perfectly modeled by LP.
+
+Since the feasible region is clearly not convex, this suggests that the **economy of scale cannot be modeled by LP**. However, we can model it by adding **integer variables**, making the model a **Mixed-Integer Linear Program (MILP)**. Our goal is to ensure that the amounts below the threshold, denoted by $\text{tranBase}$, are **fully utilized** whenever any amounts are transported above the threshold, denoted by $\text{tranOver}$.
+
+For each connection, we introduce a **binary variable**, $\text{isOver}$.
+
+```
+var isOver {(s,d) in Connections}, binary;
+```
+
+The meaning of $\text{isOver}$ is whether we are **entitled** (= 1) or not (= 0) to transport for the lower unit cost, for amounts above the threshold. This binary variable introduces a **discrete nature** to the problem, and now the search space is **not convex** because no fractional values are allowed for $\text{isOver}$ between 0 and 1. Depending on the value $\text{isOver}$ takes, there are specific circumstances required:
+
+  * If $\text{isOver}=0$, then we **cannot** use the lower cost, hence the amounts above the threshold ($\text{tranOver}$) **must be zero**.
+  * If $\text{isOver}=1$, then we **must** earn the right to use the lower costs, hence the amounts below the threshold ($\text{tranBase}$) **must be maximal**, i.e., equal to the threshold amount ($\text{CostThreshold}$).
+
+**The Big-M Constraint Technique**
+
+It's a common problem in mathematical programming that we have an ordinary linear constraint, like $A \ge B$, but we want this constraint to be **active if and only if a certain condition is met**. The condition is often represented by the value of a binary variable $x$. If $x = 1$, then constraint $A \ge B$ must hold. However, if $x = 0$, there are no restrictions on $A$ or $B$.
+
+The modeling technique used is called the **big-M constraint**. The first step is to arrange the linear constraint into the form $B - A \le 0$, then find a **positive upper bound** for $B - A$. This upper bound ($\mathbf{M}$) must be large enough to include all possible values for all model variables appearing in the expression $B - A$. In practice, often a very large number, like $M = 1,000,000$, is selected as an upper bound, which is magnitudes larger than any sensible solution for the problem, and is sufficient. This is the so-called **big-M value**.
+
+Then, include the following constraint in the model formulation:
+
+$$B - A \le M \cdot (1 - x)$$
+
+Now, let's investigate what this constraint does in the model. Because $x$ is an integer variable, there are two cases:
+
+1.  If **$x = 1$**, then the constraint reduces to $B - A \le 0$, which is exactly what we wanted to achieve when $x = 1$.
+2.  If **$x = 0$**, the constraint reduces to $B - A \le M$. Remember that $M$ is magnitudes larger than any possible, sensible values of $B - A$. Therefore, the constraint becomes **redundant**, as it does not impose further restrictions on model variables—again, exactly what we wanted for $x = 0$.
+
+If the linear constraint is an **equation**, like $A = B$, then we can express it as two inequalities ($A \ge B$ and $A \le B$) and implement a big-M constraint for each. If the condition is not $x = 1$ but $x = 0$ instead, then we can simply replace $(1 - x)$ with $x$ in the model formulation, as the negation of any binary value $x$ is $(1 - x)$.
+
+This is a very general technique that allows for the **conditional inclusion of linear constraints** in MILP models, provided that their condition can be expressed as a binary variable (or any other linear expression that results in a value that can only be 0 or 1, but nothing in between).
+
+One might ask: if $M$ is only required to be large enough, what is the most suitable $M$ to be given? From an algorithmic point of view, the best choice is usually the **lowest possible $M$**. Be careful, though, if $M$ is too small, the constraint is not redundant when the condition is not met, and we risk excluding valuable solutions. (It might be okay to exclude feasible solutions, and even optimal ones, provided that at least one optimal solution remains.) Too large $M$ values may also result in **numerical errors** in the solution procedure.
+
+**Implementing the Economy of Scale Constraints**
+
+Now that the general technique of big-M constraints is introduced, let's head back to the economy of scale and implement the required constraints. There are two conditional constraints to implement:
+
+1.  If $\text{isOver}=0$, then $\text{tranOver}=0$ must hold.
+2.  If $\text{isOver}=1$, then $\text{tranBase}=\text{CostThreshold}$ must hold.
+
+The first constraint can be formulated as follows. We define the big-M parameter as the sum of all available supplies, ensuring it is a safe upper bound for any single transportation amount.
+
+```
+param M := sum {s in Supplies} Available[s];
+s.t. Zero_Over_Threshold_if_Threshold_Not_Chosen {(s,d) in Connections}:
+tranOver[s,d] <= M * isOver[s,d];
+```
+
+Note that when $\text{isOver}[s,d]=0$, then $\text{tranOver}[s,d] \le 0$ is enforced, and because it is a nonnegative variable, it must be zero. The value $M$ must be selected to be larger than any sensible value of $\text{tranOver}[s,d]$. One easy possibility is to add up all total supplies in the problem. Clearly, no single transportation amount can be larger than this $M$; we introduced this value as a parameter. We could provide smaller values for each $\text{tranOver}[s,d]$ if we wanted, but a single $M$ will suffice.
+
+The second constraint can be formulated as follows.
+
+```
+s.t. Full_Below_Threshold_if_Threshold_Chosen {(s,d) in Connections}:
+tranBase[s,d] >= CostThreshold - M * (1 - isOver[s,d]);
+```
+
+  * If $\text{isOver}[s,d]=1$, then $\text{tranBase}[s,d] \ge \text{CostThreshold}$ is enforced, and because parameter $\text{CostThreshold}$ is also an upper bound for $\text{tranBase}[s,d]$, they will be equal ($\text{tranBase}[s,d]=\text{CostThreshold}$).
+  * If $\text{isOver}[s,d]=0$, then the constraint is redundant, because the right-hand side, $\text{CostThreshold} - M$ is a negative number and $\text{tranBase}[s,d]$ is a nonnegative variable.
+
+However, we can provide a **more clever big-M** for this constraint. The only requirement is that $\text{CostThreshold} - M$ cannot be positive; otherwise, $\text{tranBase}[s,d]=0$ would be excluded from the search space entirely, which is unacceptable. But the big-M in this constraint can be set as low as $\mathbf{CostThreshold}$, in which case $\text{CostThreshold} - M = 0$, and the constraint is still redundant when $\text{isOver}[s,d]=0$. For this particular big-M, the whole constraint can be rearranged into a more readable form, as follows:
+
+```
+s.t. Full_Below_Threshold_if_Threshold_Chosen {(s,d) in Connections}:
+tranBase[s,d] >= CostThreshold * isOver[s,d];
+```
+
+We can see that if $\text{isOver}[s,d]=1$, then $\text{tranBase}[s,d] \ge \text{CostThreshold}$ is enforced, but if $\text{isOver}[s,d]=0$, then the constraint is equivalent to $\text{tranBase}[s,d] \ge 0$, which is redundant (since $\text{tranBase}$ is a nonnegative variable).
+
+In conclusion, we added the variable $\text{isOver}$ and these two constraints to the previous model for increasing cost rates, and now our model for the transportation problem with **economy of scale** is ready.
+
+**Full MILP Model for Economy of Scale**
+
+```
+set Supplies;
+set Demands;
+param Available {s in Supplies}, >=0;
+param Required {d in Demands}, >=0;
+set Connections := Supplies cross Demands;
+param Cost {(s,d) in Connections}, >=0;
+param CostThreshold, >=0;
+param CostDecPercent, >0, <=100;
+param CostOverThreshold {(s,d) in Connections} :=
+Cost[s,d] * (1 - CostDecPercent / 100);
+check sum {s in Supplies} Available[s] >= sum {d in Demands} Required[d];
+var tran {(s,d) in Connections}, >=0;
+var tranBase {(s,d) in Connections}, >=0, <=CostThreshold;
+var tranOver {(s,d) in Connections}, >=0;
+var isOver {(s,d) in Connections}, binary;
+
+s.t. Availability_at_Supply_Points {s in Supplies}:
+sum {d in Demands} tran[s,d] <= Available[s];
+s.t. Requirement_at_Demand_Points {d in Demands}:
+sum {s in Supplies} tran[s,d] >= Required[d];
+s.t. Total_Transported {(s,d) in Connections}:
+tran[s,d] = tranBase[s,d] + tranOver[s,d];
+param M := sum {s in Supplies} Available[s];
+s.t. Zero_Over_Threshold_if_Threshold_Not_Chosen {(s,d) in Connections}:
+tranOver[s,d] <= M * isOver[s,d];
+s.t. Full_Below_Threshold_if_Threshold_Chosen {(s,d) in Connections}:
+# tranBase[s,d] >= CostThreshold - M * (1 - isOver[s,d]);
+tranBase[s,d] >= CostThreshold * isOver[s,d];
+minimize Total_Costs: sum {(s,d) in Connections}
+(tranBase[s,d] * Cost[s,d] + tranOver[s,d] * CostOverThreshold[s,d]);
+solve;
+printf "Optimal cost: %g.\n", Total_Costs;
+for {(s,d) in Connections: tran[s,d] > 0}
+{
+printf "From %s to %s, transport %g=%g+%g " &
+"amount for %g (unit cost: %g/%g).\n",
+s, d, tran[s,d], tranBase[s,d], tranOver[s,d],
+(tranBase[s,d] * Cost[s,d] + tranOver[s,d] * CostOverThreshold[s,d]),
+Cost[s,d], CostOverThreshold[s,d];
+}
+```
+
+We get the following results for **Problem 27**:
+
+```
+Optimal cost: 2625.
+From S1 to D1, transport 10=10+0 amount for 50 (unit cost: 5/3.75).
+From S1 to D5, transport 90=90+0 amount for 450 (unit cost: 5/3.75).
+From S2 to D1, transport 110=100+10 amount for 107.5 (unit cost: 1/0.75).
+From S2 to D2, transport 140=100+40 amount for 260 (unit cost: 2/1.5).
+From S3 to D3, transport 170=100+70 amount for 152.5 (unit cost: 1/0.75).
+From S3 to D5, transport 20=20+0 amount for 80 (unit cost: 4/3).
+From S4 to D4, transport 90=90+0 amount for 720 (unit cost: 8/6).
+From S4 to D6, transport 120=100+20 amount for 805 (unit cost: 7/5.25).
+```
+
+Now, the optimal solution is **2,625**, which is still better than the original 2,700, but not significantly. We can observe that each time a lower cost is used (i.e., $\text{tranOver}>0$), the **full threshold of 100 is first reached** ($\text{tranBase}=100$). Unlike the case for the increasing unit costs in Section 6.3, the reduced costs above the threshold now only affect the objective through pricing, and the optimal solution remains the same in terms of the transported amounts.
+
+Remember that the model contains **binary variables**, making it an **MILP**, instead of a pure LP model. If the number of binary variables in an MILP is large, the computational time required for the final solution may increase dramatically. This is not the case here only because the resulting MILP model, with its 24 binary variables, is still considered **small**.
+
+-----
+
+## 6.5 Fixed Costs
+
+Different scenarios for unit costs and changes were considered. These kinds of costs were all **proportional costs** because the calculation formula was always based on the amount in question, which was multiplied by some constant. In some cases, not only proportional costs, but **fixed costs** may also be present.
+
+
+
+**Problem 28.**
+
+Solve Problem 21, the transportation problem, with the following modification: for each connection, there is a **fixed cost** to be paid once for **establishing it**, in order to use that connection to transport materials.
+
+The term **fixed cost** means that its value does not depend on the actual amounts in question. We only have to pay the fixed cost once to utilize a feature. In this example, the feature is transportation through each connection. We may choose **not to establish a connection**, but then we cannot transport anything between that particular supply and demand point.
+
+The example problem to be solved here is the following.
+
+-----
+
+**Problem 29.**
+
+Solve Problem 28, the transportation problem with fixed costs, using data from the original example **Problem 22**, and the following fixed establishment costs per connection.
+
+| | **D1** | **D2** | **D3** | **D4** | **D5** | **D6** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **S1** | 50 | 50 | 80 | 50 | 200 | 50 |
+| **S2** | 200 | 50 | 50 | 50 | 200 | 50 |
+| **S3** | 50 | 200 | 200 | 50 | 50 | 50 |
+| **S4** | 50 | 50 | 50 | 200 | 200 | 200 |
+
+The starting point for implementing our model is the general implementation from **Section 6.2** where all connections were present. We add a new parameter, **`FixedCost`**, for the establishment costs per connection. The matrix in Problem 29 can then be implemented in the data section to provide values for `FixedCost`.
+
+```
+param FixedCost {(s,d) in Connections}, >=0;
+```
+
+```
+param FixedCost:
+D1 D2 D3 D4 D5 D6 :=
+S1 50 50 80 50 200 50
+S2 200 50 50 50 200 50
+S3 50 200 200 50 50 50
+S4 50 50 50 200 200 200
+;
+```
+
+If we observe the schematic representation of the fixed cost (**Figure 5**), we can see that the curve is again **not convex**, as in the case of the economy of scale.  The non-convex nature comes from the single point where the total amount and the total cost are zero, a single point which cannot be directly connected to the horizontal line describing the fixed cost for any amounts above zero without intersecting the infeasible region.
+
+As in the case of the economy of scale, we need a **binary decision variable** to distinguish the two cases. Here, **`tranUsed`** equals one if we choose to establish the connection and are able to send any positive amount of materials over it. If `tranUsed` is zero, then transportation on that particular connection **must also be zero**.
+
+```
+var tranUsed {(s,d) in Connections}, binary;
+```
+
+Two things must be enforced regarding the fixed cost and the `tranUsed` variable. The first is that if we **do not establish the connection** ($\text{tranUsed}=0$), then there must be **no amount transported** there ($\text{tran}=0$). This can be done with a single **big-M constraint**.
+
+```
+param M := sum {s in Supplies} Available[s];
+s.t. Zero_Transport_If_Fix_Cost_Not_Paid {(s,d) in Connections}:
+tran[s,d] <= M * tranUsed[s,d];
+```
+
+The coefficient $M$ must be large in order not to exclude legitimate solutions from the search space. Precisely, it must be at least the largest possible value of $\text{tran}[s,d]$ in the optimal solution to be found. The total of all available supplies, denoted by $M$, is a single valid candidate for all big-M constraints, for any supply and demand pair. However, if we want **stricter constraints** that might result in better solver running times, we can provide a particular value for each supply and demand, which is the **minimum of the available amount at the supply and the required amount at the demand**. There cannot be more traffic between the two points than this minimum.
+
+```
+s.t. Zero_Transport_If_Fix_Cost_Not_Paid {(s,d) in Connections}:
+tran[s,d] <= min(Available[s],Required[d]) * tranUsed[s,d];
+```
+
+The second thing to implement is the inclusion of the fixed establishment cost into the **objective function**.
+
+```
+minimize Total_Costs: sum {(s,d) in Connections}
+(tran[s,d] * Cost[s,d] + tranUsed[s,d] * FixedCost[s,d]);
+```
+
+Our implementation is ready. The variable $\text{tranUsed}[s,d]$ is either zero, in which case there is no fixed cost and no transportation over that connection, or $\text{tranUsed}[s,d]$ is one, the cost is paid, and there can be a positive transportation amount over that connection. Simultaneously zero transportation while still establishing the connection ($\text{tranUsed}[s,d]=1$ and $\text{tran}[s,d]=0$) is allowed as a feasible solution in the model, but the optimization procedure rules these cases out. The full model section is the following.
+
+**Full MILP Model for Fixed Costs**
+
+```
+set Supplies;
+set Demands;
+param Available {s in Supplies}, >=0;
+param Required {d in Demands}, >=0;
+set Connections := Supplies cross Demands;
+param Cost {(s,d) in Connections}, >=0;
+param FixedCost {(s,d) in Connections}, >=0;
+check sum {s in Supplies} Available[s] >= sum {d in Demands} Required[d];
+var tran {(s,d) in Connections}, >=0;
+var tranUsed {(s,d) in Connections}, binary;
+s.t. Availability_at_Supply_Points {s in Supplies}:
+sum {d in Demands} tran[s,d] <= Available[s];
+s.t. Requirement_at_Demand_Points {d in Demands}:
+sum {s in Supplies} tran[s,d] >= Required[d];
+s.t. Zero_Transport_If_Fix_Cost_Not_Paid {(s,d) in Connections}:
+tran[s,d] <= min(Available[s],Required[d]) * tranUsed[s,d];
+minimize Total_Costs: sum {(s,d) in Connections}
+(tran[s,d] * Cost[s,d] + tranUsed[s,d] * FixedCost[s,d]);
+solve;
+printf "Optimal cost: %g.\n", Total_Costs;
+for {(s,d) in Connections: tran[s,d] > 0}
+{
+printf "From %s to %s, transport %g " &
+"amount for %g (unit cost: %g, fixed: %g).\n",
+s, d, tran[s,d],
+tran[s,d] * Cost[s,d] + FixedCost[s,d], Cost[s,d], FixedCost[s,d];
+}
+end;
+```
+
+The original **Problem 22** with zero fixed costs and the new **Problem 29** mentioned here are both solved by the model. The original optimal solution is **2,700**, and this is reproduced by the model with fixed costs if these fixed costs are simply zero. If nonzero fixed costs are present, the following output is reported.
+
+```
+Optimal cost: 3640.
+From S1 to D1, transport 100 amount for 550 (unit cost: 5, fixed: 50).
+From S2 to D1, transport 20 amount for 220 (unit cost: 1, fixed: 200).
+From S2 to D2, transport 140 amount for 330 (unit cost: 2, fixed: 50).
+From S2 to D4, transport 90 amount for 140 (unit cost: 1, fixed: 50).
+From S3 to D3, transport 80 amount for 280 (unit cost: 1, fixed: 200).
+From S3 to D5, transport 110 amount for 490 (unit cost: 4, fixed: 50).
+From S4 to D3, transport 90 amount for 590 (unit cost: 6, fixed: 50).
+From S4 to D6, transport 120 amount for 1040 (unit cost: 7, fixed: 200).
+```
+
+The objective is **3,640**. The connections used are **not the same** in the two cases (zero fixed costs vs. the fixed costs from Problem 29). The total establishment cost paid is **850**, which is smaller than the increment of 940 in the objective ($3,640 - 2,700 = 940$). This is natural, because not only is the extra fixed cost paid, but the new transportation solution obtained is also **not necessarily optimal** according to the original, pure unit-cost objective anymore.
+
+-----
+
+## 6.6 Flexible Demands
+
+Several transportation cost functions were introduced, including increasing, decreasing proportional, and fixed costs. One additional example is mentioned now, but in a slightly different context.
+
+The common property of transportation costs was that total cost **increased** (or remained constant) as the total transported amount increased. But what happens when the curve is **not monotonically increasing**? Since this is not very practical for transportation costs, we will instead demonstrate it through the **demands**. So far, the required amount at each demand point was a **strict constraint**. This means that any solutions for the problem in which demands are not met are **infeasible** and are eliminated from the search. All constraints so far were strict.
+
+In some cases, constraints are **soft constraints** instead. This means we are interested in solutions that **violate them**. In that case, the **extent of the violation** must be minimized, which becomes another objective of the optimization procedure. Considering multiple objectives falls under the field of **goal programming** [17], and is not covered here. However, there are techniques to **merge different objective functions into a single one**, resulting in an LP/MILP model again. One technique is the usage of **penalties**, which are terms added to the objective function and are proportional to the extent a constraint is violated. Penalties are practical: failing to meet a desired goal can sometimes be measured or estimated as **costs**, which can be added to the objective if it is profit maximization or cost minimization.
+
+In this section, the starting point is the original transportation problem again, and it is expanded with **flexible demands**.
+
+
+
+**Problem 30.**
+
+Solve Problem 21, the transportation problem with the addition of **flexible demands**. For each demand point, we do not require the exact requirement to be served. Instead, a **penalty** is introduced into the objective which is **proportional to the extent of the difference** between the required amount at a demand point and the actually served amount.
+
+Two example problems will be solved, which differ only in the parameter constants.
+
+-----
+
+**Problem 31.**
+
+Solve Problem 22, the originally proposed transportation problem, with flexible demands added. There is a **surplus** and a **shortage penalty constant**. The penalty for each demand is calculated by multiplying the difference between the actual transported materials and the requirement by a corresponding penalty constant.
+
+Two different scenarios are to be evaluated:
+
+  * The **shortage penalty constant is 3**, and the **surplus penalty constant is 1**. This is the "**small**" penalty scenario.
+  * The **shortage penalty constant is 15**, and the **surplus penalty constant is 10**. This is the "**large**" penalty scenario.
+
+The starting point for implementation is the model with connections, from **Section 6.2**. The data content is expanded by two parameters, let's call them **`ShortagePenalty`** and **`SurplusPenalty`**. These can be given values in the data section according to the scenarios in Problem 31.
+
+Let's investigate penalties as a function of the total materials delivered at a given demand point (**Figure 6**). **Linear penalty functions** are assumed in both directions. We can observe that this penalty can be considered a special cost function, which **decreases below** and **increases above** the actual requirement for the demand point. If the requirement is exactly met, the penalty is zero. Although the function curve is "broken" in a manner similar to the absolute value function, the **feasible region is still convex**, which suggests a **pure LP model** (Linear Programming).
+
+The model is extended with an auxiliary variable, **`satisfied`**. This is defined for each demand and denotes the **total amount of materials delivered** to that demand. This helps in the formulation as the penalty for a demand $d$ is based on the difference between $\text{satisfied}[d]$ and $\text{Required}[d]$.
+
+```
+var satisfied {d in Demands}, >=0;
+s.t. Calculating_Demand_Satisfied {d in Demands}:
+satisfied[d] = sum {s in Supplies} tran[s,d];
+```
+
+From this point, two different methods are shown, which are applicable to penalties in general and are considered equally effective.
+
+1.  The first method introduces a **single variable for the penalty itself**.
+2.  The second method introduces **two variables for the shortage and the surplus** of materials.
+
+**Method 1: Single Penalty Variable**
+
+The first method relies on the idea that the penalty function (a convex, piecewise linear function) can be correctly modeled by two linear constraints. This means that two linear constraints can achieve what we want.
+
+```
+var penalty {d in Demands}, >=0;
+s.t. Shortage_Penalty_Constraint {d in Demands}:
+penalty[d] >= ShortagePenalty * (Required[d] - satisfied[d]);
+s.t. Surplus_Penalty_Constraint {d in Demands}:
+penalty[d] >= SurplusPenalty * (satisfied[d] - Required[d]);
+```
+
+The first constraint ensures that the penalty is at least as defined for **shortage**. Note that this constraint is **redundant** if the demand is satisfied, as the right-hand side (RHS) becomes negative.
+
+The second constraint ensures that the penalty is at least as defined for **surplus**. Similarly, this constraint becomes **redundant** if the demand is not met, as the RHS becomes negative.
+
+The penalty variable can be directly included into the objective function, and the model formulation for the first method is ready. Note that the model allows penalty values higher than described as feasible solutions, but these are **eliminated by the optimization procedure**. That means, in the optimal solution, **one of the constraints will be binding (strict)**, or both will be non-binding if the requirement is exactly met and the penalty is zero.
+
+```
+minimize Total_Costs:
+sum {(s,d) in Connections} tran[s,d] * Cost[s,d] +
+sum {d in Demands} penalty[d];
+```
+
+**Method 2: Shortage and Surplus Variables**
+
+Let us see the second method for implementing flexible demands. This alternative way uses **more variables**, but **fewer constraints**. The exact shortage and surplus amounts are introduced as variables in this formulation.
+
+```
+var surplus {d in Demands}, >=0;
+var shortage {d in Demands}, >=0;
+s.t. Calculating_Exact_Demands {d in Demands}:
+Required[d] - shortage[d] + surplus[d] = satisfied[d];
+```
+
+Note that the exactly transported amount, termed as $\text{satisfied}[d]$, is now the required amount, minus the shortage, plus the surplus—provided that **either variable is zero**, as common sense dictates. This is expressed by the constraint shown.
+
+However, the model allows both the shortage and the surplus value to be increased by the same amount (e.g., $\text{shortage}' = \text{shortage} + \delta$ and $\text{surplus}' = \text{surplus} + \delta$, where $\delta > 0$), and everything else remains the same. But these cases will be **eliminated by the optimization procedure**, as the new variables are introduced into the objective with their corresponding penalty constants as factors. This completes the implementation of the second method. Note that the optimization procedure ensures that **either the shortage or the surplus is zero** in the optimal solution.
+
+```
+minimize Total_Costs:
+sum {(s,d) in Connections} tran[s,d] * Cost[s,d] +
+sum {d in Demands} (shortage[d] * ShortagePenalty +
+surplus[d] * SurplusPenalty);
+```
+
+**Full Model (Method 1) and Results**
+
+The full model section for the **first method** is presented below. Remember that the two methods are equivalent.
+
+```
+set Supplies;
+set Demands;
+param Available {s in Supplies}, >=0;
+param Required {d in Demands}, >=0;
+set Connections := Supplies cross Demands;
+param Cost {(s,d) in Connections}, >=0;
+check sum {s in Supplies} Available[s] >= sum {d in Demands} Required[d];
+param ShortagePenalty, >=0;
+param SurplusPenalty, >=0;
+var tran {(s,d) in Connections}, >=0;
+var satisfied {d in Demands}, >=0;
+var penalty {d in Demands}, >=0;
+s.t. Calculating_Demand_Satisfied {d in Demands}:
+satisfied[d] = sum {s in Supplies} tran[s,d];
+s.t. Availability_at_Supply_Points {s in Supplies}:
+sum {d in Demands} tran[s,d] <= Available[s];
+s.t. Shortage_Penalty_Constraint {d in Demands}:
+penalty[d] >= ShortagePenalty * (Required[d] - satisfied[d]);
+s.t. Surplus_Penalty_Constraint {d in Demands}:
+penalty[d] >= SurplusPenalty * (satisfied[d] - Required[d]);
+minimize Total_Costs:
+sum {(s,d) in Connections} tran[s,d] * Cost[s,d] +
+sum {d in Demands} penalty[d];
+solve;
+printf "Optimal cost: %g.\n", Total_Costs;
+for {d in Demands}
+{
+printf "Required: %s, Satisfied: %g (%+g)\n",
+d, satisfied[d], satisfied[d]-Required[d];
+}
+for {(s,d) in Connections: tran[s,d] > 0}
+{
+printf "From %s to %s, transport %g amount for %g (unit cost: %g).\n",
+s, d, tran[s,d], tran[s,d] * Cost[s,d], Cost[s,d];
+}
+end;
+```
+
+Regardless of which method we choose, the same result is obtained.
+
+**"Small" Penalty Scenario** ($\text{ShortagePenalty}=3, \text{SurplusPenalty}=1$)
+
+For the "small" penalty scenario, we can see that the total costs are cut by almost half.
+
+```
+Optimal cost: 1450.
+Required: D1, Satisfied: 120 (+0)
+Required: D2, Satisfied: 40 (-100)
+Required: D3, Satisfied: 170 (+0)
+Required: D4, Satisfied: 90 (+0)
+Required: D5, Satisfied: 0 (-110)
+Required: D6, Satisfied: 0 (-120)
+From S2 to D1, transport 120 amount for 120 (unit cost: 1).
+From S2 to D2, transport 40 amount for 80 (unit cost: 2).
+From S2 to D4, transport 90 amount for 90 (unit cost: 1).
+From S3 to D3, transport 170 amount for 170 (unit cost: 1).
+```
+
+There are **no surplus penalties**, but **vast shortages** for D2, D5, and D6. The latter two demand sites (D5 and D6) do not receive any materials at all. The reason is that the **unit cost of transportation exceeds the gain by satisfying the demand**. In the case of D2, the first 40 units can be transported for low costs, but the remaining part of the requirements cannot. The reason for not satisfying demands is that the shortage penalty constant of **3 is very low**, so it is worth not delivering any materials at all and incurring the shortage penalty instead of paying the transportation cost.
+
+**"Large" Penalty Scenario** ($\text{ShortagePenalty}=15, \text{SurplusPenalty}=10$)
+
+On the other hand, the "large" penalty scenario results in **exactly the same solution as the original transportation problem** without the penalties (optimal cost: 2,700). There is no surplus again, but **no shortages either**, simply because the shortage penalty of **15 per unit material is more costly than transporting the material** from any available supply. Therefore, there are no shortages.
+
+There were **no surplus deliveries** in any case, which is not surprising. There had been no point in surplus delivery to any demand point in the original problem either, because it just increases the transportation costs. The surplus penalty just makes surplus even **less beneficial**. The case would be different if surplus deliveries were somehow needed—for example, if available supplies were required to be transported completely.
+
+-----
+
+## 6.7 Adding a Middle Level
+
+In the former sections, different modeling techniques for cost functions and penalties were presented. Now, the transportation problem is expanded to a larger scale.
+
+So far, the graph had been very simple: there were two sets of nodes in the network, the **supplies** and **demands**, and these were all directly connected. But what happens when the network is more complex, for example, if there is a **third set of nodes**?
+
+
+
+
+**Problem 32.**
+
+Solve **Problem 21**, the transportation problem extended by introducing a middle level of so-called **centers**.
+
+Material doesn't flow directly from the **supply** to the **demand** nodes. Instead, material first goes from supply nodes to center nodes and then from center nodes to demand nodes. Connections between either supplies and centers, or centers and demands, have their own transportation costs, as is standard. Moreover, centers are not necessarily used in transportation, but if a center is utilized, an **establishment cost** must be paid first if any transportation is routed through that center. Establishment costs are one-time fees and are given for each center.
+
+As previously mentioned, the original transportation problem can be represented by a graph with two types of nodes: supplies and demands (see Figure 1 in Section 6.1). In contrast, the scheme of the new transportation problem can be seen in Figure 7. Connections from supplies to centers are referred to as **A-type**, while connections from centers to demands are referred to as **B-type**, as the figure shows.
+
+Note that in general, transportation could occur over any network. However, if **cycles** are present, care must be taken to correctly interpret material flow through these cycles. Throughout this chapter, there are no cycles; material only flows in one direction.
+
+> **Figure 7:** Graph representing the transportation problem with center nodes included.
+
+-----
+
+**Problem 33.**
+
+Solve **Problem 21**, the general transportation problem with centers, using the following problem data. There are four supplies, named **S1 to S4**, two centers, **C1 and C2**, and six demands, named **D1 to D6**. Transportation costs, available amounts for supplies, and required amounts for demands are summarized in the following table:
+
+| From Supply to Center | C1 | C2 | Available Amounts |
+| :---: | :---: | :---: | :---: |
+| S1 | 5 | 10 | 100 |
+| S2 | 10 | 2 | 250 |
+| S3 | 3 | 7 | 190 |
+| S4 | 10 | 4 | 210 |
+| **From Center to Demand** | **D1** | **D2** | **D3** | **D4** | **D5** | **D6** | **Required Amounts** |
+| C1 | 10 | 3 | 9 | 8 | 1 | 6 | - |
+| C2 | 2 | 7 | 3 | 2 | 7 | 8 | - |
+| Required Amounts | 120 | 140 | 170 | 90 | 110 | 120 | **Total: 750** |
+
+Two scenarios must be evaluated:
+
+  * **In the first, "small" establishment cost scenario,** using C1 and C2 requires a fixed cost of **1,200** and **1,400**, respectively.
+  * **In the second, "large" establishment cost scenario,** fixed costs are multiplied by $10$ (e.g., **12,000** and **14,000**, respectively).
+
+-----
+
+
+Before starting the model implementation, the **data section** describing Problem 33 can be implemented as follows. The only difference between the two scenarios is the value of the `EstablishCost` parameter.
+
+```
+data;
+set Supplies := S1 S2 S3 S4;
+set Centers := C1 C2;
+set Demands := D1 D2 D3 D4 D5 D6;
+param Available :=
+S1 100
+S2 250
+S3 190
+S4 210
+;
+param Required :=
+D1 120
+D2 140
+D3 170
+D4 90
+D5 110
+D6 120
+;
+param CostA:
+C1 C2 :=
+S1
+5 10
+S2 10
+2
+S3
+3
+7
+S4 10
+4
+;
+param CostB:
+D1 D2
+C1 10
+3
+C2
+2
+7
+;
+
+D3
+9
+3
+
+D4
+8
+2
+
+D5
+1
+7
+
+D6 :=
+6
+8
+
+param EstablishCost :=
+C1 1200
+C2 1400
+;
+```
+
+Sets `Supplies` and `Demands`, and parameters `Available` and `Required` have the same meaning as before. However, instead of a single parameter for transportation costs, two parameters, named **`CostA` and `CostB`**, are introduced for **A-type** (supply-to-center) and **B-type** (center-to-demand) connections, respectively. Finally, `EstablishCost` denotes the fixed cost of using a center node.
+
+The corresponding definitions in the model section are the following. Note that the sets of all A-type and B-type connections are also defined.
+
+```
+set Supplies;
+set Centers;
+set Demands;
+param Available {s in Supplies}, >=0;
+param Required {d in Demands}, >=0;
+set ConnectionsA := Supplies cross Centers;
+set ConnectionsB := Centers cross Demands;
+param CostA {(s,c) in ConnectionsA}, >=0;
+param CostB {(c,d) in ConnectionsB}, >=0;
+param EstablishCost {c in Centers}, >=0;
+```
+
+We can still check the **feasibility** of the problem by asserting that the total available amounts are greater than or equal to the total required amounts.
+
+```
+check sum {s in Supplies} Available[s] >= sum {d in Demands} Required[d];
+```
+
+Now that the data are available in the model section, let's figure out what the **decision variables** in the model should be. At first glance, the problem seems like two independent transportation sub-problems: one from supplies to centers, and one from centers to demands. However, we cannot solve these two transportation stages separately because the amounts at the center nodes are not fixed; these are part of the decision.
+
+However, we **can** solve the two transportation sub-problems in a \*\* single model\*\*. The necessary decision variables for both transportation problems are simultaneously defined in the model: from supplies to centers, and from centers to demands. The only difference is that the amount of materials delivered to and sent from the centers are not fixed values in the sub-problems, but **variable quantities**. Moreover, the amount delivered **to** and **from** a center node must be equal. This is where the two sub-problems are connected, and it can be easily established by constraints.
+
+Because of these considerations, variables `tranA` and `tranB` are introduced to denote transportation amounts for A-type and B-type connections (e.g., from supplies to centers and from centers to demands). In fact, these decisions are sufficient to determine everything about the resulting transportation system; however, **additional variables** are required. Variable `atCenter` denotes the amount of material going through each center node, which is exactly the amount going in and going out. This is more of an **auxiliary variable**, as it's not strictly required but makes implementation easier. However, the **binary variable** `useCenter`, denoting whether a center is used at all ($=1$) or not ($=0$), **is required** in order to implement the **fixed establishment costs** associated with center nodes.
+
+```
+var tranA {(s,c) in ConnectionsA}, >=0;
+var tranB {(c,d) in ConnectionsB}, >=0;
+var atCenter {c in Centers}, >=0;
+var useCenter {c in Centers}, binary;
+```
+
+Four constraints ensure the consistency of material flow through the entire network. The following rules are expressed in order:
+
+1.  **Total transportation from supply nodes** shall not exceed the available amount.
+2.  **Total transportation to center nodes** is equal to the `atCenter` value of that center node.
+3.  **Total transportation from center nodes** is equal to the `atCenter` value of that center node.
+4.  **Total transportation to demand nodes** shall be at least the required amount.
+
+<!-- end list -->
+
+```
+s.t. Availability_at_Supply_Points {s in Supplies}:
+sum {c in Centers} tranA[s,c] <= Available[s];
+s.t. Total_To_Center {c in Centers}:
+atCenter[c] = sum {s in Supplies} tranA[s,c];
+s.t. Total_From_Center {c in Centers}:
+atCenter[c] = sum {d in Demands} tranB[c,d];
+s.t. Requirement_at_Demand_Points {d in Demands}:
+sum {c in Centers} tranB[c,d] >= Required[d];
+```
+
+Note that since we express `atCenter` in two different ways (in `Total_To_Center` and `Total_From_Center`), the two expressions that are equal to `atCenter` are made equal to each other.
+
+A fifth constraint must be added to ensure that a center node can only receive or send materials if it is established. The total available amount is denoted by $\mathbf{M}$, which serves as the coefficient in the required **Big-M constraint**.
+
+```
+param M := sum {s in Supplies} Available[s];
+s.t. Zero_at_Center_if_Not_Established {c in Centers}:
+atCenter[c] <= M * useCenter[c];
+```
+
+The **objective function** is the total of all costs, which has three components: A-type connection costs, B-type connection costs, and the establishment costs of center nodes.
+
+```
+minimize Total_Costs:
+sum {(s,c) in ConnectionsA} tranA[s,c] * CostA[s,c] +
+sum {(c,d) in ConnectionsB} tranB[c,d] * CostB[c,d] +
+sum {c in Centers} useCenter[c] * EstablishCost[c];
+```
+
+We can include `printf` statements after the `solve` statement, as usual, to show the details of the optimal solution found. Our model section is ready.
+
+```
+set Supplies;
+set Centers;
+set Demands;
+param Available {s in Supplies}, >=0;
+param Required {d in Demands}, >=0;
+set ConnectionsA := Supplies cross Centers;
+set ConnectionsB := Centers cross Demands;
+param CostA {(s,c) in ConnectionsA}, >=0;
+param CostB {(c,d) in ConnectionsB}, >=0;
+param EstablishCost {c in Centers}, >=0;
+check sum {s in Supplies} Available[s] >= sum {d in Demands} Required[d];
+var tranA {(s,c) in ConnectionsA}, >=0;
+var tranB {(c,d) in ConnectionsB}, >=0;
+var atCenter {c in Centers}, >=0;
+var useCenter {c in Centers}, binary;
+s.t. Availability_at_Supply_Points {s in Supplies}:
+sum {c in Centers} tranA[s,c] <= Available[s];
+s.t. Total_To_Center {c in Centers}:
+atCenter[c] = sum {s in Supplies} tranA[s,c];
+s.t. Total_From_Center {c in Centers}:
+atCenter[c] = sum {d in Demands} tranB[c,d];
+s.t. Requirement_at_Demand_Points {d in Demands}:
+sum {c in Centers} tranB[c,d] >= Required[d];
+param M := sum {s in Supplies} Available[s];
+s.t. Zero_at_Center_if_Not_Established {c in Centers}:
+atCenter[c] <= M * useCenter[c];
+minimize Total_Costs:
+sum {(s,c) in ConnectionsA} tranA[s,c] * CostA[s,c] +
+sum {(c,d) in ConnectionsB} tranB[c,d] * CostB[c,d] +
+sum {c in Centers} useCenter[c] * EstablishCost[c];
+solve;
+printf "Optimal cost: %g.\n", Total_Costs;
+for {c in Centers: useCenter[c]}
+{
+printf "Establishing center %s for %g.\n", c, EstablishCost[c];
+}
+for {(s,c) in ConnectionsA: tranA[s,c] > 0}
+{
+printf "A: From %s to %s, transport %g amount for %g (unit cost: %g).\n",
+s, c, tranA[s,c], tranA[s,c] * CostA[s,c], CostA[s,c];
+}
+for {(c,d) in ConnectionsB: tranB[c,d] > 0}
+{
+printf "B: From %s to %s, transport %g amount for %g (unit cost: %g).\n",
+c, d, tranB[c,d], tranB[c,d] * CostB[c,d], CostB[c,d];
+}
+end;
+```
+
+Now we can use the solver to find the optimal decisions for both scenarios in Problem 33. Recall that the **small scenario** assumes fixed costs of $1,200$ and $1,400$ for establishing C1 and C2, while the **large scenario** assumes $12,000$ and $14,000$.
+
+The results of the **small scenario** are the following:
+
+> Optimal cost: **$7,350$**.
+>
+> Establishing center C1 for $1,200$.
+> Establishing center C2 for $1,400$.
+>
+> A: From S1 to C1, transport $100$ amount for $500$ (unit cost: $5$).
+> A: From S2 to C2, transport $250$ amount for $500$ (unit cost: $2$).
+> A: From S3 to C1, transport $190$ amount for $570$ (unit cost: $3$).
+> A: From S4 to C2, transport $210$ amount for $840$ (unit cost: $4$).
+>
+> B: From C1 to D2, transport $140$ amount for $420$ (unit cost: $3$).
+> B: From C1 to D5, transport $110$ amount for $110$ (unit cost: $1$).
+> B: From C1 to D6, transport $40$ amount for $240$ (unit cost: $6$).
+> B: From C2 to D1, transport $120$ amount for $240$ (unit cost: $2$).
+> B: From C2 to D3, transport $170$ amount for $510$ (unit cost: $3$).
+> B: From C2 to D4, transport $90$ amount for $180$ (unit cost: $2$).
+> B: From C2 to D6, transport $80$ amount for $640$ (unit cost: $8$).
+
+The results of the **large scenario** are the following:
+
+> Optimal cost: **$21,310$**.
+>
+> Establishing center C2 for $14,000$.
+>
+> A: From S1 to C2, transport $100$ amount for $1,000$ (unit cost: $10$).
+> A: From S2 to C2, transport $250$ amount for $500$ (unit cost: $2$).
+> A: From S3 to C2, transport $190$ amount for $1,330$ (unit cost: $7$).
+> A: From S4 to C2, transport $210$ amount for $840$ (unit cost: $4$).
+>
+> B: From C2 to D1, transport $120$ amount for $240$ (unit cost: $2$).
+> B: From C2 to D2, transport $140$ amount for $980$ (unit cost: $7$).
+> B: From C2 to D3, transport $170$ amount for $510$ (unit cost: $3$).
+> B: From C2 to D4, transport $90$ amount for $180$ (unit cost: $2$).
+> B: From C2 to D5, transport $110$ amount for $770$ (unit cost: $7$).
+> B: From C2 to D6, transport $120$ amount for $960$ (unit cost: $8$).
+
+As we can see, the optimal solution for the small scenario uses **both** center nodes, with an almost equal distribution of materials. Therefore, establishing both centers for a total of $2,600$ is advantageous. There is no need to deliver to both center nodes from the same supply, and there is only a single demand, D6, where delivery is made from both center nodes. It seems like the establishment costs are paid, and then the cheapest possible routes are used from supplies to demands.
+
+In contrast, the establishment costs are **too high** in the large scenario, so establishing both centers is not beneficial. However, we still need at least one center node for the network, and the optimal solution chooses **C2** with a fixed cost of $14,000$. Assuming this decision, transportation is straightforward: every supply is transported to C2 and then from C2 to the demands. Note that C2 is more expensive to establish than C1 by $2,000$, but choosing C2 seems to be justified by the larger transportation costs across C1.
+
+-----
+
+## 6.8. TRANSPORTATION PROBLEM – SUMMARY
+
+The basic case of the transportation problem was first presented, which involves a set of supply and demand nodes and transportation costs between them. The implementation was later improved by introducing index sets and some additional features of GNU MathProg.
+
+The transportation problem results in an **LP (Linear Programming) model**, and transportation costs for each connection are linear (e.g., they can be described by a single cost coefficient, which, when multiplied by the transported amount, gives the total cost). Four cases of more elaborate cost functions, example problems, and their implementations were also presented:
+
+  * **Increasing Unit Costs:** Two factors and a threshold describe the situation, but we still use an **LP** model.
+  * **Economy of Scale:** Two factors and a threshold describe the function again, but the cost above the threshold is now lower. **Binary decision variables** are required, making it a **MILP (Mixed-Integer Linear Programming)** model.
+  * **Fixed Costs:** A fixed cost is paid once instead of a proportional cost describing the cost function. A **binary variable** is used; the model is **MILP**.
+  * **Linear Penalties:** Flexible demands were assumed, and any difference, either positive or negative, was penalized by a linear factor. This results in an **LP** model.
+
+Finally, the transportation problem was extended by **center nodes**, which divides the entire problem into two related sub-problems, and a fixed cost decision problem is also involved.
+
+ 
+
