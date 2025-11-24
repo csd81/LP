@@ -6464,6 +6464,7 @@ What happens if the factory introduces a new (a sixth) product, where the data f
 For example, suppose the column of the new product is $a_6 = (1, 2, 1)^T$, where the components represent the resource consumption from the three resources for producing one unit of this new product (say, product $\text{P}6$). Furthermore, let $c_6 = 35$, which is the profit gained from producing one unit of this product.
 
 Note that the current basis is:
+
 $$B(a_3, s_2, a_5) = \begin{bmatrix} 1 & 0 & 0 \\ 1 & 1 & 1 \\ 0 & 0 & 2 \end{bmatrix} \quad \text{and} \quad B^{-1} = \begin{bmatrix} 1 & 0 & 0 \\ -1 & 1 & -1/2 \\ 0 & 0 & 1/2 \end{bmatrix}.$$
 
 We can also find the inverse in the last three columns of the simplex tableau. Thus, $B^{-1}a_6 = (1, 1/2, 1/2)^T$, and $c_B B^{-1}a_6 - c_6 = (15, 0, 33) \cdot (1, 1/2, 1/2) - 35 = -7/2$. This negative value means the production of the new product is **advantageous**, and the procedure will continue, with the vector representing the new product entering the basis.
@@ -6479,6 +6480,7 @@ Here, we will briefly introduce the **Two-Phase Method**. What has been shown pr
 The goal of the first phase is to **find a basic feasible solution**. In the second phase, starting from this feasible solution, we proceed step-by-step to find an **optimal solution**. When is the first phase needed? It's needed when we are **not able to begin** with a suitable feasible solution.
 
 We will illustrate the first phase with an example. Let's assume our $\text{LP}$ is:
+
 $$\begin{array}{rcccccccc}
 x_1 & +2x_2 & +x_3 & +3x_4 & & & & \ge & 24 \\
 & x_2 & +x_3 & +5x_4 & +x_5 & & & \le & 43 \\
@@ -6490,6 +6492,7 @@ x_1 & & & +2x_4 & +2x_5 & & & = & 18 \\
 We've slightly modified our original example. This could be interpreted as needing to use **at least 24 units** of the first resource, being able to use **at most 43 units** of the second resource (as before), and needing to consume the **entire amount** of the third resource.
 
 First, we convert the inequalities to equations:
+
 $$\begin{array}{rccccccccc}
 x_1 & +2x_2 & +x_3 & +3x_4 & & -s_1 & & & = & 24 \\
 & x_2 & +x_3 & +5x_4 & +x_5 & & +s_2 & & = & 43 \\
@@ -6499,6 +6502,7 @@ x_1 & & & +2x_4 & +2x_5 & & & & = & 18 \\
 \end{array}$$
 
 Now, we can see that we **do not have enough unit vectors** to serve as an initial basis. Note that $s_2$ is called a **slack variable** and $s_1$ is called a **surplus variable**. Let's create the missing unit vectors we need for a basis:
+
 $$\begin{array}{rcccccccccc}
 x_1 & +2x_2 & +x_3 & +3x_4 & & -s_1 & & +t_1 & & = & 24 \\
 & x_2 & +x_3 & +5x_4 & +x_5 & & +s_2 & & & = & 43 \\
@@ -6514,6 +6518,7 @@ We call $t_1$ and $t_2$ **artificial variables**; we use them, but we are "not a
 ## 8.3 The Dual Simplex Method
 
 Besides the Primal Simplex Method, the **Dual Simplex Method** is the other main version. We introduce it briefly. Let's consider the following $\text{LP}$:
+
 $$\begin{array}{rccccccc}
 x_1 & & +x_3 & & & \ge & 1 \\
 2x_1 & +x_2 & +3x_3 & & & \ge & 3 \\
@@ -6524,6 +6529,7 @@ x_1 & +2x_2 & & & & \ge & 5 \\
 \end{array}$$
 
 After multiplying all inequalities and the objective function by $-1$ and adding slack variables ($s_i$), we get the following system:
+
 $$\begin{array}{rccccccc}
 -x_1 & & -x_3 & +s_1 & & & & = & -1 \\
 -2x_1 & -x_2 & -3x_3 & & +s_2 & & & = & -3 \\
@@ -6585,6 +6591,7 @@ The **Gomory cut** is a primary tool for finding **integer solutions** for an $\
 Solving an integer (or mixed-integer) program is typically much harder. There are several tools to handle the integrality of variables; we will show only one such commonly used method. We will demonstrate the method using an example. The example comes from a book by András Prékopa, as mentioned in Tamás Szántai's manuscript [35], page 28 (in Hungarian), and also shown in Mihály Hujter's short (Hungarian) draft [36]. Note that we perform the calculations in a slightly different manner to maintain uniformity with our presentation of the Primal and Dual Simplex tableaux.
 
 Let's consider the following $\text{ILP}$:
+
 $$\begin{array}{rccccccc}
 2x_1 & +x_2 & & & & \ge & 1 \\
 2x_1 & +5x_2 & & & & \ge & 4 \\
@@ -6596,6 +6603,7 @@ $$\begin{array}{rccccccc}
 \end{array}$$
 
 Let's transform the inequalities to the "$\le$" type, then convert them to equations by introducing slack variables. We also transform the objective to the "$\max$" form. We get the following:
+
 $$\begin{array}{rccccccc}
 -2x_1 & -x_2 & +s_1 & & & & & = & -1 \\
 -2x_1 & -5x_2 & & +s_2 & & & & = & -4 \\
@@ -6633,12 +6641,15 @@ This tableau is optimal. The optimal (fractional) solution is $x_B = (1/8, 3/4 \
 At this point, we will perform the famous **Gomory Cut**!
 
 Let's choose a fractional variable, e.g., $x_1 = 1/8$. Let's also consider the row of this variable in the tableau, where the data means:
+
 $$1/8 = x_1 - 5/8s_1 + 1/8s_2.$$
 
 We **round up** all coefficients in this equation. The rounding-up values (for $1/8, 1, -5/8, \text{ and } 1/8$) are $7/8, 0, 5/8, \text{ and } 7/8$, respectively. Using these values (and omitting the zero), we create the next (new) constraint:
+
 $$7/8 \le 5/8s_1 + 7/8s_2.$$
 
 We can see that this condition **does not hold**, since $s_1 = s_2 = 0$ in the current optimal (fractional) basic solution. This means that by adding this constraint to the previously used constraints, the current basic solution becomes **infeasible**. Let's multiply the new constraint by $-1$ and introduce a new slack variable, $s_6$. We get:
+
 $$-5/8s_1 - 7/8s_2 + s_6 = -7/8.$$
 
 We add this new equation to the system and write it as a new line in the simplex tableau:
