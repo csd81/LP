@@ -1576,9 +1576,7 @@ var production {p in Products}, >=0;
 
 Finally, all the constraints can be described by one general `s.t.` statement. The logic is as follows: There is a single inequality for each raw material: its **total consumption cannot exceed its availability**. The availability is simply described as a parameter, but the total consumption is obtained by a **summation**. We must sum, for each product, its amount multiplied by the consumption rate of that particular raw material.
 
-$$
-\sum_{p \in \text{Products}} \text{Consumption\_Rate}[r,p] \cdot \text{production}[p] \le \text{Storage}[r]
-$$
+$\sum_{p \in \text{Products}} \text{Consumption\_Rate}[r,p]$ \cdot $\text{production}[p] \le \text{Storage}[r]$
 
 ```
 s.t. Material_Balance {r in Raw_Materials}:
@@ -1588,9 +1586,7 @@ sum {p in Products} Consumption_Rate[r,p] * production[p]
 
 The objective is obtained as a **sum** for all products, where the amounts must be multiplied by the unit revenues.
 
-$$
-\text{Maximize Total\_Revenue} = \sum_{p \in \text{Products}} \text{Revenue}[p] \cdot \text{production}[p]
-$$
+$\text{Maximize TotalRevenue} = \sum_{p \in \text{Products}} \text{Revenue}[p] \cdot \text{production}[p]$
 
 ```
 maximize Total_Revenue:
