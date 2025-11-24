@@ -48,7 +48,7 @@ GNU MathProg code for model files is formatted like this.
 If you have questions or find any errors in this Tutorial, please feel free to contact us at eles@dcs.uni-pannon.hu. We hope you will find this material useful.
 
 
-
+----
 # Chapter 2: Optimization
 
 ## 2.1 Equations
@@ -189,7 +189,7 @@ In **Mixed-Integer Linear Programming (MILP)** models, we may also require some 
 In this manual, we focus on MILP and LP models. In both cases, only linear expressions of the variables appear in the formulations. There are other problem classes, such as Nonlinear Programming (NLP) and Mixed-Integer Nonlinear Programming (MINLP), with corresponding solvers, but these are not covered here.
 
 
-
+-----
 # Chapter 3: GNU MathProg
 
 This chapter aims to briefly introduce GNU MathProg and demonstrate how it can be used to implement and solve mathematical programming models in the LP or MILP class. A short example problem is presented with implementation, solution, and results, showing some of the most frequently used features of the language.
@@ -2946,13 +2946,13 @@ The sign of `Order_Cash_Flow` is used to represent cost (positive) or revenue (n
 
       * If the order is an **expense** ($\text{Order\_Cash\_Flow} > 0$), $\text{Cost}$ increases.
       * If the order is an **income** ($\text{Order\_Cash\_Flow} < 0$), $\text{Cost}$ decreases (increases available funds).
-      * The term is $\sum \text{Order\_Cash\_Flow}[o] \times \text{ordcnt}[o]$.
+      * The term is `sum \text{Order\_Cash\_Flow}[o] \times \text{ordcnt}[o]`.
 
 2.  **If payment is due AFTER production (`!Order\_Pay\_Before[o]` is true, or 0):** The cash flow is subtracted from `total_revenue`.
 
-      * If the order is an **income** ($\text{Order\_Cash\_Flow} < 0$), subtracting a negative number increases $\text{Revenue}$.
-      * If the order is an **expense** ($\text{Order\_Cash\_Flow} > 0$), $\text{Revenue}$ decreases (treated as a negative revenue).
-      * The term is $-\sum \text{Order\_Cash\_Flow}[o] \times \text{ordcnt}[o]$.
+      * If the order is an **income** (`Order_Cash_Flow} < 0`), subtracting a negative number increases `Revenue`.
+      * If the order is an **expense** (`Order_Cash_Flow > 0`), `Revenue` decreases (treated as a negative revenue).
+      * The term is `-\sum \text{Order\_Cash\_Flow}[o] \times \text{ordcnt}[o]`.
 
 **Filtering in GNU MathProg**
 
