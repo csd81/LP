@@ -1,3 +1,22 @@
+set UnknownValues;
+set Equations;
+
+param Rhs {e in Equations};
+
+param Coef {e in Equations, u in UnknownValues};
+
+var value {u in UnknownValues};
+
+s.t. Cts {e in Equations}:
+	sum {u in UnknownValues} Coef[e,u] * value[u] = Rhs[e];
+
+solve;
+
+for {u in UnknownValues}
+{
+	printf "%s = %g\n", u, value[u];
+}
+
 data;
 
 set UnknownValues := x y z w v;
@@ -42,3 +61,4 @@ param Coef :=
 # Solution: 2, 3.5, -2, 7, 0.5
 
 end;
+
