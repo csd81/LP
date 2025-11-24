@@ -37,7 +37,7 @@ At this point, the contents of the sets are **not defined**. The reason is exact
 
 Now, let us define the parameters in our model with the following code:
 
-```
+```ampl
 param Rhs {e in Equations};
 param Coef {e in Equations, u in UnknownValues};
 ```
@@ -92,7 +92,8 @@ Now, for each $u$ unknown value, we want to print out the corresponding value in
 
 At this point, the model section is ready. This means any system of linear equations can be translated into a data section, and if done with the correct syntax, can be solved without altering the model file. Now, let us translate the previous problem instance into a well-formed data section.
 
-```
+```ampl
+
 data;
 set UnknownValues := x y z w v;
 set Equations := Eq1 Eq2 Eq3 Eq4 Eq5;
@@ -102,7 +103,7 @@ The sets are assigned values here. That means the names of the unknown values an
 
 One of the parameters that requires values to be given is the RHS constants.
 
-```
+```ampl
 param Rhs :=
   Eq1 -5
   Eq2 -5
@@ -116,7 +117,7 @@ There are multiple ways parameter data can be provided; refer to the GNU MathPro
 
 This similar format can also be applied if the index has more dimensions, as with `Coef`.
 
-```
+```ampl
 param Coef :=
     Eq1 x 4
     Eq1 y -2
