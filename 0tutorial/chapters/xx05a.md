@@ -1,10 +1,13 @@
+
+-----
+
 # Chapter 5: Production Problem
 
-This chapter explores a **fundamental Linear Programming (LP) problem** in terms of model implementation: the **production problem**. This problem involves determining which products to manufacture in order to achieve the **maximum profit** when resources are limited. It is also referred to as the **product mix problem** or **production planning problem**.
+This chapter explores a **fundamental Linear Programming (LP) problem** in terms of model implementation: the **production problem**. This problem involves determining which products to manufacture to achieve the **maximum profit** when resources are limited. It is also referred to as the **product mix problem** or **production planning problem**.
 
-The production problem is one of the oldest problems in **Operations Research**, and numerous tutorials use it as an introduction to mathematical programming (see, for example, [11, 12]). The **diet problem**, which seeks to find the least expensive combination of foods that meets all nutritional requirements, is also presented. A common generalization of these two problems is also shown. The final section includes an overview of **integer programming**, where "packages" of raw materials and products can be bought and sold all at once.
+The production problem is one of the oldest problems in **Operations Research**, and numerous tutorials use it as an introduction to mathematical programming (see, for example, [11, 12]). We will also present the **diet problem**, which seeks to find the least expensive combination of foods that meets all nutritional requirements. A common generalization of these two problems is also shown. The final section includes an overview of **integer programming**, where "packages" of raw materials and products can be bought and sold all at once.
 
-The chapter focuses on how a single model can be extended to incorporate various circumstances one-by-one. We begin with a simple exercise that can even be solved manually and conclude with a very general and complex optimization model.
+The chapter focuses on how a single model can be extended to incorporate various circumstances one by one. We begin with a simple exercise that can even be solved manually and conclude with a very general and complex optimization model.
 
 -----
 
@@ -48,7 +51,7 @@ Compared to "pure mathematical" models like the system of linear equations we sa
 
 However, understanding the units in the problem is recommended because it helps us avoid mistakes by reminding us that **only scalars of the same unit should ever be added together**. For example, amounts in kWh and kg cannot be added. If adding them appears necessary, it means either the operation is wrong entirely, or we are missing one or more factors that would bring these quantities to the same dimension and unit.
 
-Let's begin formulating the model. The first step is selecting the **decision variables**. The goal of optimization is to determine the values of these variables. Each solution obtained describes a decision on how the plant will be operated. Of course, not all solutions are generally feasible, and the revenues are also usually different. Therefore, we seek the **feasible solution with the highest revenue**.
+Let's begin formulating the model. The first step is selecting the **decision variables**. The goal of optimization is to determine the values of these variables. Each solution obtained describes a decision on how the plant will be operated. Of course, not all solutions are feasible, and the revenues are also usually different. Therefore, we seek the **feasible solution with the highest revenue**.
 
 The decision variables can be read directly from the problem description. The **amounts of each product to be determined** are the decision variables; these must definitely be determined by the optimization. The question is, should there be more variables? If we only know the amounts produced, we can calculate everything relevant in the plant: the exact amounts consumed of each raw material and the total revenue. Therefore, at this point, we do not need any more variables in our optimization model.
 
@@ -58,7 +61,7 @@ What remains are the **constraints** and **variable bounds**. In general, the on
 
 We have defined the variables, the objective, constraints, and bounds, so we are ready to implement our model in **GNU MathProg**. First, we will not use indexing and will implement it in the most straightforward way.
 
-The variables denote production amounts. For convention, these are all in the **dollar ($)** currency.
+The variables denote production amounts. By convention, these are all in **dollars ($)**.
 
 ```
 var P1, >=0;
@@ -83,7 +86,7 @@ Finally, the objective can also be defined based on production amounts. Note tha
 maximize Raw_material: 252 * P1 + 89 * P2 + 139 * P3;
 ```
 
-A `solve` statement can be inserted in the model, after which some additional post-processing work can be done to print the solution. The full code is the following. We print the total revenue (the objective), the production of each product (the variables), and the usage of each raw material. In the usage part, we print both the total amount consumed for production and the amount remaining available.
+A `solve` statement can be inserted in the model, after which some additional post-processing work can be done to print the solution. The full code is below. We print the total revenue (the objective), the production of each product (the variables), and the usage of each raw material. In the usage part, we print both the total amount consumed for production and the amount remaining available.
 
 ```
 var P1, >=0;
@@ -136,9 +139,9 @@ Usage of C: 450000, remaining: -5.82077e-11
 Usage of D: 200, remaining: 0
 ```
 
-We interpret the solutions as follows: **$33,389** is the **maximum revenue** that can be obtained. The way to obtain this revenue is to produce **91.34 units of P1**, **94.65 units of P2**, and **14.02 units of P3**. Note that, in this case, it is allowed to produce **fractional amounts** of a product—this can occur in practice, for example, if the products and raw materials are chemicals, fluids, heat, electricity, or other divisible quantities.
+We interpret the solutions as follows: **$33,389** is the **maximum revenue** that can be obtained. To achieve this, we produce **91.34 units of P1**, **94.65 units of P2**, and **14.02 units of P3**. Note that, in this case, it is allowed to produce **fractional amounts** of a product—this can occur in practice if the products and raw materials are chemicals, fluids, heat, electricity, or other divisible quantities.
 
-Production consumes **all of A, C, and D**, but there is a **surplus of B** that is not used up. Some remaining amounts are reported as extremely small positive numbers. These are actually tiny **numerical errors** from the actual value of zero in the optimal solution because `glpsol` uses floating-point arithmetic, which is not perfect. If this output is inconvenient, we can use the format specifier `%f` instead of `%g`, or alternatively, explicitly round down the numbers to be printed in the model using the built-in `floor()` function.
+Production consumes **all of A, C, and D**, but there is a **surplus of B** that is not used up. Some remaining amounts are reported as extremely small positive numbers. These are actually tiny **numerical errors** from the actual value of zero in the optimal solution because `glpsol` uses floating-point arithmetic, which isn't perfect. If this output is inconvenient, we can use the format specifier `%f` instead of `%g`, or alternatively, explicitly round down the numbers to be printed in the model using the built-in `floor()` function.
 
 Another option is to add `--xcheck` as a command-line argument to `glpsol`. This forces the final solution to be recalculated with **exact arithmetic**, eliminating rounding errors.
 
@@ -146,9 +149,9 @@ Another option is to add `--xcheck` as a command-line argument to `glpsol`. This
 glpsol -m model.mod -d data.dat --xcheck
 ```
 
-One interesting observation about the solution is that **three of the remaining amounts are zero**. If we varied the problem data and solved the model repeatedly, it would turn out that, from the seven values printed (three production amounts and four remaining amounts), there are almost always **three zeroes**. In general, the number of zeroes is the number of products, and the number of nonzeroes is the number of raw materials. (Exceptions occur in some special cases.) This is a beautiful property of production problems that is better understood by knowing how the solution algorithms (particularly the **simplex method**) work, generally for LP problems. However, we are not focusing on the algorithms here, only the model implementations. Nevertheless, understanding what a good solution looks like is a very valuable skill.
+One interesting observation about the solution is that **three of the remaining amounts are zero**. If we varied the problem data and solved the model repeatedly, it would turn out that, from the seven values printed (three production amounts and four remaining amounts), there are almost always **three zeroes**. Generally, the number of zeroes is the number of products, and the number of non-zeroes is the number of raw materials. (Exceptions occur in some special cases.) This is a beautiful property of production problems that is better understood by knowing how the solution algorithms (particularly the **simplex method**) work for LP problems. However, we are not focusing on the algorithms here, only the model implementations. Nevertheless, understanding what a good solution looks like is a very valuable skill.
 
-We now have a working implementation for the particular production problem described. However, we know this solution is not very general. If a different production problem is in question, we must understand and **tamper with the code** describing the model logic. Also note that the exact expressions describing the total consumption of each raw material appear **three times**: once in the constraints and twice in the post-processing work. This level of **redundancy** is typically considered bad code design, regardless of the programming language.
+We now have a working implementation for the specific production problem described. However, we know this solution is not very general. If we encounter a different production problem, we must understand and **tamper with the code** describing the model logic. Also, notice that the exact expressions describing the total consumption of each raw material appear **three times**: once in the constraints and twice in the post-processing work. This level of **redundancy** is typically considered bad code design, regardless of the programming language.
 
 Our next task is to create a more general, **indexed model** that requires only a properly formatted data section to solve any production problem.
 
@@ -159,7 +162,7 @@ set Products;
 set Raw_Materials;
 ```
 
-We can also identify three important **parameters**. One for the production ratios, which is defined for each pair of raw materials and products; we'll call it `Consumption_Rate`. One parameter is for availability. This is defined for each raw material, and we name it `Storage`. The name "storage" captures the logic of how raw materials work from a modeling perspective: they are present in a given amount beforehand, like physically stored material, and no more than this amount can be used for production. Another parameter is the `Revenue`, which is defined for each product.
+We can also identify three important **parameters**. One for the production ratios, defined for each pair of raw materials and products; we'll call it `Consumption_Rate`. One for availability, defined for each raw material; we name it `Storage`. The name "storage" captures the logic of how raw materials work from a modeling perspective: they are present in a given amount beforehand, like physically stored material, and no more than this amount can be used for production. Another parameter is `Revenue`, defined for each product.
 
 ```
 param Storage {r in Raw_Materials}, >=0;
@@ -167,9 +170,9 @@ param Consumption_Rate {r in Raw_Materials, p in Products}, >=0, default 0;
 param Revenue {p in Products}, >=0, default 0;
 ```
 
-Notice how **indexing** is used so that each `param` statement refers not just to a single scalar but to a **collection of values** instead. For `Consumption_Rate` and `Revenue`, we also provide a default value of **zero**. This means if we do not provide data, we assume no raw material need or revenue for that particular case.
+Notice how **indexing** is used so that each `param` statement refers not just to a single scalar but to a **collection of values**. For `Consumption_Rate` and `Revenue`, we also provide a default value of **zero**. This means if we do not provide data, we assume no raw material need or revenue for that particular case.
 
-Also, in GNU MathProg, we can define **bounds and other value restrictions for parameters**. In this case, all three parameters are forced to be **nonnegative** by the `>=0` restriction. This is generally good practice if we do not expect specific values for a given parameter. If a restriction is violated by a value provided for the parameter (for example, in the data section or calculated on the spot), model processing terminates with an error describing the exact situation. It's much easier to notice and correct errors this way than to allow a wrong parameter value in the model, which could lead to an invalid solution. It is typically difficult to debug a model once it can be processed, so it is recommended to explicitly check data as much as possible.
+Also, in GNU MathProg, we can define **bounds and other value restrictions for parameters**. In this case, all three parameters are forced to be **nonnegative** by the `>=0` restriction. This is generally good practice if we do not expect specific values for a given parameter. If a restriction is violated by a value provided for the parameter (for example, in the data section or calculated on the spot), model processing terminates with an error describing the situation. It's much easier to notice and correct errors this way than to allow a wrong parameter value in the model, which could lead to an invalid solution. It is typically difficult to debug a model once it can be processed, so explicitly checking data is highly recommended.
 
 The variables can now be defined. They denote production amounts, and each must be nonnegative.
 
@@ -179,7 +182,6 @@ var production {p in Products}, >=0;
 
 Finally, all the constraints can be described by one general `s.t.` statement. The logic is as follows: There is a single inequality for each raw material: its **total consumption cannot exceed its availability**. The availability is simply described as a parameter, but the total consumption is obtained by a **summation**. We must sum, for each product, its amount multiplied by the consumption rate of that particular raw material.
 
-
 ```
 s.t. Material_Balance {r in Raw_Materials}:
     sum {p in Products} Consumption_Rate[r,p] * production[p]
@@ -188,13 +190,12 @@ s.t. Material_Balance {r in Raw_Materials}:
 
 The objective is obtained as a **sum** for all products, where the amounts must be multiplied by the unit revenues.
 
-
 ```
 maximize Total_Revenue:
     sum {p in Products} Revenue[p] * production[p];
 ```
 
-Finally, we can implement a general post-processing routine to print the total revenue, production amounts, and raw material usages. The full model file is the following.
+Finally, we can implement a general post-processing routine to print the total revenue, production amounts, and raw material usages. The full model file is below.
 
 ```
 set Products;
@@ -260,7 +261,7 @@ param Revenue :=
 end;
 ```
 
-Although the model is very general and compact, it still contains some **redundancy**. The total consumed amount of each raw material is still represented three times in the code. At least, we do not have to rewrite that code ever again if another problem's data is given; we only have to modify the data section. However, we still want to eliminate this redundancy.
+Although the model is very general and compact, it still contains some **redundancy**. The total consumed amount of each raw material is still represented three times in the code. At least we don't have to rewrite that code ever again if another problem's data is given; we only have to modify the data section. However, we still want to eliminate this redundancy.
 
 Remember that we can introduce parameters in the model section and calculate values on the spot. If we are after the `solve` statement, then even variable values can be referred to, as their values have already been determined by the solver. We introduce `Material_Consumed` and `Material_Remained` to denote the total amount consumed and the amount remaining for each material.
 
@@ -283,7 +284,7 @@ for {r in Raw_Materials}
 }
 ```
 
-The solution should be exactly the same as before again, for the same data file. But now, some of the redundancy has been eliminated from the model section. Unfortunately, the parameter for the total amounts consumed **cannot be used** in the constraints where it appears first. More on that later.
+The solution should be exactly the same as before for the same data file. But now, some of the redundancy has been eliminated from the model section. Unfortunately, the parameter for the total amounts consumed **cannot be used** in the constraints where it appears first. More on that later.
 
 -----
 
@@ -291,27 +292,24 @@ The solution should be exactly the same as before again, for the same data file.
 
 Now that we have a working implementation for arbitrary production problems, let's change the problem description itself.
 
- 
-
 **Problem 10.**
 
 Solve the **production problem**, provided that for each **raw material** and each **product**, a **minimum** and **maximum** total **usage** is also given that must be respected by the solution.
 
 The usage of a raw material is the total amount consumed, and the usage of a product is the total amount produced.
 
-These are **additional restrictions** on the production mix in question. Let's see how this affects the model formulation. The problem remains almost the same; just additional solutions must be excluded from the **feasible set**—namely, those for which any newly introduced restriction is violated.
+These are **additional restrictions** on the production mix. Let's see how this affects the model formulation. The problem remains almost the same; we just need to exclude additional solutions from the **feasible set**—namely, those where any newly introduced restriction is violated.
 
-The change only added new restrictions, so the **variables**, the **objective function**, and even the already mentioned **constraints** and **bounds** may remain the same. The new limits shall be implemented by new constraints and/or bounds. We also need to provide new options in the **data sections** where these limits can be given as **parameter** values.
+The change only added new restrictions, so the **variables**, the **objective function**, and even the existing **constraints** and **bounds** can remain the same. The new limits must be implemented by new constraints and/or bounds. We also need to provide new options in the **data sections** where these limits can be given as **parameter** values.
 
-There are four limits altogether.
+There are four limits altogether:
 
   * **Upper limit on production amount.** The production amount for any product $p$ appears as the $production[p]$ variable in the model. A constant upper limit for this value can easily be implemented as a **linear constraint**, but an even easier way is to implement it as an **upper bound** of the $production$ variable.
-  * **Lower limit on production amount.** The same as for the upper limit. Just note that there is already a non-negativity bound defined for the variables, and defining two lower or two upper bounds on the same variable is forbidden in **GNU MathProg**.
-  * **Upper limit on raw material consumption.** The total consumption of each raw material is already represented in the model as an **expression**. Actually, the only constraint in the production problem so far defines an upper limit for this expression as $Storage[r]$ for any raw material $r$. Therefore, there's no need to further define upper bounds. If one wants to give an extra upper limitation for the total consumption of a raw material, it can be done without modifying the **model section**, simply by decreasing the appropriate $Storage$ parameter value in the **data section**.
-  * **Lower limit on raw material consumption.** As we noticed before, the expression already appears in a constraint. We need to implement another constraint with exactly the same expression, but expressing a **minimum limit** instead of the maximum.
+  * **Lower limit on production amount.** The same applies here. Just note that there is already a non-negativity bound defined for the variables, and defining two lower or two upper bounds on the same variable is forbidden in **GNU MathProg**.
+  * **Upper limit on raw material consumption.** The total consumption of each raw material is already represented in the model as an **expression**. Actually, the only constraint in the production problem so far defines an upper limit for this expression as $Storage[r]$ for any raw material $r$. Therefore, there's no need to further define upper bounds. If one wants to give an extra upper limitation for total consumption, it can be done without modifying the **model section**, simply by decreasing the appropriate $Storage$ parameter value in the **data section**.
+  * **Lower limit on raw material consumption.** As we noted before, the expression already appears in a constraint. We need to implement another constraint with exactly the same expression, but expressing a **minimum limit** instead of the maximum.
 
 First, we have to add the extra parameters to describe the limits.
-
 
 ```
 param Storage {r in Raw_Materials}, >=0, default 1e100;
@@ -327,9 +325,9 @@ param Min_Production {p in Products}, >=0, default 0;
 param Max_Production {p in Products}, >=Min_Production[p], default 1e100;
 ```
 
-The new $Min\_Usage$ is for the **minimum** total consumption for each raw material, while parameters $Min\_Production$ and $Max\_Production$ are for the **lower and upper limit** of production for each product. The fourth limit parameter is the original $Storage$, for the **upper limit** of raw material consumption. All these limit parameters now have sensible bounds and default values. Lower limits are defaulted to $0$, while upper limits are defaulted to $10^{100}$, which is a number of a large magnitude that we **expect not to appear** in problem data. Also, the lower limits must **not be larger** than the upper limits. Meanwhile, all limits must be **non-negative**. Remember that these restrictions on parameter values are valuable to **prevent mistakes in the data sections** but we don't expect them to contribute to generating and solving the model if once satisfied. This is in contrast to **variable bounds**, which are part of the model formulation and may affect solutions.
+The new $Min\_Usage$ is for the **minimum** total consumption for each raw material, while parameters $Min\_Production$ and $Max\_Production$ are for the **lower and upper limits** of production for each product. The fourth limit parameter is the original $Storage$, for the **upper limit** of raw material consumption. All these limit parameters now have sensible bounds and default values. Lower limits default to $0$, while upper limits default to $10^{100}$, a massive number that we **expect not to appear** in problem data. Also, lower limits must **not be larger** than upper limits. Meanwhile, all limits must be **non-negative**. Remember that these restrictions on parameter values are valuable to **prevent mistakes in data sections**, but we don't expect them to contribute to generating and solving the model once satisfied. This is in contrast to **variable bounds**, which are part of the model formulation and may affect solutions.
 
-The variables and the objective function remain the same. However, we must add **three additional constraints** to tighten the search space of the model. Each of the four constraints actually corresponds to the four limits mentioned. The $Material\_Balance$ constraint is for the upper limit of total consumption of raw materials; this one was originally there and was left unchanged.
+The variables and the objective function remain the same. However, we must add **three additional constraints** to tighten the search space of the model. Each of the four constraints corresponds to one of the four limits mentioned. The $Material\_Balance$ constraint is for the upper limit of total consumption of raw materials; this one was originally there and was left unchanged.
 
 ```
 var production {p in Products}, >=0;
@@ -355,10 +353,6 @@ The **post-processing work** to print out solution data may remain the same as f
 
 To demonstrate how it works, consider the following production problem with limits.
 
- 
-
- 
-
 **Problem 11.**
 
 Solve the **production problem** described in Problem 9, but with the following restrictions added:
@@ -366,9 +360,6 @@ Solve the **production problem** described in Problem 9, but with the following 
   * Use at least $20,000$ hours of working time (**raw material B**).
   * Fill the production quota: produce at least $200$ units (**raw material D**), which is also the maximum for that raw material.
   * Produce at most $10$ units of **P3**.
-
------
-
 
 Since the problem is simply an "**extension**" of the original one, its implementation can be done by just extending the **data section** with the aforementioned limits. Note that each parameter is indexed with the set of all raw materials and all products. Those that do not appear in the data section will simply default to $0$ for lower limits and $10^{100}$ for upper limits, effectively making the limits redundant. In that case, they don't modify the search space of the model because those limits are true anyway for any otherwise feasible solution.
 
@@ -400,9 +391,9 @@ Usage of C: 433000, remaining: 17000
 Usage of D: 200, remaining: 0
 ```
 
-This means that **$90$ units of P1, $100$ units of P2, and $10$ units of P3** are produced. We can verify that all the limitations are met. It's interesting to note that all the variables in this solution are **integers**, even though they are not forced to be. This means that if the problem were changed to only consider integer solutions (for example, if the product is an object for which an integer number must be produced), then this solution would also be valid. Moreover, it would also be the **optimal solution**, too, because restricting variables to only attain integer values just makes the model's search space even tighter. So, if a solution is optimal even in the original model—meaning there are no better solutions—then there shouldn't be better solutions in the more restrictive **integer counterpart** either.
+This means that **$90$ units of P1, $100$ units of P2, and $10$ units of P3** are produced. We can verify that all limitations are met. It's interesting to note that all variables in this solution are **integers**, even though they aren't forced to be. This means that if the problem were changed to consider only integer solutions (e.g., if the product must be produced in whole numbers), this solution would still be valid. Moreover, it would also be the **optimal solution**, because restricting variables to only integer values just makes the model's search space tighter. So, if a solution is optimal even in the original model—meaning there are no better solutions—then there shouldn't be better solutions in the more restrictive **integer counterpart** either.
 
-Now, our implementation for limits is complete. But we can still improve the model implementation by making it a bit more **readable** and less **redundant**. First, there's a neat feature in **GNU MathProg**: if a **linear expression** can be bounded by both an upper and a lower value, and both of these limits are constants, then they can be defined in a **single constraint** instead of two that contain the same expression twice. Using this feature, we can reduce the number of `s.t.` statements from four to two in our model section, as follows. All other parts of the model, the data, and the solution remain the same.
+Now, our implementation for limits is complete. But we can still improve the model implementation by making it a bit more **readable** and less **redundant**. First, there's a neat feature in **GNU MathProg**: if a **linear expression** can be bounded by both an upper and a lower value, and both limits are constants, they can be defined in a **single constraint** instead of two. Using this, we can reduce the number of `s.t.` statements from four to two in our model section, as follows. All other parts of the model, the data, and the solution remain the same.
 
 ```
 s.t. Material_Balance {r in Raw_Materials}: Min_Usage[r] <=
@@ -413,7 +404,7 @@ s.t. Production_Limits {p in Products}:
     Min_Production[p] <= production[p] <= Max_Production[p];
 ```
 
-There is another thing we can improve, which is actually a **modeling technique** rather than a language feature: we can introduce **auxiliary variables** for linear expressions. The variables, constraints, and the objective function will look like the following:
+There is another thing we can improve, which is actually a **modeling technique** rather than a language feature: we can introduce **auxiliary variables** for linear expressions. The variables, constraints, and objective function will look like this:
 
 ```
 var production {p in Products}, >=Min_Production[p], <=Max_Production[p];
@@ -429,23 +420,23 @@ s.t. Total_Revenue_Calc: total_revenue =
 maximize Total_Revenue: total_revenue;
 ```
 
-Observe the newly introduced variable `usage`. We intend for this variable to denote the total consumption of a raw material. Therefore, we add the `Usage_Calc` constraint to ensure this. We now have that variable throughout the model to denote this value. We also do this for the total revenue, which is denoted by the variable `total_revenue`, calculated in the `Total_Revenue_Calc` constraint, and then used in the objective function. The objective function is actually the `total_revenue` variable itself.
+Observe the newly introduced variable `usage`. We intend for this variable to denote the total consumption of a raw material. Therefore, we add the `Usage_Calc` constraint to ensure this. We now have that variable throughout the model to denote this value. We also do this for the total revenue, denoted by the variable `total_revenue`, calculated in the `Total_Revenue_Calc` constraint, and then used in the objective function. The objective function is actually the `total_revenue` variable itself.
 
-Now, observe that all the expressions we have to limit are actually variables, and all the limits are constants. This means that the constraints for the limits can be converted to **bounds** of these variables, specifically `production` and `usage`. This way, we effectively got rid of all the previously defined constraints and converted them into bounds, but we needed two more constraints (`Usage_Calc` and `Total_Revenue_Calc`) to calculate the values of `usage` and `total_revenue`.
+Now, notice that all the expressions we have to limit are actually variables, and all the limits are constants. This means the constraints for the limits can be converted to **bounds** of these variables, specifically `production` and `usage`. This way, we effectively got rid of all the previously defined constraints and converted them into bounds, but we needed two more constraints (`Usage_Calc` and `Total_Revenue_Calc`) to calculate the values of `usage` and `total_revenue`.
 
-We might think that the main importance of introducing the new variable lies in the possibility of using bounds instead of `s.t.` statements, which makes our implementation shorter. This is just an example of its usefulness. The key point is that if some expression is used more than once in our model, we can simply introduce a **new variable** for it, define a new constraint so that the variable equals that expression, and then use the variable instead of that expression everywhere.
+You might think the main importance of introducing the new variable is the possibility of using bounds instead of `s.t.` statements, making our implementation shorter. This is just one example of its usefulness. The key point is that if some expression is used more than once in our model, we can simply introduce a **new variable** for it, define a new constraint so that the variable equals that expression, and then use the variable instead of that expression everywhere.
 
-Think about this: does this operation of adding auxiliary variables change the **search space**? Well, formally, yes. The search space has a different **dimension**. There are more variables, so in a solution to the new problem, we have to decide more values. However, note that feasible solutions of the new model will be in a **one-to-one correspondence** with the original ones. For a solution feasible to the original problem, we can introduce the auxiliary variable with the corresponding value of the expression and get a feasible solution for the extended problem. Conversely, each feasible solution in the extended problem must have its auxiliary variable equal to the expression it is defined for, and thus it can be substituted back into the model to return to a feasible solution of the original model.
+Think about this: does adding auxiliary variables change the **search space**? Formally, yes. The search space has a different **dimension**. There are more variables, so in a solution to the new problem, we have to decide more values. However, note that feasible solutions of the new model will be in a **one-to-one correspondence** with the original ones. For a solution feasible to the original problem, we can introduce the auxiliary variable with the corresponding value of the expression and get a feasible solution for the extended problem. Conversely, each feasible solution in the extended problem must have its auxiliary variable equal to the expression it is defined for, so it can be substituted back into the model to return to a feasible solution of the original model.
 
 In short, the search space formally changes, but the (feasible) solutions for the problem **logically remain the same**.
 
-An important question arises: how does the introduction of auxiliary variables change the course of the algorithms, and **solver performance**? The general answer is that we don't know. There are more variables, so computational performance might be slightly worse, but this is often **negligible**, because the main difficulty of solving a model in practice comes from the complexity of the search space, which is logically unchanged. Of course, if there are magnitudes more auxiliary variables than ordinary variables and constraints themselves, it might cause technical problems. Also note that, in theory, the solver has the right to substitute out auxiliary variables, effectively reverting back to the original problem formulation, but we generally cannot be sure that it does so. The solver doesn't see which of our variables are intended to be "auxiliary." If there is an equation constraint in the model, the solver might use that equation to express one of the variables appearing in it and perform a substitution into that variable, even if we had not considered it auxiliary at all.
+An important question arises: how does introducing auxiliary variables change the course of the algorithms and **solver performance**? The general answer is that we don't know. There are more variables, so computational performance might be slightly worse, but this is often **negligible** because the main difficulty of solving a model in practice comes from the complexity of the search space, which is logically unchanged. Of course, if there are magnitudes more auxiliary variables than ordinary variables and constraints, it might cause technical problems. Also note that, in theory, the solver has the right to substitute out auxiliary variables, effectively reverting back to the original problem formulation, but we generally cannot be sure that it does so. The solver doesn't see which of our variables are intended to be "auxiliary." If there is an equation constraint in the model, the solver might use that equation to express one of the variables appearing in it and perform a substitution, even if we hadn't considered it auxiliary.
 
-In short, the course of the solution algorithm may be different, and the computational performance of the solver might change, but this is usually negligible.
+In short, the course of the solution algorithm may differ, and the computational performance might change, but this is usually negligible.
 
-Note also that we have already introduced some new values in the post-processing work so that we didn't have to write the total consumption expression twice. That was done by introducing a new parameter, not a variable, and only worked **after** the `solve` statement because it involved variable values that are only available when the model is already solved. However, now with an auxiliary variable introduced for the total consumption, we can use it **both before and after** the `solve` statement. Therefore, we write this expression down in code only once, and that redundancy finally totally diminished.
+Also note that we previously introduced some new values in the post-processing work so we didn't have to write the total consumption expression twice. That was done by introducing a new parameter, not a variable, and only worked **after** the `solve` statement because it involved variable values only available when the model is solved. However, now with an auxiliary variable introduced for total consumption, we can use it **both before and after** the `solve` statement. Therefore, we write this expression down in code only once, and that redundancy is finally completely gone.
 
-The ultimate model code for the limits is the following. Note that the data section and the solution remained the same as before. Also note that we didn't have to introduce new parameters after the `solve` statement, as the auxiliary variables do the work.
+The ultimate model code for the limits is below. Note that the data section and solution remain the same as before. Also note that we didn't have to introduce new parameters after the `solve` statement, as the auxiliary variables do the work.
 
 ```
 set Products;
@@ -492,25 +483,23 @@ end;
 
 ## 5.3. Maximizing minimum production
 
-In the previous parts, we've seen a complete implementation for the production problem where total raw material consumption and production can be limited by constants for all raw materials and products. Now, let's modify the goal of the optimization to **maximize the minimum production**. The exact definition is the following.
-
-
+In the previous sections, we saw a complete implementation for the production problem where total raw material consumption and production can be limited by constants. Now, let's modify the optimization goal to **maximize the minimum production**. The exact definition is as follows.
 
 **Problem 12.**
 
 The problem requires us to **maximize the minimum production** amount among all products, while keeping the problem data the same. The minimum production refers to the product for which the least amount is manufactured.
 
-Regardless of whether we start with the simple model or the one with added limitations, this problem only requires us to modify the **objective function**. This means the **feasible solutions** and the search space remain exactly the same as before.
+Whether we start with the simple model or the one with added limitations, this problem only requires us to modify the **objective function**. This means the **feasible solutions** and search space remain exactly the same.
 
 This also makes the **revenue parameter** irrelevant, because we are no longer interested in the total monetary value of the products, but only the production amounts (specifically, the minimum of those amounts).
 
-We have already solved a similar problem in the case of the system of linear equations (see Problem 7 from Section 4.8), where the objective was to minimize the maximum error across all equations. Here, we need to maximize the minimum production. The required **modeling technique** is indeed similar.
+We have already solved a similar problem with the system of linear equations (Problem 7 from Section 4.8), where the objective was to minimize the maximum error across all equations. Here, we need to maximize the minimum production. The required **modeling technique** is indeed similar.
 
-The idea is to introduce a new **variable** to represent the minimum of all production amounts. Specifically, this variable will denote a **lower bound** for all the individual production amounts. This lower bound also serves as a lower bound for the minimum of those amounts. If this variable is **maximized**, the optimization process will eventually increase its value as much as possible until it reaches the true minimum of the production amounts.
+The idea is to introduce a new **variable** to represent the minimum of all production amounts. Specifically, this variable will denote a **lower bound** for all individual production amounts. This lower bound also serves as a lower bound for the minimum of those amounts. If this variable is **maximized**, the optimization process will eventually increase its value as much as possible until it reaches the true minimum of the production amounts.
 
 Using this modeling trick, we can ensure that the final optimal solution found will correspond to the maximal possible value of the minimum production amount. This is a general method that works for any set of linear expressions where either the minimum must be maximized or the maximum must be minimized.
 
-In the implementation, the parameters and post-processing work remain the same, as do the already-existing variables, bounds, and constraints from the extended model (including `Min_Production`, `Max_Production`, and the auxiliary variables for usage and revenue calculation):
+In the implementation, parameters and post-processing work remain the same, as do the existing variables, bounds, and constraints from the extended model (including `Min_Production`, `Max_Production`, and auxiliary variables for usage and revenue):
 
 ```
 var production {p in Products}, >=Min_Production[p], <=Max_Production[p];
@@ -524,7 +513,7 @@ s.t. Total_Revenue_Calc: total_revenue =
   sum {p in Products} Revenue[p] * production[p];
 ```
 
-The change is that, instead of the original objective of maximizing total revenue, we set the minimum production as the new objective. This requires introducing a new variable, `min_production`, to denote a lower bound for all production amounts, and a constraint to ensure that the variable is, in fact, a lower bound. Then, this new variable is maximized as the objective function.
+The change is that, instead of maximizing total revenue, we set the minimum production as the new objective. This requires introducing a new variable, `min_production`, to denote a lower bound for all production amounts, and a constraint to ensure that the variable is, in fact, a lower bound. Then, this new variable is maximized as the objective function.
 
 ```
 var min_production;
@@ -541,13 +530,13 @@ The post-processing code can be the same as before, so we print the same data as
 printf "Minimum Production: %g\n", min_production;
 ```
 
-Note that in our code, `min_production` is the name of the **variable**, and `Minimum_Production` is the name of the **objective function**. In GNU MathProg, we could use both as values. However, be cautious when referring to the objective by its name, because constant terms in the objective are omitted. The reason for this is that constant terms do not affect the selection of the optimal solution, only the value of the objective. Therefore, it is recommended to refer to the objective function value using the variable `min_production` instead.
+Note that in our code, `min_production` is the name of the **variable**, and `Minimum_Production` is the name of the **objective function**. In GNU MathProg, we could use both as values. However, be cautious when referring to the objective by its name because constant terms in the objective are omitted. Constant terms do not affect the selection of the optimal solution, only the value of the objective. Therefore, it is recommended to refer to the objective function value using the variable `min_production` instead.
 
 We can now run our model to solve two problems.
 
 **Example 1: Ignoring Production/Usage Limits**
 
-In the first example, all the limits (`Min_Usage`, `Min_Production`, `Max_Production`) are ignored, except for the `Storage` capacity. Note that, in the data section, we can begin rows with a hash mark (`#`). This turns the row into a **comment**, effectively excluding it from processing. The data section looks like the following:
+In the first example, all the limits (`Min_Usage`, `Min_Production`, `Max_Production`) are ignored, except for the `Storage` capacity. Note that in the data section, we can begin rows with a hash mark (`#`). This turns the row into a **comment**, effectively excluding it from processing. The data section looks like this:
 
 ```
 data;
@@ -608,13 +597,13 @@ Usage of C: 450000, remaining: 0
 Usage of D: 155.172, remaining: 44.8276
 ```
 
-It turns out that production is **balanced** to the edge to achieve this solution. All resources are distributed evenly, and all three products are produced in an **equal amount**. If we consider the objective, this is not surprising. Why would we produce any product amount above the minimum if it offers no advantage to the objective function, but represents a disadvantage in terms of raw materials consumed?
+It turns out that production is **balanced** to the edge to achieve this solution. All resources are distributed evenly, and all three products are produced in an **equal amount**. If we consider the objective, this isn't surprising. Why would we produce any product amount above the minimum if it offers no advantage to the objective function, but represents a disadvantage in terms of raw materials consumed?
 
-It looks like raw material **C is the bottleneck** in this problem. We call a factor a **bottleneck** if changing that factor has a visible impact on the final solution while other factors remain the same—for example, the most scarce resource, as in this case. If there were slightly less or more of raw materials A, B, and D, the solution would be the same because all of C is completely used up and distributed evenly among the products. This kind of knowledge can be fundamental in real-world optimization problems because it informs decision-makers that some factors are unnecessary to improve. On the other hand, slightly more or less of C would likely result in slightly more or less production (likely, because there could be other limitations in the model that we do not see). For this reason, raw material **C is the bottleneck** in this particular production problem.
+It looks like raw material **C is the bottleneck** in this problem. We call a factor a **bottleneck** if changing it has a visible impact on the final solution while other factors remain the same—for example, the most scarce resource. If there were slightly less or more of raw materials A, B, and D, the solution would be the same because all of C is completely used up and distributed evenly. This knowledge can be fundamental in real-world optimization because it informs decision-makers that improving some factors is unnecessary. On the other hand, slightly more or less of C would likely result in slightly more or less production (likely, because there could be other limitations we do not see). For this reason, raw material **C is the bottleneck** in this particular production problem.
 
 **Example 2: With Constraints** (Excluding $P3 \le 10$)
 
-In the second example, **Problem 11** is used but without the constraint on $P3$. This means all the limitations are now included in the model, except for the restriction that $P3$ is maximized at 10 units. Note that if this constraint were enabled, there would be no question that the optimal solution would be 10 units, as the former solution we already know produces exactly 10 units of $P3$, and there cannot be more.
+In the second example, **Problem 11** is used but without the constraint on $P3$. This means all limitations are now included, except for the restriction that $P3$ is maximized at 10 units. Note that if this constraint were enabled, the optimal solution would obviously be 10 units, as the former solution we already know produces exactly 10 units of $P3$, and there cannot be more.
 
 In short, we only get a meaningful new problem if we **omit** the constraint maximizing $P3$ at 10 units.
 
@@ -630,13 +619,13 @@ Usage of C: 450000, remaining: 0
 Usage of D: 200, remaining: 0
 ```
 
-The solution is slightly different in this case. Now, only **P1 and P3 are produced in equal amounts**, both at the minimum production amount of **43.86**. Also, not only C but **D is also totally used up**. Note that a much larger amount of P2 is needed because all 200 units of D must be used up in this problem. This answers a former question: why is it advantageous to produce products above the minimum limit? Because it might help satisfy the minimum production and/or minimum consumption constraints.
+The solution is slightly different here. Now, only **P1 and P3 are produced in equal amounts**, both at the minimum production amount of **43.86**. Also, not only C but **D is also totally used up**. Note that a much larger amount of P2 is needed because all 200 units of D must be used up in this problem. This answers a former question: why is it advantageous to produce products above the minimum limit? Because it might help satisfy the minimum production and/or minimum consumption constraints.
 
-Note that the objective in this case is slightly **worse** than that of the first example problem, where the objective was 51.72. This is a natural consequence of differences in the data. In the second example, the data were the same, except that there were **additional constraints** on consumption and production. If a problem is more constrained, we can only get an optimal solution with the **same, or a worse, objective value**.
+Note that the objective in this case is slightly **worse** than that of the first example problem, where the objective was 51.72. This is a natural consequence of differences in the data. In the second example, the data were the same except for **additional constraints** on consumption and production. If a problem is more constrained, we can only get an optimal solution with the **same, or a worse, objective value**.
 
 Generally, if only the objective is changed in a model, the set of **feasible solutions remains the same**, because the objective only guides the selection of the most suitable solution, not which solutions are feasible. In this case, the new objective function involved a new variable, `min_production`, which served as a lower bound and was maximized.
 
-Note that, in theory, the variable `min_production` does not need any lower bound and can even be allowed to be zero or negative. The solution would still be feasible. However, such solutions are not reported because they are not optimal. Therefore, only those feasible solutions are interesting for which `min_production` is not only a valid lower bound on production amounts but is actually **strict**—that is, it equals the minimum production amount.
+Note that, in theory, `min_production` does not need any lower bound and can even be allowed to be zero or negative. The solution would still be feasible. However, such solutions are not reported because they are not optimal. Therefore, only those feasible solutions are interesting for which `min_production` is not only a valid lower bound on production amounts but is actually **strict**—that is, it equals the minimum production amount.
 
 Among these interesting solutions, `min_production` works just like an **auxiliary variable**. Each optimal solution where `min_production` is a strict bound corresponds to a feasible solution of the original problem where revenues were maximized, and vice versa.
 
@@ -646,16 +635,11 @@ Among these interesting solutions, `min_production` works just like an **auxilia
 
 We have seen an example where only the objective was changed. Now let's look at another example, which is a more natural extension to the problem. From now on, raw materials are no longer considered **"free"**: they must be produced, purchased, stored, etc. In general, they have **costs**. Just as there is a revenue for each product per unit produced, there is now a **cost for each raw material per unit consumed**.
 
-
----
-
 **Problem 13.**
 
 Solve the production problem, but now instead of optimizing for revenue, optimize for **profit**. The profit is defined as the difference between the **total revenue** from products and the **total cost** of raw materials consumed for production. The cost for each raw material is proportional to the material consumed and is independent of which product it is used for. A single **unit cost** for each raw material is given.
 
 This is the general description of the problem. We will again use an example for demonstration, which includes costs for raw materials. The other data for the example problem remain the same as before.
-
------
 
 **Problem 14.**
 
@@ -675,11 +659,11 @@ Additionally, there are three limitations, as before:
   * Fill the production quota: produce at least **200 units** (raw material D), which also happens to be the maximum for that raw material.
   * Produce at most **10 units of P3**.
 
-Again, we want to write a general model and a separate, corresponding data section for the particular example problem. The starting point is the model and data sections we obtained by solving **Problem 11**, where the limits were introduced, as both the model and data sections are almost ready; we only need to implement some modifications.
+Again, we want to write a general model and a separate, corresponding data section for the particular example problem. The starting point is the model and data sections we obtained by solving **Problem 11** (where limits were introduced), as both are almost ready; we only need to implement some modifications.
 
 First, we definitely need a new parameter that describes the costs. Let's call this parameter `Material_Cost`. We can simply add it to the model section. No other data is needed.
 
-Before proceeding, let's observe what happens when material costs are zero. This means our problem is the same as the original, where raw materials were free. This means that the current problem with raw material costs is a **generalization** of the original problem. In other words, the original problem is a **special case** of the current problem where all raw material costs are zero. For this reason, it is sensible to give a **zero default value** to material costs. This makes data files implemented for the original problem compatible with our new model as well.
+Before proceeding, let's observe what happens when material costs are zero. This means our problem is the same as the original, where raw materials were free. This means the current problem with raw material costs is a **generalization** of the original problem. In other words, the original problem is a **special case** of the current problem where all raw material costs are zero. For this reason, it is sensible to give a **zero default value** to material costs. This makes data files implemented for the original problem compatible with our new model as well.
 
 ```
 param Material_Cost {r in Raw_Materials}, >=0, default 0;
@@ -696,7 +680,7 @@ param Material_Cost :=
   ;
 ```
 
-Beyond the data, the only difference in the model is the **objective value**. We could simply change the objective line and our model would be complete. However, for better readability, we will introduce an **auxiliary variable** for the profit and use it instead. The modified part of the model section is the following. Only three lines of code changed: the `profit` variable was introduced, the objective changed, and the `Profit_Calc` constraint was added to ensure that the `profit` variable obtains the corresponding value. We also print it after the `solve` statement.
+Beyond the data, the only difference in the model is the **objective value**. We could simply change the objective line and our model would be complete. However, for better readability, we will introduce an **auxiliary variable** for the profit and use it instead. The modified part of the model section is below. Only three lines of code changed: the `profit` variable was introduced, the objective changed, and the `Profit_Calc` constraint was added to ensure that the `profit` variable obtains the corresponding value. We also print it after the `solve` statement.
 
 ```
 var production {p in Products}, >=Min_Production[p], <=Max_Production[p];
@@ -735,35 +719,29 @@ Usage of C: 291065, remaining: 158935
 Usage of D: 200, remaining: 0
 ```
 
-Now let's examine this solution briefly. Logically, the **search space** of the problem did not change: exactly the same solutions are **feasible** in both the original problem (where revenue is maximized) and the current problem (where profit is maximized). This explains the difference in total revenues. In the original problem, the optimal (maximal) total revenue was **$32,970**, achieved by producing 90 units of P1, 100 units of P2, and 10 units of P3. However, when we optimize for **profit** instead, we get a total revenue of **$22,453.87**, which is worse. The profit in this case is much smaller, **$1,577.45**, meaning most of the revenue is diminished by raw material costs. The production is also slightly different: 25.48 units of P1, 164.52 units of P2, and 10 units of P3 are now produced.
+Now let's examine this solution briefly. Logically, the **search space** did not change: exactly the same solutions are **feasible** in both the original problem (maximizing revenue) and the current problem (maximizing profit). This explains the difference in total revenues. In the original problem, the optimal total revenue was **$32,970**, achieved by producing 90 units of P1, 100 units of P2, and 10 units of P3. However, optimizing for **profit** yields a total revenue of **$22,453.87**, which is worse. The profit in this case is much smaller, **$1,577.45**, meaning most of the revenue is consumed by raw material costs. The production is also slightly different: 25.48 units of P1, 164.52 units of P2, and 10 units of P3 are now produced.
 
-Although the revenue is significantly higher for the original solution than for the current one, we can now be certain that the profit would be no more than **$1,577.45** in that case either.
+Although revenue is significantly higher for the original solution, we can now be certain that the profit would be no more than **$1,577.45** in that case either.
 
 -----
 
 ## 5.5 Diet Problem
 
-We have seen several versions of the production problem. Now, a seemingly unrelated problem is considered, which is called the **diet problem** [13, 14], or the **nutrition problem**.
-
------
-
-
+We have seen several versions of the production problem. Now, we consider a seemingly unrelated problem called the **diet problem** [13, 14], or the **nutrition problem**.
 
 **Problem 15.**
 
 Given a set of **food types** and a set of **nutrients**. Each food consists of a given, fixed ratio of the nutrients.
 
-We aim to arrange a **diet**, which is any combination of the set of food types, in any amounts. However, for each nutrient, there is a **minimum requirement** that the diet must satisfy in order to be healthy. Also, each food has its own proportional **cost**.
+We aim to arrange a **diet**, which is any combination of the set of food types, in any amount. However, for each nutrient, there is a **minimum requirement** that the diet must satisfy to be healthy. Also, each food has its own proportional **cost**.
 
 **Find the healthy diet with the lowest total cost of food involved.**
 
 After the general problem definition, let's look at a specific example.
 
------
-
 **Problem 16.**
 
-Solve the diet problem with the following data. There are five food types, named **F1 to F5**, and four nutrients under focus, named **N1 to N4**. The contents of a unit amount of each food, the unit cost of each food, and the minimum requirement of each nutrient are shown in the following table.
+Solve the diet problem with the following data. There are five food types, named **F1 to F5**, and four nutrients under focus, named **N1 to N4**. The contents of a unit amount of each food, the unit cost of each food, and the minimum requirement of each nutrient are shown below.
 
 | | **N1** | **N2** | **N3** | **N4** | **Cost (per unit)** |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -776,20 +754,20 @@ Solve the diet problem with the following data. There are five food types, named
 
 The diet problem is regarded as one of the first problems that led to the field of **Operations Research**.
 
-Note that the underlying dimensions are slightly different in the diet problem and the production problem. Here we have omitted fictional physical dimensions, but the scale of each nutrient suggests which data belong to a single dimension. In this data table, each column corresponds to a single nutrient and, therefore, has its own unit of measure. The last column shows unit costs.
+Note that the underlying dimensions are slightly different in the diet problem and the production problem. We omitted fictional physical dimensions here, but the scale of each nutrient suggests which data belong to a single dimension. In this table, each column corresponds to a single nutrient and has its own unit of measure. The last column shows unit costs.
 
 Usually, when implementing a model, the first things we must decide are: how our **freedom of choice** will be implemented as **decision variables**, how the **search space** can be described by **constraints**, and how the **objective** can be calculated. These steps are essential for deciding whether a mathematical programming approach is even suitable for a real-world problem.
 
-However, we will instead start by defining all the data available in the problem and then proceed with the steps above. This makes defining the variables, constraints, and objectives easier afterward. So, the first part of modeling in GNU MathProg is now defining the **sets and parameters**. These are either calculated on the spot or provided later in a data section at the end of the model file or in separate data file(s).
+However, we will instead start by defining all the data available in the problem and then proceed with the steps above. This makes defining the variables, constraints, and objectives easier afterward. So, the first part of modeling in GNU MathProg is defining the **sets and parameters**. These are either calculated on the spot or provided later in a data section.
 
-Two sets appear in the problem: one for **food types** and one for **nutrients**. These sets will be used in indexing expressions.
+Two sets appear in the problem: one for **food types** and one for **nutrients**.
 
 ```
 set FoodTypes;
 set Nutrients;
 ```
 
-There are three parameters available. One is for denoting **food costs**, obviously defined for each food type. One parameter is for denoting the **minimum required amount of nutrients**, defined for each nutrient. Finally, one parameter is for the **contents of food**, which can be given by a unit amount for each pair of food type and nutrient. In the particular problem, for example, each unit of F2 contains 20 units of N1, 0.7 units of N3, and 0.0001 units of N4. The default values are all set to zero, and all these parameters are nonnegative by nature.
+There are three parameters available. One denotes **food costs**, defined for each food type. One denotes the **minimum required amount of nutrients**, defined for each nutrient. Finally, one parameter denotes the **contents of food**, given by a unit amount for each pair of food type and nutrient. For example, each unit of F2 contains 20 units of N1, 0.7 units of N3, and 0.0001 units of N4. The default values are all set to zero, and all these parameters are nonnegative.
 
 ```
 param Food_Cost {f in FoodTypes}, >=0, default 0;
@@ -797,18 +775,18 @@ param Content {f in FoodTypes, n in Nutrients}, >=0, default 0;
 param Requirement {n in Nutrients}, >=0, default 0;
 ```
 
-Now that all the data are defined as sets and variables, we must identify our freedom of choice. The **amounts of each food used** are clearly under our decision. If we know these amounts, we can easily calculate the total cost and nutrient contents, so we can determine whether the diet is healthy and, if so, how much it costs. This means we should define a variable denoting **food consumption** for each food type separately, and no more variables are needed in the model.
+Now that all data are defined as sets and variables, we must identify our freedom of choice. The **amounts of each food used** are clearly under our decision. If we know these amounts, we can easily calculate total cost and nutrient contents, determining if the diet is healthy and how much it costs. This means we should define a variable denoting **food consumption** for each food type, and no other variables are needed.
 
-We introduce a variable named `eaten` to denote the amount of each food included in the diet. This variable is obviously nonnegative and is indexed over the set of food types. We also introduce the auxiliary variable `total_costs` so that it can be printed out more easily. We could define bounds for the auxiliary variable, but it is unnecessary as its value will be exactly calculated by a constraint.
+We introduce a variable named `eaten` to denote the amount of each food included in the diet. This variable is nonnegative and indexed over the set of food types. We also introduce the auxiliary variable `total_costs` so it can be printed more easily.
 
 ```
 var eaten {f in FoodTypes}, >=0;
 var total_costs;
 ```
 
-There is one significant factor in our model that restricts which diets are acceptable: the **total nutritional content**. This translates into a constraint for each nutrient. The total amount contained in the selected diet must be summed up, and this total must be **no less than** the minimal requirement for that particular nutrient.
+There is one significant factor restricting which diets are acceptable: the **total nutritional content**. This translates into a constraint for each nutrient. The total amount contained in the selected diet must be summed up, and this total must be **no less than** the minimal requirement for that nutrient.
 
-Additionally, there is another constraint for calculating the auxiliary variable denoting the total food costs.
+Additionally, there is another constraint for calculating the auxiliary variable denoting total food costs.
 
 ```
 s.t. Nutrient_Requirements {n in Nutrients}:
@@ -824,7 +802,7 @@ With the auxiliary `total_costs` variable, defining the objective is straightfor
 minimize Total_Costs: total_costs;
 ```
 
-After the `solve` statement, we can again write our own printing code that will show the solution found by the solver. This time, the amount of each food in the diet is shown, as well as the total consumption per nutrient, along with the lower limit. Our model section is now ready.
+After the `solve` statement, we can write our own printing code to show the solution found. This time, we show the amount of each food in the diet, as well as the total consumption per nutrient alongside the lower limit. Our model section is now ready.
 
 ```
 set FoodTypes;
@@ -866,7 +844,7 @@ for {n in Nutrients}
 end;
 ```
 
-Now we also implement the particular problem mentioned. It is described in a single data section as follows.
+Now we implement the specific problem mentioned. It is described in a single data section as follows.
 
 ```
 data;
@@ -899,7 +877,7 @@ param Requirement :=
 end;
 ```
 
-Now we can solve the problem, and the result is the following.
+Solving the problem gives the following result:
 
 ```
 Total Costs: 29707.2
@@ -914,8 +892,6 @@ Requirement 30 of nutrient N3 done with 30
 Requirement 0.04 of nutrient N4 done with 0.04
 ```
 
-The optimal objective is **$29,707.2**. This result literally means that any diet containing at least 2,000 units of N1, 180 units of N2, 30 units of N3, and 0.04 units of N4, and consisting of F1 through F5, would cost at least **$29,707.2**, and there exists a solution to obtain exactly this number.
+The optimal objective is **$29,707.2**. This literally means that any diet containing at least 2,000 units of N1, 180 units of N2, 30 units of N3, and 0.04 units of N4, using foods F1 through F5, would cost at least **$29,707.2**, and there exists a solution to obtain exactly this number.
 
-The optimal solution only uses **F2, F4, and F5**. This means that if F1 and F3 were omitted from the problem data altogether, the optimal solution would be exactly the same. This is because introducing a new food type only **increases the freedom** in the model, leaving any previously feasible solutions as feasible afterward, and potentially introducing new feasible solutions that utilize the newly introduced food type. We can also observe that **N1 is the only nutrient** for which the consumption in the optimal diet is **more than** the minimal amount required, with 2,042.99 units rather than 2,000. For the other three nutrients, there is exactly enough. This suggests that the solution shows a diet that is **balanced to the edge** to meet the minimum requirements while optimizing costs.
-
-
+The optimal solution only uses **F2, F4, and F5**. This means that if F1 and F3 were omitted from the problem data altogether, the optimal solution would be exactly the same. Introducing a new food type only **increases freedom** in the model, leaving any previously feasible solutions feasible, and potentially adding new ones. We can also observe that **N1 is the only nutrient** for which consumption in the optimal diet is **more than** the minimal requirement (2,042.99 units vs. 2,000). For the other three nutrients, there is exactly enough. This suggests the solution shows a diet that is **balanced to the edge** to meet minimum requirements while optimizing cost.
