@@ -1,8 +1,6 @@
 
 
-## Chapter 1
-
-## Introduction
+# Chapter 1: Introduction
 
 This Tutorial is intended to provide an **overview** of mathematical programming and Operations Research in general, using the development of Linear Programming (LP) and Mixed-Integer Linear Programming (MILP) models with the GNU MathProg (GMPL) modeling language.
 
@@ -51,11 +49,9 @@ If you have questions or find any errors in this Tutorial, please feel free to c
 
 
 
-## Chapter 2
+# Chapter 2: Optimization
 
-## Optimization
-
-### 2.1 Equations
+## 2.1 Equations
 
 Equations are one of the simplest and most powerful mathematical modeling tools we have. Let's look at an example problem that can be solved using an equation.
 
@@ -74,13 +70,13 @@ Alice's task is to choose an appropriate $x$ so that this equation holds true. F
 
 $$x = \frac{4 \text{ km}}{\text{h}}$$ (2)
 
-### 2.2 Finding the "Best" Solution
+## 2.2 Finding the "Best" Solution
 
 What we actually do when solving an equation is transform it into simpler forms, where each subsequent form is a direct consequence of the previous one. The final form is $x = \frac{4 \text{ km}}{\text{h}}$, which literally means: "If $30 \text{ min} + \frac{3 \text{ km}}{x} = 75 \text{ min}$, then its direct consequence is $x = \frac{4 \text{ km}}{\text{h}}$." So, if Alice is to just catch the train, her average speed must be $\frac{4 \text{ km}}{\text{h}}$. At this point, we have the result and can interpret it in reality. This is the general way equations are used in problem-solving. First, we identify the degree of freedom we have in the problem ($x$, the speed). Then, we use equations as modeling tools to express the rules of reality that must be followed (the first equation). The model is now ready; we apply our solution techniques, which are typically general for all types of equations and have nothing to do with the underlying real-world problem. In this case, the equation is transformed in a chain of direct consequences until the variable is expressed directly as a constant value. Finally, once the result for the mathematical model is obtained, we interpret it as the solution to our initial real-world problem.
 
 Of course, there are much more difficult examples of equation solving (for example, multiple solutions for single equations, extraneous solutions, multiple variables, systems of multiple equations, etc.), which are not covered here. But the point is that the scheme is always similar: we formulate a mathematical model that describes the real-world situation, solve that model with some well-known general techniques, and then interpret the model's solution as the solution to the original problem.
 
-### 2.3 Main Concepts
+## 2.3 Main Concepts
 
 Note that the question about Alice catching the train in Problem 1 was about how fast she *must* go. The answer was $x = \frac{4 \text{ km}}{\text{h}}$, but that is not entirely accurate. In reality, $x = \frac{5 \text{ km}}{\text{h}}$, $x = \frac{10 \text{ km}}{\text{h}}$, or even $x = \frac{15 \text{ km}}{\text{h}}$ are also solutions for her, assuming she can walk that fast. However, $x = \frac{3 \text{ km}}{\text{h}}$ is not a solution, as she would miss the train if she were that slow. Of course, for this particular problem, we understand there is a minimum speed of $x = \frac{4 \text{ km}}{\text{h}}$ for which Alice just makes the train on time. However, the more precise formulation would be the following inequality instead:
 
@@ -94,7 +90,7 @@ $$\begin{aligned} \text{minimize} &: x \\ \text{subject to} &: 30 \text{ min} + 
 
 At this point, the formulated problem is an **optimization problem**. The goal is not only to find a suitable solution for a real-world problem but to find the **most suitable** one in some specific aspect. From a mathematical perspective, optimization involves finding the *best* solution, not just *a* solution, for an equation, inequality, or a set of such statements. Optimization is a sub-field of Operations Research, as it is an essential way to support business decisions: given a complex real-world situation, what is the best course of action?
 
-### 2.3 Main Concepts
+ 
 
 Now that we have seen some optimization from Problem 1, it is time to establish some basic concepts of optimization models.
 
@@ -118,7 +114,8 @@ It may happen that an optimization model does not have a feasible solution at al
 
 
 
-##  Problem 2.
+**Problem 2.**
+
 Alice’s train leaves 75 minutes from now. She lives 8 km away from the station and plans to walk, and she also needs 30 minutes to get ready. Furthermore, she cannot average a speed faster than $\frac{10 \text{ km}}{\text{h}}$. How fast must she walk to the station to catch the train?
 
 $$\begin{aligned} \text{minimize} &: x \\ \text{subject to} &: 30 \text{ min} + \frac{8 \text{ km}}{x} \leq 75 \text{ min} \\ & x \leq \frac{10 \text{ km}}{\text{h}}\end{aligned}$$ (5)
@@ -150,7 +147,7 @@ The method for finding this optimal solution and unequivocally proving its optim
 
 ---
 
-### 2.4 Mathematical Programming
+## 2.4 Mathematical Programming
 
 We've examined two very simple optimization problems so far. However, for the second one, we would have trouble if we had to actually solve it and prove that our solution is indeed optimal.
 
@@ -174,15 +171,13 @@ In this manual, we focus on MILP and LP models. In both cases, only linear expre
 
 
 
-## Chapter 3
-
-## GNU MathProg
+# Chapter 3: GNU MathProg
 
 This chapter aims to briefly introduce GNU MathProg and demonstrate how it can be used to implement and solve mathematical programming models in the LP or MILP class. A short example problem is presented with implementation, solution, and results, showing some of the most frequently used features of the language.
 
 -----
 
-### 3.1 Prerequisites for Programming
+## 3.1 Prerequisites for Programming
 
 GNU MathProg, also referred to as the **GNU Mathematical Programming Language** (GMPL), is a modeling language used for designing and solving LP and MILP problems. The **GNU Linear Programming Kit (GLPK)** provides free software for both parsing implemented models and solving them to report the optimal solution. GLPK is available under the General Public License version 3.0 or later [6].
 
@@ -202,7 +197,7 @@ A reference manual for the GNU MathProg modeling language, including usage of th
 
 -----
 
-### 3.2 "Hello World\!" Program
+## 3.2 "Hello World\!" Program
 
 After successful installation, we can try the program with a very simple LP problem. This will be our first GNU MathProg program, much like a "Hello World\!" example.
 
@@ -412,9 +407,7 @@ As we might suspect, the algorithmic procedure behind the MILP can be substantia
 We should keep in mind that solvers can handle a large number of variables and constraints in an LP model, but they can usually only handle a **limited number of integer variables** in an MILP model. The exact limit for integer variables strongly depends on the model itself; it can range from dozens to thousands.
 
 
-# Chapter 4
-
-### Equation Systems
+# Chapter 4: Equation Systems
 
 In this chapter, we present the basic capabilities of the GNU MathProg language using an example modeling problem: the general solution of linear equation systems. The aim is to navigate from a straightforward initial implementation to the use of indexing and separated model and data sections.
 
@@ -424,7 +417,7 @@ Note that solving linear systems of equations is considered a routine task. Ther
 
 ---
 
-### 4.1 Example System
+## 4.1 Example System
 
 Let’s begin by solving a small system of equations using GNU MathProg.
 
@@ -516,7 +509,7 @@ As we can see, whitespace characters can be freely used in GNU MathProg to impro
 
 ---
 
-### 4.2 Modifications in Code
+## 4.2 Modifications in Code
 
 Now that we have a working model file that solves a particular system of linear equations, let's try to solve another one obtained by making slight modifications to the original. The problem description is as follows:
 
@@ -1229,10 +1222,6 @@ However, there is still an interesting question when faced with an overspecified
 
 -----
 
-## 4.8 Minimizing Error
-
-
-
 **Problem 7.**
 
 Given a system of linear equations, find a solution that minimizes the maximum error across all equations. The error for a specific equation is defined as the absolute value of the difference between the Left-Hand Side (LHS) and the Right-Hand Side (RHS).
@@ -1342,7 +1331,7 @@ If we manually investigate the results, we can verify that all the variables are
 
 It is interesting to note that the error is the same for all six equations. Perhaps this is a general rule when the number of equations is one greater than the number of variables? This leads to another mathematical problem.
 
-### 4.9 Equation Systems – Summary
+## 4.9 Equation Systems – Summary
 
 We have learned the basic skills in GNU MathProg required to implement linear mathematical models: using parameters, separating the model and data sections, and, most importantly, indexing expressions. We also solved a simple yet non-trivial optimization problem regarding minimizing errors in equations.
 
@@ -1352,9 +1341,7 @@ From now on, it is recommended that for each subsequent optimization problem, yo
 
 
 
-# Chapter 5
-
-### Production Problem
+# Chapter 5: Production Problem
 
 This chapter explores a **fundamental Linear Programming (LP) problem** in terms of model implementation: the **production problem**. This problem involves determining which products to manufacture in order to achieve the **maximum profit** when resources are limited. It is also referred to as the **product mix problem** or **production planning problem**.
 
@@ -1364,7 +1351,7 @@ The chapter focuses on how a single model can be extended to incorporate various
 
 -----
 
-### 5.1 Basic Production Problem
+## 5.1 Basic Production Problem
 
 The simplest version of the production problem can be generally described as follows.
 
@@ -1678,14 +1665,11 @@ The solution should be exactly the same as before again, for the same data file.
 
 -----
 
-### 5.2 Introducing Limits
+## 5.2 Introducing Limits
 
 Now that we have a working implementation for arbitrary production problems, let's change the problem description itself.
 
  
-
-
-
 
 **Problem 10.**
 
@@ -1706,9 +1690,6 @@ There are four limits altogether.
 
 First, we have to add the extra parameters to describe the limits.
 
------
-
-## 5.2. INTRODUCING LIMITS: PRODUCTION PROBLEM
 
 ```
 param Storage {r in Raw_Materials}, >=0, default 1e100;
@@ -1756,7 +1737,6 @@ Solve the **production problem** described in Problem 9, but with the following 
 
 -----
 
-## 5.2. INTRODUCING LIMITS: PRODUCTION PROBLEM
 
 Since the problem is simply an "**extension**" of the original one, its implementation can be done by just extending the **data section** with the aforementioned limits. Note that each parameter is indexed with the set of all raw materials and all products. Those that do not appear in the data section will simply default to $0$ for lower limits and $10^{100}$ for upper limits, effectively making the limits redundant. In that case, they don't modify the search space of the model because those limits are true anyway for any otherwise feasible solution.
 
@@ -1917,7 +1897,7 @@ Note that in our code, `min_production` is the name of the **variable**, and `Mi
 
 We can now run our model to solve two problems.
 
-### Example 1: Ignoring Production/Usage Limits
+**Example 1: Ignoring Production/Usage Limits**
 
 In the first example, all the limits (`Min_Usage`, `Min_Production`, `Max_Production`) are ignored, except for the `Storage` capacity. Note that, in the data section, we can begin rows with a hash mark (`#`). This turns the row into a **comment**, effectively excluding it from processing. The data section looks like the following:
 
@@ -1987,7 +1967,7 @@ It turns out that production is **balanced** to the edge to achieve this solutio
 
 It looks like raw material **C is the bottleneck** in this problem. We call a factor a **bottleneck** if changing that factor has a visible impact on the final solution while other factors remain the same—for example, the most scarce resource, as in this case. If there were slightly less or more of raw materials A, B, and D, the solution would be the same because all of C is completely used up and distributed evenly among the products. This kind of knowledge can be fundamental in real-world optimization problems because it informs decision-makers that some factors are unnecessary to improve. On the other hand, slightly more or less of C would likely result in slightly more or less production (likely, because there could be other limitations in the model that we do not see). For this reason, raw material **C is the bottleneck** in this particular production problem.
 
-### Example 2: With Constraints (Excluding $P3 \le 10$)
+**Example 2: With Constraints** (Excluding $P3 \le 10$)
 
 In the second example, **Problem 11** is used but without the constraint on $P3$. This means all the limitations are now included in the model, except for the restriction that $P3$ is maximized at 10 units. Note that if this constraint were enabled, there would be no question that the optimal solution would be 10 units, as the former solution we already know produces exactly 10 units of $P3$, and there cannot be more.
 
@@ -2017,7 +1997,7 @@ Among these interesting solutions, `min_production` works just like an **auxilia
 
 -----
 
-### 5.4 Raw Material Costs and Profit
+## 5.4 Raw Material Costs and Profit
 
 We have seen an example where only the objective was changed. Now let's look at another example, which is a more natural extension to the problem. From now on, raw materials are no longer considered **"free"**: they must be produced, purchased, stored, etc. In general, they have **costs**. Just as there is a revenue for each product per unit produced, there is now a **cost for each raw material per unit consumed**.
 
@@ -2109,7 +2089,7 @@ Although the revenue is significantly higher for the original solution than for 
 
 -----
 
-### 5.5 Diet Problem
+## 5.5 Diet Problem
 
 We have seen several versions of the production problem. Now, a seemingly unrelated problem is considered, which is called the **diet problem** [13, 14], or the **nutrition problem**.
 
@@ -2290,7 +2270,7 @@ The optimal solution only uses **F2, F4, and F5**. This means that if F1 and F3 
 
 -----
 
-### 5.6 Arbitrary Recipes
+## 5.6 Arbitrary Recipes
 
 The implementation of the **diet problem** and the **production problem** are surprisingly similar. This is true for the number of sets, parameters, variables, constraints, the content of the constraints, and the objective. In this section, we will show how the diet problem can be viewed as a production problem. Finally, we will show a production problem with **arbitrary recipes** that generalizes both problems at the same time.
 
@@ -2333,7 +2313,7 @@ Find the optimal production, where recipes are utilized in arbitrary volumes, su
 
 -----
 
-### Model Implementation
+**Model Implementation**
 
 Let's start by implementing this problem without a specific example. We will find that its implementation is very similar to the original production problem. The first step is to "read" all the available data for future use. For this reason, there are three sets in the model: the set of raw materials, the set of products, and the set of recipes.
 
@@ -2460,7 +2440,7 @@ end;
 
 Although the model for arbitrary recipes is similar in nature to the former models, we implemented it all at once. The question arises: how can a large, complex model be implemented in GNU MathProg from scratch? Or, generally, in any mathematical programming language?
 
-### Guide to Complex Model Implementation
+**Guide to Complex Model Implementation**
 
 There is no universal guide for modeling, but there are good **rules of thumb** to follow. The recommendation is the following, specifically for GNU MathProg:
 
@@ -2475,11 +2455,11 @@ There is no universal guide for modeling, but there are good **rules of thumb** 
 
 Complex models may have several dozen constraints, so how can you be sure you haven't forgotten any rules? One idea is to focus on **parameters or variables**. In many cases, parameters are used only once in the model. Even if not, you can list all the roles the parameter or variable must appear in the model: as a bound, a constraint, or an objective term, etc. Then it is easy to spot one that has been forgotten.
 
-### Applications of the Arbitrary Recipe Model
+***Applications of the Arbitrary Recipe Model***
 
 Now that we have our model for arbitrary recipes ready, we will demonstrate how this works for all the problems mentioned so far in this chapter (with the exception of the maximum-of-minimum production amounts case).
 
-#### 1\. Production Problem with Costs (Problem 14)
+***1\. Production Problem with Costs (Problem 14)***
 
 First, **Problem 14**, which introduced raw material costs, is solved. Since this is a pure production problem in the original way, a recipe is introduced to produce each of the products. All the limits are implemented by the `Min_Usage` parameter, while raw material costs and product revenues are implemented by the `Value` parameter. The data section is the following.
 
@@ -2558,7 +2538,7 @@ Production of product P2: 164.516
 Production of product P3: 10
 ```
 
-#### 2\. Diet Problem (Problem 16)
+**2. Diet Problem (Problem 16)**
 
 The second application is the **diet problem**. We solve exactly the same problem instance as in **Problem 16**. In this example, the food types are the **raw materials** and the nutrients are the **products** we want to obtain. Contrary to the original production problem, where there were several inputs and one output per recipe, here there is only one input (a food type) per recipe, which produces several nutrients with given ratios.
 
@@ -2714,7 +2694,7 @@ end;
 
 -----
 
-### Production Results
+**Production Results**
 
 | Metric | Value |
 | :--- | :--- |
@@ -2724,7 +2704,7 @@ end;
 
 -----
 
-### Recipe Volumes
+**Recipe Volumes**
 
 | Recipe | Volume |
 | :--- | :--- |
@@ -2736,7 +2716,7 @@ end;
 
 -----
 
-### Raw Material Usage
+**Raw Material Usage**
 
 | Raw Material | Consumption |
 | :--- | :--- |
@@ -2747,7 +2727,7 @@ end;
 
 -----
 
-### Product Production
+**Product Production**
 
 | Product | Production |
 | :--- | :--- |
@@ -2797,7 +2777,7 @@ The objective is to optimize for **Profit**, which is the difference between the
 
 -----
 
-### Model Analysis and Compatibility
+**Model Analysis and Compatibility**
 
 The first observation is that although this problem definition is extensive, if we assume there are **no orders** in the problem, we revert exactly to the production problem with arbitrary recipes.
 
@@ -2807,7 +2787,7 @@ For this reason, the new model is designed to work with the data files from the 
 
 -----
 
-### Data Implementation for Orders
+**Data Implementation for Orders**
 
 First, let's see how the extra data for orders can be implemented in the model using sets and parameters:
 
@@ -2835,7 +2815,7 @@ param Order_Pay_Before {o in Orders}, binary, default 1;
 
 -----
 
-### Decision Variables
+**Decision Variables**
 
 The following variables are defined, with a new variable to handle order acquisition:
 
@@ -2852,7 +2832,7 @@ var ordcnt {o in Orders}, integer, >=0, <=Order_Count[o];
 
 -----
 
-### Material Usage Variables
+**Material Usage Variables**
 
 The material flow is now more complicated because materials can come from and go to different sources. We introduce several usage variables to track this:
 
@@ -2874,7 +2854,7 @@ All variables are set as $\ge 0$ to ensure quantities are non-negative.
 
 -----
 
-### Material Balance Constraints
+**Material Balance Constraints**
 
 Constraints are used to define the relationships between the new usage variables.
 
@@ -2924,7 +2904,7 @@ usage_total[p] = usage_orders[p] + usage_market[p];
 
 -----
 
-### Cost, Revenue, and Profit Calculation
+**Cost, Revenue, and Profit Calculation**
 
 These constraints calculate the financial variables, incorporating the timing of cash flows from orders.
 
@@ -2940,7 +2920,7 @@ sum {o in Orders: !Order_Pay_Before[o]} Order_Cash_Flow[o] * ordcnt[o];
 s.t. Profit_Calc: profit = total_revenue - total_costs;
 ```
 
-#### Order Cash Flow Logic:
+**Order Cash Flow Logic:**
 
 The sign of `Order_Cash_Flow` is used to represent cost (positive) or revenue (negative).
 
@@ -2956,7 +2936,7 @@ The sign of `Order_Cash_Flow` is used to represent cost (positive) or revenue (n
       * If the order is an **expense** ($\text{Order\_Cash\_Flow} > 0$), $\text{Revenue}$ decreases (treated as a negative revenue).
       * The term is $-\sum \text{Order\_Cash\_Flow}[o] \times \text{ordcnt}[o]$.
 
-#### Filtering in GNU MathProg
+**Filtering in GNU MathProg**
 
 The selective addition of order cash flow is done using a **filter** in the summation's indexing expression:
 
@@ -2966,7 +2946,7 @@ The selective addition of order cash flow is done using a **filter** in the summ
 
 -----
 
-### Complete Model Section and Output
+**Complete Model Section and Output**
 
 The final model maximizes the profit:
 
@@ -3058,7 +3038,7 @@ The order of variables and constraints does not affect the solution, but a logic
 
 -----
 
-### Example 1: Problem 14 Data (No Orders)
+**Example 1: Problem 14 Data (No Orders)**
 
 The first example uses data from **Problem 14** (arbitrary recipes with costs) but without defining the `Orders` set.
 
@@ -3122,7 +3102,7 @@ Production of product P3: 10 -> 0 + 10 (total: 10)
 
 -----
 
-### Example 2: Problem 18 Data (No Orders, Explicit Empty Sets)
+**Example 2: Problem 18 Data (No Orders, Explicit Empty Sets)**
 
 The second example uses data from **Problem 18** (arbitrary recipes with joint production), but explicitly defines the order-related parameters and sets as empty.
 
@@ -3396,7 +3376,7 @@ If we look closely at the LP relaxation solution, it surprisingly seems "more in
 
 -----
 
-### 5.8 Production Problem – Summary 📝
+## 5.8 Production Problem – Summary 
 
 We began with the simplest production problem: given only the available amounts of raw materials, the goal was to decide the production mix to achieve the highest revenue. We demonstrated how this problem can include upper and lower limits on production and consumption, how to optimize using a different objective if necessary, and how to factor in raw material costs.
 
@@ -3407,9 +3387,7 @@ Finally, the concept of **orders** was introduced in the ultimate model of the c
 
 
 
-## Chapter 6
-
-### Transportation Problem 🚚
+# Chapter 6: Transportation Problem 
 
 We'll introduce another common **optimization problem**, known as the **transportation problem**.
 
@@ -3421,7 +3399,7 @@ This chapter also presents some additional capabilities of **GNU MathProg**. The
 
 -----
 
-### 6.1 Basic Transportation Problem
+## 6.1 Basic Transportation Problem
 
 The basic transportation problem can be described generally as follows:
 
@@ -3633,7 +3611,7 @@ There are many other examples of the transportation problem publicly available; 
 
 -----
 
-### 6.2 Connections as an Index Set
+## 6.2 Connections as an Index Set
 
 Based on the complete solution presented in Section 6.1, we will now slightly enhance the implementation. As mentioned previously, in GNU MathProg, we can introduce additional parameters and sets to simplify the model formulation. These can either be defined on the spot, read from a separate data section outside the model, or allow both as a default value.
 
@@ -3952,7 +3930,7 @@ The meaning of $\text{isOver}$ is whether we are **entitled** (= 1) or not (= 0)
   * If $\text{isOver}=0$, then we **cannot** use the lower cost, hence the amounts above the threshold ($\text{tranOver}$) **must be zero**.
   * If $\text{isOver}=1$, then we **must** earn the right to use the lower costs, hence the amounts below the threshold ($\text{tranBase}$) **must be maximal**, i.e., equal to the threshold amount ($\text{CostThreshold}$).
 
-### The Big-M Constraint Technique
+**The Big-M Constraint Technique**
 
 It's a common problem in mathematical programming that we have an ordinary linear constraint, like $A \ge B$, but we want this constraint to be **active if and only if a certain condition is met**. The condition is often represented by the value of a binary variable $x$. If $x = 1$, then constraint $A \ge B$ must hold. However, if $x = 0$, there are no restrictions on $A$ or $B$.
 
@@ -3973,7 +3951,7 @@ This is a very general technique that allows for the **conditional inclusion of 
 
 One might ask: if $M$ is only required to be large enough, what is the most suitable $M$ to be given? From an algorithmic point of view, the best choice is usually the **lowest possible $M$**. Be careful, though, if $M$ is too small, the constraint is not redundant when the condition is not met, and we risk excluding valuable solutions. (It might be okay to exclude feasible solutions, and even optimal ones, provided that at least one optimal solution remains.) Too large $M$ values may also result in **numerical errors** in the solution procedure.
 
-### Implementing the Economy of Scale Constraints
+**Implementing the Economy of Scale Constraints**
 
 Now that the general technique of big-M constraints is introduced, let's head back to the economy of scale and implement the required constraints. There are two conditional constraints to implement:
 
@@ -4011,7 +3989,7 @@ We can see that if $\text{isOver}[s,d]=1$, then $\text{tranBase}[s,d] \ge \text{
 
 In conclusion, we added the variable $\text{isOver}$ and these two constraints to the previous model for increasing cost rates, and now our model for the transportation problem with **economy of scale** is ready.
 
-### Full MILP Model for Economy of Scale
+**Full MILP Model for Economy of Scale**
 
 ```
 set Supplies;
@@ -4151,7 +4129,7 @@ minimize Total_Costs: sum {(s,d) in Connections}
 
 Our implementation is ready. The variable $\text{tranUsed}[s,d]$ is either zero, in which case there is no fixed cost and no transportation over that connection, or $\text{tranUsed}[s,d]$ is one, the cost is paid, and there can be a positive transportation amount over that connection. Simultaneously zero transportation while still establishing the connection ($\text{tranUsed}[s,d]=1$ and $\text{tran}[s,d]=0$) is allowed as a feasible solution in the model, but the optimization procedure rules these cases out. The full model section is the following.
 
-### Full MILP Model for Fixed Costs
+**Full MILP Model for Fixed Costs**
 
 ```
 set Supplies;
@@ -4248,7 +4226,7 @@ From this point, two different methods are shown, which are applicable to penalt
 1.  The first method introduces a **single variable for the penalty itself**.
 2.  The second method introduces **two variables for the shortage and the surplus** of materials.
 
-### Method 1: Single Penalty Variable
+**Method 1: Single Penalty Variable**
 
 The first method relies on the idea that the penalty function (a convex, piecewise linear function) can be correctly modeled by two linear constraints. This means that two linear constraints can achieve what we want.
 
@@ -4272,7 +4250,7 @@ sum {(s,d) in Connections} tran[s,d] * Cost[s,d] +
 sum {d in Demands} penalty[d];
 ```
 
-### Method 2: Shortage and Surplus Variables
+**Method 2: Shortage and Surplus Variables**
 
 Let us see the second method for implementing flexible demands. This alternative way uses **more variables**, but **fewer constraints**. The exact shortage and surplus amounts are introduced as variables in this formulation.
 
@@ -4294,7 +4272,7 @@ sum {d in Demands} (shortage[d] * ShortagePenalty +
 surplus[d] * SurplusPenalty);
 ```
 
-### Full Model (Method 1) and Results
+**Full Model (Method 1) and Results**
 
 The full model section for the **first method** is presented below. Remember that the two methods are equivalent.
 
@@ -4339,7 +4317,7 @@ end;
 
 Regardless of which method we choose, the same result is obtained.
 
-#### "Small" Penalty Scenario ($\text{ShortagePenalty}=3, \text{SurplusPenalty}=1$)
+**"Small" Penalty Scenario** ($\text{ShortagePenalty}=3, \text{SurplusPenalty}=1$)
 
 For the "small" penalty scenario, we can see that the total costs are cut by almost half.
 
@@ -4359,7 +4337,7 @@ From S3 to D3, transport 170 amount for 170 (unit cost: 1).
 
 There are **no surplus penalties**, but **vast shortages** for D2, D5, and D6. The latter two demand sites (D5 and D6) do not receive any materials at all. The reason is that the **unit cost of transportation exceeds the gain by satisfying the demand**. In the case of D2, the first 40 units can be transported for low costs, but the remaining part of the requirements cannot. The reason for not satisfying demands is that the shortage penalty constant of **3 is very low**, so it is worth not delivering any materials at all and incurring the shortage penalty instead of paying the transportation cost.
 
-#### "Large" Penalty Scenario ($\text{ShortagePenalty}=15, \text{SurplusPenalty}=10$)
+**"Large" Penalty Scenario** ($\text{ShortagePenalty}=15, \text{SurplusPenalty}=10$)
 
 On the other hand, the "large" penalty scenario results in **exactly the same solution as the original transportation problem** without the penalties (optimal cost: 2,700). There is no surplus again, but **no shortages either**, simply because the shortage penalty of **15 per unit material is more costly than transporting the material** from any available supply. Therefore, there are no shortages.
 
@@ -4412,7 +4390,6 @@ Two scenarios must be evaluated:
 
 -----
 
-## 6.7. ADDING A MIDDLE LEVEL: TRANSPORTATION PROBLEM
 
 Before starting the model implementation, the **data section** describing Problem 33 can be implemented as follows. The only difference between the two scenarios is the value of the `EstablishCost` parameter.
 
@@ -4666,9 +4643,7 @@ Finally, the transportation problem was extended by **center nodes**, which divi
 
  
 
-## Chapter 7
-
-### MILP Models 🔢
+# Chapter 7: MILP Models 
 
 In the previous chapters, most of the problems we presented were solvable using an **LP (Linear Programming) model**. Nevertheless, some complex elements, such as fulfilling an entire order, modeling the economy of scale, and including fixed costs, required the use of **integer variables**, which resulted in an **MILP (Mixed-Integer Linear Programming) model**. However, the main problems we looked at—production, diet, and transportation—were fundamentally **continuous** in nature. That is, the variables could take any value within a range of real numbers, and integer values were only necessary under specific conditions.
 
@@ -4676,7 +4651,7 @@ In this chapter, we will explore several optimization problems that inherently i
 
 -----
 
-### 7.1 Knapsack Problem 🎒
+## 7.1 Knapsack Problem 
 
 One of the simplest optimization problems that is discrete by nature is the **knapsack problem** [18]. Its definition is as follows:
 
@@ -4966,7 +4941,7 @@ Another similar, interesting, and **better-known problem** is the so-called **bi
 
 -----
 
-## 7.2 Tiling the Grid 🧱
+## 7.2 Tiling the Grid 
 
 The **knapsack** and **similar problems** require items to "fit" somewhere. "Fitting" means that each item has a **weight**, and the **sum of the weights** is under a **constraint**. But what happens when **fitting is more complex**? For instance, considering the **size** or **shape** of items and their **container** is also a **common real-world question** that can lead to much more **difficult optimization problems**.
 
@@ -5348,7 +5323,7 @@ We can observe that the inside of the $30 \times 30$ square is almost perfectly 
 
 -----
 
-### 7.3 Assignment Problem 📎
+## 7.3 Assignment Problem 
 
 Another well-known optimization problem, the **assignment problem** [21], is presented in this section.
 
@@ -5366,10 +5341,6 @@ Assign each worker exactly one task so that the **total cost is maximized**.
 As usual, the general problem is demonstrated through an example.
 
 -----
-
-## 7.3. ASSIGNMENT PROBLEM
-
-MILP MODELS
 
 **Problem 41.**
 
@@ -5418,9 +5389,6 @@ end;
 
 -----
 
-## 7.3. ASSIGNMENT PROBLEM
-
-MILP MODELS
 
 There is only one kind of decision to be made in the model: for each assignment, decide whether we assign that particular task to the worker or not. This is a binary variable; we name it `assign`.
 
@@ -5537,7 +5505,7 @@ This completes our new model, which not only solves the assignment problem but s
 
 -----
 
-### Trial 1: Prohibiting an Assignment
+**Trial 1: Prohibiting an Assignment**
 
 First, we set the assignment **W6 to T6 fixed as zero (excluded)**. This is the only assignment decided a priori. This case is related to the original example Problem 41, because its optimal solution involves this assignment. Therefore, prohibiting this assignment forces the solver to find another solution. The data section modifications and the results are shown below.
 
@@ -5562,7 +5530,7 @@ It turns out that although the W6 to T6 assignment has a cost of 3 (the second s
 
 -----
 
-### Trial 2: Mandating an Assignment
+**Trial 2: Mandating an Assignment**
 
 Now for the second trial, set the assignment **W4 to T3 as mandatory (1)**. This is the **cheapest possible assignment** in the whole matrix with a cost of 2, but was not included in either optimal solution previously reported. This is the only a priori decision in the second trial. The added data and results are the following.
 
@@ -5626,7 +5594,7 @@ Solve the **minimum weight spanning tree (MST)** [25] problem on an arbitrary si
 
 -----
 
-### Understanding the Problems
+**Understanding the Problems**
 
 In the **shortest path problem**, edge weights typically represent **distances** between two nodes. This is common in practice, for example, in navigation.
 
@@ -5647,13 +5615,13 @@ Other approaches are also available. Our aim here is to show how **MILP models c
 
 On the graph depicted in **Figure 12**, find the shortest path between nodes **A and I**, and find the minimum weight spanning tree.
 
-### Feasibility Analysis
+**Feasibility Analysis**
 
 First, we analyze the problems in terms of feasibility. If a graph is **disconnected**, then there are nodes that cannot be reached by moving along edges, and there is **no connecting path**. Disconnected graphs have **no spanning trees** either. On the other hand, if a graph is **connected**, there should be paths from any node to any other, and also a spanning tree. We omit proofs of these claims here.
 
 The graph in **Figure 12** is connected and clearly has paths and spanning trees, so feasibility is guaranteed.
 
-### Data Implementation for the Graph
+**Data Implementation for the Graph**
 
 The main idea about modeling graphs with mathematical programming tools is that edges are defined by pairs of nodes. Therefore, edges can be indexed by two-dimensional indices where both dimensions refer to the set of nodes.
 
@@ -5718,7 +5686,7 @@ Finally, a parameter **`W`** is introduced for the weight of an edge used in the
   * If only one of $XY$ or $YX$ has data provided, then $W$ will be equal to that given weight. Therefore, we only have to mention each edge once in the data section, in an arbitrary order of the two nodes it connects.
   * If both $XY$ and $YX$ have data provided, then the minimum of these weights is used for both. (Note that this is not an intended functionality; we should not provide both weights in the data. This could also be asserted by a check statement.)
 
-### Solving the Shortest Path Problem
+**Solving the Shortest Path Problem**
 
 The main idea for the shortest path problem is to imagine a single **"droplet" of material** placed into the **`Start`** node. It will flow through the arcs of the graph to finally reach the **`Finish`** node. We expect the droplet to draw the path we are looking for. This is where the usage of arcs is more convenient than the usage of edges, because the **direction of flow is very important**.
 
@@ -5809,7 +5777,7 @@ Two additional notes on the shortest path problem:
 
 -----
 
-### Solving the Minimum Weight Spanning Tree (MST) Problem
+**Solving the Minimum Weight Spanning Tree (MST) Problem**
 
 Now let us solve the minimum weight spanning tree problem on the same graph. We start with the strategy:
 
@@ -6335,8 +6303,7 @@ The examples shown here included some of the most common **linear programming te
 
 
 
-## Chapter 8
-### Solution Algorithms
+# Chapter 8: Solution Algorithms
 
 So far, the focus has been on $\text{LP}$ and $\text{MILP}$ **modeling techniques** and the details of **GNU MathProg implementation**. Mathematical programming models are solved by **dedicated solvers**. Typically, the modeling procedure can be performed without knowing how these solvers operate.
 
@@ -6348,7 +6315,7 @@ In fact, **Linear Programming (LP)** is a primary technique within operations re
 
 ---
 
-### 8.1 The Primal Simplex Method
+## 8.1 The Primal Simplex Method
 
 Consider the following table, which contains the data for a production problem:
 
@@ -6481,7 +6448,7 @@ Finally, we mention an article that discusses various pivoting rules [34].
 
 ---
 
-### 8.2 The Two-Phase (Primal) Simplex Method
+## 8.2 The Two-Phase (Primal) Simplex Method
 
 Here, we will briefly introduce the **Two-Phase Method**. What has been shown previously is, in fact, the **second phase** of this method. Therefore, we need to show the **first phase**.
 
@@ -6520,7 +6487,7 @@ We call $t_1$ and $t_2$ **artificial variables**; we use them, but we are "not a
 
 ---
 
-### 8.3 The Dual Simplex Method
+## 8.3 The Dual Simplex Method
 
 Besides the Primal Simplex Method, the **Dual Simplex Method** is the other main version. We introduce it briefly. Let's consider the following $\text{LP}$:
 $$\begin{array}{rccccccc}
@@ -6587,7 +6554,7 @@ Since we obtained a tableau with a solution that is **both primal and dual feasi
 
 ---
 
-### 8.4 The Gomory Cut
+## 8.4 The Gomory Cut
 
 The **Gomory cut** is a primary tool for finding **integer solutions** for an $\text{LP}$. If we require that the variables of an $\text{LP}$ must be integer numbers, the model is called an **Integer Linear Program ($\text{ILP}$)**. In many cases, some variables are required to be integers, but others can be real values; this is called a **Mixed-Integer Linear Program ($\text{MILP}$)**.
 
@@ -6680,8 +6647,7 @@ We obtained an optimal tableau again (primal and dual feasible, so it's optimal)
 
 ---
 
-## Chapter 9
-### Summary
+# Chapter 9: Summary
 
 The capabilities of the **GNU MathProg modeling language** were presented using various problems. This included solving linear equation systems, the production and diet problems and their common extensions, the transportation problem, various general cost functions, and integer programming techniques through common optimization problems.
 
