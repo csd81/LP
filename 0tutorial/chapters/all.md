@@ -172,7 +172,13 @@ Although the general concept is that we are only formulating a model, we still n
 
 In **Linear Programming (LP)** models, the variables can take arbitrary real values. The constraints are equations or non-strict inequalities involving **linear expressions** of the variables. A linear expression is the sum of some variables, each multiplied by a constant. Linear expressions cannot contain multiplication or division of variables with each other, or any other mathematical functions or operations: only addition, subtraction, and multiplication by a constant are allowed. The objective function itself must be a linear expression of the variables, the minimization or maximization of which is the optimization goal. The following is an example of an LP problem:
 
-$$\begin{aligned} \text{minimize} &: 3x + 4y - z \\ \text{subject to} &: 2x + 5 = z + 2 \\ & x - y \leq 0 \\ & x + y + z \leq 2 (x + y) \\ & x, y, z \geq 0\end{aligned}$$ (7)
+$$\begin{aligned} \text{minimize} &: 3x + 4y - z \\ 
+\text{subject to} &: 2x + 5 = z + 2 \\ 
+& x - y \leq 0 \\ 
+& x + y + z \leq 2 (x + y) \\ 
+& x, y, z \geq 0\end{aligned}$$ 
+
+(7)
 
 An important point about LP models is that only non-strict constraints are allowed ($\leq$, $\geq$, or $=$), but strict constraints ($<$, $>$ ) are not. Also note that Problem 1 about Alice is formulated as an LP model, while Problem 3 about the chocolate blocks is **not** an LP, because it contains a product of variables ($xyz$), which is a nonlinear term.
 
