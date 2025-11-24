@@ -121,7 +121,11 @@ It may happen that an optimization model does not have a feasible solution at al
 
 Alice’s train leaves 75 minutes from now. She lives 8 km away from the station and plans to walk, and she also needs 30 minutes to get ready. Furthermore, she cannot average a speed faster than $\frac{10 \text{ km}}{\text{h}}$. How fast must she walk to the station to catch the train?
 
-$$\begin{aligned} \text{minimize} &: x \\ \text{subject to} &: 30 \text{ min} + \frac{8 \text{ km}}{x} \leq 75 \text{ min} \\ & x \leq \frac{10 \text{ km}}{\text{h}}\end{aligned}$$ (5)
+$$\begin{aligned} \text{minimize} &: x \\ 
+\text{subject to} &: 30 \text{ min} + \frac{8 \text{ km}}{x} \leq 75 \text{ min} \\ 
+& x \leq \frac{10 \text{ km}}{\text{h}}\end{aligned}$$ 
+
+(5)
 
 In rare cases, a model may be **unbounded**. This means that feasible solutions exist, but none of them are optimal, because there are always better and better feasible solutions available. For example, if Alice’s goal was to go as fast as possible to catch a train, instead of as slow as possible, then neither $\frac{4 \text{ km}}{\text{h}}$, $\frac{10 \text{ km}}{\text{h}}$, $\frac{1000 \text{ km}}{\text{h}}$, nor the speed of light would be optimal solutions, because there would always be a feasible solution with a higher speed value. Of course, this scenario is nonsensical. Typically, when our model turns out to be unbounded, we either made a mistake in solving it, or it does not accurately describe reality—perhaps because it omits some real-world constraint we overlooked. The latter was the case in our example, because, in practice, Alice cannot walk as fast as she wishes.
 
