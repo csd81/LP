@@ -451,6 +451,7 @@ y - z &= w - 5 \\
 x + 2w &= 7y - x
 \end{aligned}
 $$
+
 (8)
 
 Although not explicitly stated in the problem description, there are four variables: $x$, $y$, $z$, and $w$. The "real domain" means that all of these can independently take arbitrary real values. Our goal is to find values for these four variables such that all four equations are true.
@@ -469,6 +470,7 @@ y + z &= 1 \\
 2x - 7y + 2w &= 0
 \end{aligned}
 $$
+
 (9)
 
 The point is that this arrangement can be obtained from the original system by simplifying each equation individually: removing parentheses and adding or merging terms on both sides. In this way, the arranged system is equivalent to the original. On the left-hand side (LHS) of each equation, there is a linear expression of the variables (each multiplied by a constant and then added), and on the right-hand side (RHS), there is a constant. Therefore, all equations are linear.
@@ -483,6 +485,7 @@ $$
 (+2) \cdot x + (-7) \cdot y + 0 \cdot z + (+2) \cdot w &= 0
 \end{aligned}
 $$
+
 (10)
 
 Although this representation is less readable, it represents more generally what a system of linear equations actually means. For each equation, there is a constant right-hand side and a linear expression on the left-hand side, for which we only need to know the coefficients for each variable. Thus, this whole problem can be represented in a matrix of coefficients, where the rows correspond to equations and the columns correspond to variables—except for the rightmost column, which corresponds to the right-hand side. 
