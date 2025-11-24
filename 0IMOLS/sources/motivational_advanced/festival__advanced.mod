@@ -1,3 +1,23 @@
+
+set Bands;
+set Festivals;
+
+param performs{Bands,Festivals};
+
+var go{Festivals};
+
+minimize FestivalsWentTo:
+    sum{f in Festivals} go[f];
+
+s.t. ListenToAllBandsAtLeastOnce {b in Bands}:
+    sum{f in Festivals} performs[b,f] * go[f] >= 1;
+
+solve;
+
+display go;
+
+
+data;
 set Bands :=
   Haggard
   Stratovarius
@@ -20,15 +40,5 @@ param performs:
     Liva          0   1   1   1   1
     Eluveitie     0   0   1   0   1
     ;
-set Bands;
-set Festivals;
 
-param performs{Bands,Festivals};
-
-var go{Festivals};
-
-s.t. ListenToAllBandsAtLeastOnce {b in Bands}:
-  sum{f in Festivals} performs[b,f] * go[f] >= 1;
-
-minimize FestivalsWentTo:
-  sum{f in Festivals} go[f];
+end;

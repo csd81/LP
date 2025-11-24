@@ -13,9 +13,6 @@ s.t. IngredientUsage{i in Ingredients}:
 maximize Income:
   sum{p in Products} price[p] * quantity[p];
 
-solve;
-
-display Income;
 
 data;
 
