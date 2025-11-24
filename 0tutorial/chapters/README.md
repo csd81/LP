@@ -1,4 +1,832 @@
 
+---
+
+# Chapter 1: Introduction
+
+This tutorial provides an **overview** of mathematical programming and Operations Research (OR). We will focus on developing Linear Programming (LP) and Mixed-Integer Linear Programming (MILP) models using the GNU MathProg (GMPL) modeling language.
+
+Optimization is essentially about finding the **best** solution to real-world problems. While you can sometimes rely on common sense or simple logic, many scenarios require advanced approaches. Typically, we create a mathematical model of the problem and design solution methods by leveraging the best available math, computer science, and technology.
+
+The main challenge often lies in the **vast number of potential solutions** to a problem. It is often impossible to evaluate every single one, even with the fastest supercomputers. In many situations, instead of hunting for a perfect solution, we use "rules of thumb," also known as **heuristic methods**. These methods simplify the underlying model or limit the number of solutions we investigate. This approach sacrifices optimality but makes finding a "good enough" solution computationally feasible. Even then, we usually need some form of optimization to pick the best option from the remaining candidates.
+
+When faced with an optimization problem, the "conventional" approach is to design and code a specific algorithm in a programming language like C++, Java, or Python. This involves defining the data structures and the exact sequence of steps (the "How") to achieve the goal (the "What"). For example, you might implement Dijkstra’s algorithm to find the shortest path in a graph, Kruskal’s algorithm for the cheapest spanning tree, or the Ford-Fulkerson algorithm for network flow.
+
+Mathematical programming offers a different path. Instead of coding the steps, you **only formulate a mathematical model** of the real-world problem. This model uses equations, inequalities, and logical expressions to describe the rules governing the problem. You don't write the algorithm to solve it; you just define the system. Specialized **solver software** handles the heavy lifting to find the solution for that class of mathematical model.
+
+This tutorial focuses on a subset of these methods—specifically Linear Programming (LP) and Mixed-Integer Linear Programming (MILP)—using the GNU MathProg (GMPL) language [1]. **Tackling** real-world optimization problems by building a model and running it through a solver is a valuable skill, distinct from standard programming. While a custom algorithm might be faster for specific problems, building a mathematical model is often surprisingly fast and easy. Plus, models are much more flexible if the requirements of the real-world problem change later.
+
+The internal algorithms that solvers use to process our models are an interesting topic, but they aren't our focus here. In short, learning *how to formulate* these models is more important for our purposes than the mechanics of *how the software solves them* to optimality.
+
+We chose the GNU MathProg language and the `glpsol` solver (part of the GNU Linear Programming Kit [2]) because they are open-source and relatively easy to understand. There are many other free and commercial tools available for formulating and solving mathematical programming models, many of which are significantly faster than `glpsol`.
+
+There are several other learning resources available on this subject. The basic GLPK installation includes a number of example models, some of which are quite complex. GLPK also has a detailed Wikibooks project [3]. We also recommend Hegyháti’s Linear Programming tutorial [4], and you can find many useful books and lecture materials on the Hungarian Tankönyvtár homepage [5].
+
+This tutorial covers the basics of the language and presents key problems that are easily solved with mathematical programming. It offers insight into the power of optimization using mathematical models, particularly MILP. We will also touch on some algorithmic solution methods for specific problems.
+
+The remainder of the tutorial is organized as follows:
+
+* **Chapter 2** introduces the main goals, tools, and concepts of optimization.
+* **Chapter 3** covers the basic usage of GNU MathProg and the `glpsol` solver, including a minimal "Hello, World!" model.
+* **Chapter 4** demonstrates how to solve linear equation systems using GNU MathProg. We will gradually improve the model implementation to show off language features like indexing and separating data from the model.
+* **Chapter 5** introduces the production problem. This chapter focuses on incremental development, showing how to handle changes, extensions, and integer variables.
+* **Chapter 6** presents the transportation problem. We will introduce modeling techniques for various cost functions found in complex problems.
+* **Chapter 7** discusses more challenging problems that require MILP formulations. We will cover advanced modeling and coding techniques, as well as graphical outputs.
+* **Chapter 8** provides a brief look "under the hood" at LP/MILP solving algorithms to explain how the software works in the background.
+
+This tutorial includes attachments. You can find all the GNU MathProg codes (models, data files, and outputs) mentioned in the text, grouped by chapter and section. (See the attachment itself for a detailed description.)
+
+For the best learning experience, we recommend manually examining and solving the models with their corresponding data files. Note that most of the code and key output segments are included directly in the text using the following format:
+
+> GNU MathProg code for model files is formatted like this.
+
+> GNU MathProg code of data sections that may go to
+> separate data files are formatted like this.
+
+> Output generated by the solver is formatted like this.
+
+> Commands to be run are formatted like this.
+
+If you have questions or spot any errors in this tutorial, please feel free to contact us at eles@dcs.uni-pannon.hu. We hope you find this material useful.
+
+---
+
+
+---
+
+# Chapter 2: Optimization
+
+## 2.1 Equations
+
+Equations are among the simplest and most powerful tools we have for mathematical modeling. Let's look at an example problem that can be solved using a single equation.
+
+
+
+**Problem 1.**
+Alice's train departs in 75 minutes. She lives 3 km away from the station and plans to walk, but she also needs 30 minutes to get ready. How fast must she walk to the station to catch the train?
+
+We can see that we are actually looking for the minimum average speed Alice must maintain. She might walk faster at some points or slower at others, but her overall average speed determines her arrival time. She could even walk at a constant speed to achieve the same result. We are specifically looking for the minimal speed at which she *just* catches the train. Of course, she could walk faster and have some waiting time at the station. These assumptions may seem trivial, but they are part of the modeling process: we have simplified the problem to finding a single minimal speed value, assuming Alice walks at that constant speed to arrive precisely on time.
+
+We can solve this problem by expressing the time until she reaches the station in two different ways. First, based on the train schedule, her arrival time is 75 minutes from now. Second, her arrival time is the sum of the 30 minutes needed for preparation plus the time spent walking. The walking time is the unknown term because it depends on Alice's speed. We now introduce a variable, $x$, to represent Alice's speed—this is what we need to find. The variable $x$ represents a value that can be chosen, giving Alice control over the outcome. She can adjust her speed to arrive at the station sooner or later.
+
+Using $x$, we can easily express the time she spends walking as $\frac{3 \text{ km}}{x}$. We can now formulate an equation based on the fact that Alice's arrival time is expressed in these two different ways.
+
+$$30 \text{ min} + \frac{3 km}{x} = 75 \text{ min}$$
+
+(1)
+
+Alice's task is to choose an appropriate $x$ so that this equation holds true. At this point, the equation is formulated, so we can set aside the real-world scenario and apply our mathematical knowledge to solve it. This one is easy. For example, we can subtract 30 minutes from both sides, multiply by $x$ (assuming $x$ is not zero), and then divide by 3 km, in that order. We arrive at the following:
+
+$$x = \frac{4 km}{h}$$
+
+(2)
+
+## 2.2 Finding the "Best" Solution
+
+When we solve an equation, we are essentially transforming it into simpler forms, where each new form is a direct consequence of the previous one. The final form is $x = \frac{4 \text{ km}}{\text{h}}$, which literally means: "If $30 \text{ min} + \frac{3 \text{ km}}{x} = 75 \text{ min}$, then the direct consequence is $x = \frac{4 \text{ km}}{\text{h}}$." So, if Alice wants to *just* catch the train, her average speed must be $\frac{4 \text{ km}}{\text{h}}$. At this point, we have the mathematical result and can interpret it in reality. This is the general approach to using equations in problem-solving. First, we identify the degree of freedom in the problem (in this case, $x$, the speed). Then, we use equations as modeling tools to express the rules of reality that must be followed (Equation 1). Once the model is ready, we apply solution techniques that are typically general for all types of equations and independent of the underlying real-world problem. In this case, the equation is transformed through a chain of direct consequences until the variable is expressed directly as a constant value. Finally, once we obtain the result from the mathematical model, we interpret it as the solution to our initial real-world problem.
+
+Of course, there are much more difficult examples of equation solving (such as multiple solutions for single equations, extraneous solutions, multiple variables, systems of multiple equations, etc.) that we won't cover here. However, the scheme is always similar: we formulate a mathematical model that describes the real-world situation, solve that model using well-known general techniques, and then interpret the model's solution as the answer to the original problem.
+
+## 2.3 Main Concepts
+
+Notice that in Problem 1, the question asked how fast Alice *must* go. The answer was $x = \frac{4 \text{ km}}{\text{h}}$, but that isn't entirely accurate. In reality, $x = \frac{5 \text{ km}}{\text{h}}$, $x = \frac{10 \text{ km}}{\text{h}}$, or even $x = \frac{15 \text{ km}}{\text{h}}$ are also valid solutions for her, assuming she can walk that fast. However, $x = \frac{3 \text{ km}}{\text{h}}$ is not a solution, because she would miss the train at that speed. While we understand that $x = \frac{4 \text{ km}}{\text{h}}$ is the *minimum* speed required for Alice to make the train on time, a more precise formulation would be the following inequality:
+
+$$30 \text{ min} + \frac{3 \text{ km}}{x} \leq 75 \text{ min}$$
+
+(3)
+
+Here, two quantities are compared: the time Alice needs to reach the station if her speed is $x$ (which is $30 \text{ min} + \frac{3 \text{ km}}{x}$) and the time the train departs (75 min). These two quantities are related: Alice must arrive at or before the train is due (in other words, no later). This is best expressed as an inequality rather than an equation, though the goal is the same. We must find a speed $x$ for Alice for which the inequality holds. Technically, this can be solved in exactly the same way as the equation, leading to $x \geq \frac{4 \text{ km}}{\text{h}}$. This means the solutions effectively include all speeds $x$ that are at least $\frac{4 \text{ km}}{\text{h}}$. Since there are infinitely many solutions to the inequality, Alice can choose from infinitely many speeds.
+
+While this is more precise, Alice is likely interested in the minimum speed she can get away with—meaning let $x$ be as small as possible. The formulation is as follows:
+
+$$\begin{aligned} \text{minimize} &: x \\ 
+\text{subject to} &: 30 \text{ min} + \frac{3 \text{ km}}{x} \leq 75 \text{ min}\end{aligned}$$ 
+
+(4)
+
+At this point, the formulated problem is an **optimization problem**. The goal isn't just to find *a* suitable solution for a real-world problem, but to find the **most suitable** one based on specific criteria. From a mathematical perspective, optimization involves finding the *best* solution, not just any solution, for an equation, inequality, or set of such statements. Optimization is a sub-field of Operations Research, as it is an essential tool for supporting business decisions: given a complex real-world situation, what is the best course of action?
+
+Now that we have seen some optimization in Problem 1, it is time to establish some basic concepts regarding optimization models.
+
+When we solve a real-world problem by defining variables, equations, inequalities, and so on, we are formulating a **mathematical model** for the problem. That model is then solved using mathematical knowledge that is usually independent of the original, real-world problem. If the solution procedure is carried out by software (which is usually the case), that software is called a **solver**.
+
+An optimization model contains **variables**. These represent our freedom of choice: the different values a variable can take represent our different potential actions. In Problem 1, there is a single variable, $x$, representing Alice's average speed.
+
+A **solution** to an optimization model occurs when all the variables are assigned a value. If the model has multiple variables, a single solution consists of values for all of those variables. Two solutions are considered different if any of the variables take a different value. In Problem 1, there are infinitely many solutions, such as $x = \frac{4 \text{ km}}{\text{h}}$, $x = \frac{10 \text{ km}}{\text{h}}$, and even $x = \frac{1 \text{ km}}{\text{h}}$ (see below), though in the latter case, Alice misses the train.
+
+Usually, variables cannot take arbitrary values. In Problem 1, Alice cannot choose a speed that would cause her to miss the train. Such mandatory restrictions are called **constraints**. In our example problem, there is a single constraint, which is expressed by Inequality (3).
+
+A wide range of constraints may appear in an optimization problem; some cannot even be expressed as simple inequalities. We should also mention the concept of **bounds**: these are constraints that require a single variable to be no less than or no more than a given constant limit. For example, $x \geq \frac{0 \text{ km}}{\text{h}}$ is a bound that must also be enforced. The problem required Alice to move at a positive speed, so this was implicitly enforced rather than explicitly stated. In many optimization problems, however, we must explicitly consider bounds; otherwise, the solutions might not reflect reality. Bounds also have great practical importance in model solution algorithms.
+
+Constraints determine whether solutions are **feasible** or **infeasible**. A feasible solution is one where all variables take values for which all the constraints hold true. Otherwise, it is an infeasible solution. In Problem 1, solutions $x = \frac{4 \text{ km}}{\text{h}}$ and $x = \frac{10 \text{ km}}{\text{h}}$ are feasible, while $x = \frac{1 \text{ km}}{\text{h}}$ is infeasible. We could simply say that $x = \frac{4 \text{ km}}{\text{h}}$ is a solution and $x = \frac{1 \text{ km}}{\text{h}}$ is not, but we prefer the terminology of feasible and infeasible solutions.
+
+The way we differentiate between feasible solutions—determining which ones are more or less suitable—is expressed in the model as an **objective function**, which is to be minimized (or maximized). Like constraints, an objective function evaluates an expression based on the model variables. The goal of optimization is to find a feasible solution where the objective function is minimal (or maximal). A solution with this property is an **optimal solution** of the model. If a solution is optimal, we can be sure that any other solution is either infeasible, has an equal or worse objective value, or both. There can be multiple optimal solutions for the same model. In Problem 1, we have a very simple objective function, $c(x) = x$, which is minimal at the solution $x = \frac{4 \text{ km}}{\text{h}}$. The optimal objective for the problem is therefore $\frac{4 \text{ km}}{\text{h}}$. Sometimes, we refer to the objective value as the solution of an optimization problem. Therefore, we can say that the optimal solution to Problem 1 is $\frac{4 \text{ km}}{\text{h}}$.
+
+It may happen that an optimization model does not have a feasible solution at all, meaning there are no optimal solutions either. In this case, we say the model is **infeasible**. For example, consider the following modification (Problem 2), where the resulting System (5) would be infeasible: Alice is too far away and cannot walk fast enough; she will miss the train by at least 3 minutes.
+
+**Problem 2.**
+
+Alice’s train departs in 75 minutes. She lives 8 km away from the station and plans to walk, and she needs 30 minutes to get ready. Furthermore, she cannot maintain an average speed faster than $\frac{10 \text{ km}}{\text{h}}$. How fast must she walk to the station to catch the train?
+
+$$\begin{aligned} \text{minimize} &: x \\ 
+\text{subject to} &: 30 \text{ min} + \frac{8 \text{ km}}{x} \leq 75 \text{ min} \\ 
+& x \leq \frac{10 \text{ km}}{\text{h}}\end{aligned}$$ 
+
+(5)
+
+In rare cases, a model may be **unbounded**. This means that feasible solutions exist, but none are optimal because there are always better and better feasible solutions available. For example, if Alice’s goal was to go as fast as possible to catch the train, rather than as slow as possible, then neither $\frac{4 \text{ km}}{\text{h}}$, $\frac{10 \text{ km}}{\text{h}}$, $\frac{1000 \text{ km}}{\text{h}}$, nor the speed of light would be optimal solutions, because there would always be a feasible solution with a higher speed. Of course, this scenario is nonsensical. Typically, when our model turns out to be unbounded, we either made a mistake in solving it, or it does not accurately describe reality—perhaps because we omitted a real-world constraint. The latter was the case in our example because, in practice, Alice cannot walk as fast as she wishes.
+
+We can also call the set of feasible solutions of the model the **search space**, emphasizing that our actual goal in optimization is to maximize or minimize an objective function value over that set. If all the variables are treated together as a mathematical vector, each solution can be considered a point in that vector space. The set of all feasible solutions is a set of points in space that may have special properties. For instance, in LP problems, it is a convex polytope. Constraints (and bounds) are used to define the search space. Each constraint may exclude some values, making them no longer feasible within the search space.
+
+It may appear that a constraint does not exclude any solutions from the search space at all. We call those constraints **redundant**. Note that redundant constraints do not affect the model's solutions and therefore do not change the optimal solution, but they might affect the solution procedure itself, either positively or negatively. We may also refer to constraints as redundant if they do exclude some solutions, but only those that are not interesting to us (for example, because they cannot be optimal for some reason and will not be reported by the solution algorithm anyway).
+
+Now, let's look at a slightly more elaborate example of an optimization problem.
+
+
+
+**Problem 3.**
+
+A company wants to design a new type of chocolate in the form of a rectangular block of uniform material. They want the block to contain as much mass as possible; however, shipping regulations limit the size of the block's faces. One face must have an area no greater than $6 \text{ cm}^2$, another face cannot be greater than $8 \text{ cm}^2$, and the largest face cannot be greater than $12 \text{ cm}^2$. What is the greatest possible mass for a piece of chocolate?
+
+This example could be part of a business decision-making problem. The company aims to maximize its profit but must find a suitable solution for production. Operations Research assists in decision-making, for instance, through optimization models.
+
+In this case, defining the variables isn't even straightforward. Though not explicitly mentioned in the problem description, the three edge lengths of the block—say, $x$, $y$, and $z$—are appropriate variables for the following reasons. First, using these lengths, we can easily express the other quantities specified in the problem: $xy$, $xz$, and $yz$ are the face areas, and $xyz$ is the total volume, which is to be maximized. Note that if the chocolate is homogeneous, volume is proportional to mass, so maximizing volume is equivalent to maximizing mass. Second, $x$, $y$, and $z$ are independent of one another: selecting $x$ does not directly affect the selection of $y$, as all possible combinations can form a block. If they were not independent, additional constraints would need to be formalized.
+
+The most important requirement for a set of variables is that if $x$, $y$, and $z$ are given, the solution to the real-world problem is well-defined. That is, we can accurately determine whether the constraints are satisfied and what the objective value is. Now, let's express the three face area constraints and the volume objective to formulate the optimization model. Note that $x$, $y$, and $z$ should also be positive, but these bounds will be implicitly enforced by an optimal solution of the model.
+
+$$\begin{aligned} \text{maximize} &: xyz \\ 
+\text{subject to} &: xy \leq 6 \text{ cm}^2 \\ 
+& xz \leq 8 \text{ cm}^2 \\ 
+& yz \leq 12 \text{ cm}^2 \\ 
+& x, y, z \geq 0\end{aligned}$$ 
+
+(6)
+
+There are many feasible solutions for this model; for example, $x = y = z = 2 \text{ cm}$ is feasible, but $x = y = z = 2.5 \text{ cm}$ is infeasible. There is a single optimal solution, which is $x = 2 \text{ cm}$, $y = 3 \text{ cm}$, and $z = 4 \text{ cm}$; the total volume in this case is $24 \text{ cm}^3$.
+
+The method for finding this optimal solution and unequivocally proving its optimality is non-trivial and beyond the scope of this tutorial. Here’s a hint, if you wish to solve it: $(xyz)^2 = (xy) \cdot (xz) \cdot (yz)$.
+
+---
+
+## 2.4 Mathematical Programming
+
+We've examined two very simple optimization problems so far. However, for the second one, we would have trouble if we had to actually solve it and prove that our solution is indeed optimal.
+
+The key idea of mathematical programming is that **we are not the ones who actually solve the models**. We are the ones who translate the real-world problem into an optimization model; then, software specifically designed for solving models typically does the heavy lifting for us. Finally, we only need to verify that the model's solution is suitable for the real-world problem.
+
+A mathematical programming model consists of the **model variables** that represent our freedom of choice, the **constraints** that express the requirements for a solution to be feasible and suitable for the real-world problem, and finally, the **objective function**, which determines the criteria for finding the best among the feasible solutions.
+
+Although the general concept is that we are only formulating a model, we still need to be careful about which class of model we choose. The main reason is that the class greatly affects the available solution methods. Solving a model from a more specialized class, as opposed to a more general one, can be drastically cheaper in terms of computational effort. We explicitly mention two model classes that are highly important in Operations Research.
+
+
+
+In **Linear Programming (LP)** models, the variables can take arbitrary real values. The constraints are equations or non-strict inequalities involving **linear expressions** of the variables. A linear expression is the sum of variables, each multiplied by a constant. Linear expressions cannot contain multiplication or division of variables with each other, or any other mathematical functions or operations: only addition, subtraction, and multiplication by a constant are allowed. The objective function itself must be a linear expression of the variables, the minimization or maximization of which is the optimization goal. The following is an example of an LP problem:
+
+$$\begin{aligned} \text{minimize} &: 3x + 4y - z \\ 
+\text{subject to} &: 2x + 5 = z + 2 \\ 
+& x - y \leq 0 \\ 
+& x + y + z \leq 2 (x + y) \\ 
+& x, y, z \geq 0\end{aligned}$$ 
+
+(7)
+
+An important point about LP models is that only non-strict constraints are allowed ($\leq$, $\geq$, or $=$), while strict constraints ($<$, $>$ ) are not. Also, note that Problem 1 about Alice is formulated as an LP model, while Problem 3 about the chocolate blocks is **not** an LP because it contains a product of variables ($xyz$), which is a nonlinear term.
+
+An LP model is solvable in polynomial time based on the number of constraints and variables. This means large models can be formulated and solved in an acceptable amount of time using a modern computer. LP problems have several interesting properties that make them solvable with efficient algorithms, for example, the Simplex Method (see Chapter 8). One such property is that the set of feasible solutions in space is always a closed, convex set.
+
+In **Mixed-Integer Linear Programming (MILP)** models, we may also require some variables to only take integer values in feasible solutions, contrary to LP problems. This difference makes solving the generally broader class of MILP models an **NP-complete problem** regarding the number of integer variables. This means that if there are many integer variables in an MILP model, we generally cannot expect a complete solution in an acceptable amount of computational time. However, the number of applications that MILP models can cover is surprisingly much wider than for LP problems, making MILP models a popular method for solving complex optimization problems. Effective software tools utilizing heuristic algorithms often solve non-complex MILP models very quickly.
+
+In this manual, we focus on MILP and LP models. In both cases, only linear expressions of the variables appear in the formulations. There are other problem classes, such as Nonlinear Programming (NLP) and Mixed-Integer Nonlinear Programming (MINLP), with corresponding solvers, but these are not covered here.
+-----
+
+# Chapter 3: GNU MathProg
+
+This chapter introduces GNU MathProg and demonstrates how to use it to implement and solve mathematical programming models in the LP or MILP class. We will present a short example problem, complete with implementation, solution, and results, to highlight some of the language's most frequently used features.
+
+-----
+
+## 3.1 Prerequisites for Programming
+
+GNU MathProg, also known as the **GNU Mathematical Programming Language** (GMPL), is a modeling language used for designing and solving LP and MILP problems. The **GNU Linear Programming Kit (GLPK)** provides free software that parses implemented models and solves them to report the optimal solution. GLPK is available under the General Public License version 3.0 or later [6].
+
+There are other software tools available for solving MILP models; some are free, such as CBC or lpsolve. These tools can be much faster than GLPK. Commercial software can be even better, and some options are available through academic licenses. However, we chose GNU MathProg and the **`glpsol`** solver from GLPK because they are relatively easy to use and include both the language and the model-solving tools in one package.
+
+GLPK installation depends on your operating system. On Linux, you can visit the official GLPK website to find installation packages, source code, and sample GNU MathProg problems. On some distributions, you can install it with a single command:
+
+```bash
+sudo apt-get install glpk-utils
+```
+
+If the installation is successful, the program **`glpsol`** should be available in your command line. Throughout this manual, we will use this tool in the command line to parse and solve models.
+
+You can also get the command-line solver on Windows. However, a more convenient option is a desktop application called **GUSEK** [9], which is a simple Integrated Development Environment (IDE) featuring a text editor specifically for the GNU MathProg language. The `glpsol` solver is available there with all its functionalities. With GUSEK, you don't need the command line, although managing multiple files requires some attention.
+
+A public reference manual for the GNU MathProg modeling language, including usage instructions for the `glpsol` software, is available (see reference [1]).
+
+-----
+
+## 3.2 "Hello World\!" Program
+
+Once installed, we can test the program with a very simple LP problem. This will be our first GNU MathProg program, effectively a "Hello World\!" example.
+
+```ampl
+var x >= 0;
+var y >= 0;
+var z >= 0;
+s.t. Con1: x + y <= 3;
+s.t. Con2: x + z <= 5;
+s.t. Con3: y + z <= 7;
+maximize Sum: x + y + z;
+solve;
+printf "Optimal (max) sum is: %g.\n", Sum;
+printf "x = %g\n", x;
+printf "y = %g\n", y;
+printf "z = %g\n", z;
+end;
+```
+
+GNU MathProg is designed to be readable, and its mathematical meaning is easy to understand. The language consists of commands ending with a semicolon (;), which are called **statements**. This file contains six distinct statements: `var`, `s.t.`, `maximize`, `solve`, `printf`, and `end`. As we will see, the meanings of most are self-explanatory.
+
+```ampl
+var x >= 0;
+var y >= 0;
+var z >= 0;
+```
+
+First, this is an LP problem where all three variables—$x$, $y$, and $z$—can take real values. They also have **bounds** defined: each must be non-negative. Note that this is the most common bound used for variables.
+
+```ampl
+s.t. Con1: x + y <= 3;
+s.t. Con2: x + z <= 5;
+s.t. Con3: y + z <= 7;
+```
+
+The problem has three **constraints**, separate from the bounds, which are treated differently in the language. The constraints are named `Con1`, `Con2`, and `Con3`, respectively. The names are preceded by **"s.t."**, which is an abbreviation for "subject to," though it has several aliases and can even be omitted entirely. These constraints state that the sum of any two of the three variables cannot be greater than the given constants (3, 5, and 7, respectively).
+
+```ampl
+maximize Sum: x + y + z;
+```
+
+The goal of the optimization is to **maximize** the objective titled "Sum," which is simply the sum of the three variables. A model file can contain at most one `maximize` or `minimize` statement.
+
+At this point, the LP problem is fully defined. While this is a relatively easy linear problem, its optimal solution might not be immediately obvious.
+
+Note that you can omit the objective function entirely from a GNU MathProg model formulation. In that case, the only task is to find any **feasible solution** for the problem.
+
+```ampl
+solve;
+printf "Optimal (max) sum is: %g.\n", Sum;
+printf "x = %g\n", x;
+printf "y = %g\n", y;
+printf "z = %g\n", z;
+end;
+```
+
+The file includes a **`solve`** statement. This marks the point where the solver software should finish reading all the data, then construct and solve the model. After the `solve` statement, you can include other statements to report valuable information about the solution. In this case, the objective value and our three variables are printed using the values obtained by the optimization procedure. The **`printf`** statement works similarly to the `printf()` function in the C programming language but supports fewer format specifiers. We prefer the `%g` format because it prints both integers and fractional values in a compact form. In some cases, a fixed-precision number, like `%.3f`, is more appropriate.
+
+The **`end`** statement marks the end of the model description, although it is optional.
+
+You can use any text editor you like, but some offer syntax highlighting. GUSEK on Windows has a text editor specifically designed for modeling. On Linux, you can use `gedit`. While `gedit` does not have built-in syntax highlighting for GNU MathProg by default, you can download it from the internet.
+
+Let's name this file `helloworld.mod`. on some systems, the file extension `.mod` might be recognized as a video format by the file browser. This might cause a "double-click" to try opening the file as a video instead of a text file. For this reason, we recommend setting the file's opening method to your preferred text editor, such as `gedit`. Alternatively, you can simply use a different file extension, like `.m` or just `.txt`; it doesn't matter to `glpsol`, although it may matter if you use an IDE like GUSEK.
+
+The `helloworld.mod` file is a **model file** because it contains the business logic of the problem we want to solve. It is sufficient on its own for defining a problem. Later on, we will split our problem formulations into a single model file and one or more **data files**. The model file encapsulates the problem's logic, while the data file(s) provide the actual data used to solve the problem. This separation is useful because if the real-world data changes, we don't need to modify the model itself. In other words, a user who wants to solve a model for a specific problem doesn't need to understand the model code; they only need to correctly implement a data file, which is much easier and less error-prone.
+
+Use `glpsol` to solve the model file with the following command:
+
+```bash
+glpsol -m helloworld.mod
+```
+
+You should see output similar to the following:
+
+```bash
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+-m helloworld.mod
+
+Reading model section from helloworld.mod...
+20 lines were read
+Generating Con1...
+Generating Con2...
+Generating Con3...
+Generating Sum...
+Model has been successfully generated
+GLPK Simplex Optimizer, v4.65
+4 rows, 3 columns, 9 non-zeros
+Preprocessing...
+3 rows, 3 columns, 6 non-zeros
+Scaling...
+A: min|aij| = 1.000e+00 max|aij| = 1.000e+00 ratio =
+Problem data seem to be well scaled
+Constructing initial basis...
+Size of triangular part is 3
+* 0: obj = -0.000000000e+00 inf =   0.000e+00 (3)
+* 3: obj =   7.500000000e+00 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.1 Mb (102283 bytes)
+Optimal (max) sum is: 7.5.
+x = 0.5
+y = 2.5
+z = 4.5
+Model has been successfully processed
+```
+
+Since this is a small problem, the result is almost instantaneous. Let's look at what information we can read from the output.
+
+```bash
+GLPSOL: GLPK LP/MIP Solver, v4.65
+Parameter(s) specified in the command line:
+-m helloworld.mod
+Reading model section from helloworld.mod...
+18 lines were read
+Generating Con1...
+Generating Con2...
+Generating Con3...
+Generating Sum...
+Model has been successfully generated
+```
+
+The first section of the output appears during the **model generation procedure**. If the model has bad syntax, it will be noted here. Note that only the first error is displayed. Notice that the constraints and the objective are the model elements that must be "generated."
+
+```bash
+GLPK Simplex Optimizer, v4.65
+4 rows, 3 columns, 9 non-zeros
+Preprocessing...
+3 rows, 3 columns, 6 non-zeros
+Scaling...
+A: min|aij| = 1.000e+00 max|aij| = 1.000e+00 ratio =
+Problem data seem to be well scaled
+Constructing initial basis...
+Size of triangular part is 3
+* 0: obj = -0.000000000e+00 inf =   0.000e+00 (3)
+* 3: obj =   7.500000000e+00 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.1 Mb (102283 bytes)
+```
+
+The solution procedure for an LP problem—from the constraints to the final, optimal solution—is an interesting subject in Operations Research. However, we won't focus on the underlying solution algorithms here. Still, basic knowledge about them will help us with debugging later. First, all LP problems are represented in a **matrix of coefficients**, where the rows correspond to constraints (and the objective), the columns correspond to variables, and the matrix entries are the coefficients of a given variable in a given constraint. Some preprocessing steps are performed on this matrix, and then the main algorithm is launched.
+
+Two rows in this output show a "current" result. The first shows an objective of 0; the second shows the objective $7.5$, which is actually the final optimal solution. The row "OPTIMAL LP SOLUTION FOUND" indicates that the solver successfully solved the problem and now knows the optimal solution and the corresponding variable values. If there are multiple optimal solutions, one is chosen.
+
+For more complex problems, finding the solution can take significant time, and the current best solutions are updated regularly. The procedure may end before reaching the optimal solution, in which case the best feasible solution found so far is reported. This happens, for example, when you set a time limit for `glpsol` and that limit is exceeded during the process.
+
+```bash
+Optimal (max) sum is: 7.5.
+x = 0.5
+y = 2.5
+z = 4.5
+Model has been successfully processed
+```
+
+Finally, we see the result of the `printf` statements we added at the end. The optimal solution is $x = \frac{1}{2} = 0.5$, $y = \frac{5}{2} = 2.5$, $z = \frac{9}{2} = 4.5$, and the objective function value is $x + y + z = \frac{15}{2} = 7.5$. This result means we cannot choose values for the variables to obtain a larger sum unless at least one of the constraints (or bounds) is violated. Note that `printf` statements are also valid before the `solve` statement—that is, during the model construction procedure. However, variables and the objective are not available before the `solve` statement because they haven't been calculated yet. The final "Model has been successfully processed" message indicates that the solver call was successful.
+
+We should also note that the `glpsol` command-line tool has many other options. For example, you can automatically print a solution file using the `-o` option. You can save the program's output with the `--log` option. Additionally, you can export the constructed model to formats that other MILP solvers can use. For instance, the `--wlp` option exports to CPLEX-LP matrix format, which is supported by many other solver software. Perhaps you don't want to use `glpsol` to solve the model; you only need it to translate the model to another format. In that case, the `--check` option ensures that the model is only parsed, not solved. It is also possible to manipulate the solution procedure in many ways.
+
+Now that we have successfully formulated, solved, and analyzed the output for our first LP problem in GNU MathProg, let's make a slight change to the model file. Add the **integer restriction** to all three variables, as shown below. Save the modified file as `helloworld-int.mod`.
+
+```ampl
+var x >= 0, integer;
+var y >= 0, integer;
+var z >= 0, integer;
+```
+
+This is no longer an LP model; it is now a **Mixed-Integer Linear Programming (MILP)** model because some (in this case, all) of the variables must take integer values. Solving the model with `glpsol` is the same:
+
+```bash
+glpsol -m helloworld-int.mod
+```
+
+The solver identifies the model as MILP, and there are some changes in the generated output.
+
+```bash
+Solving LP relaxation...
+GLPK Simplex Optimizer, v4.65
+3 rows, 3 columns, 6 non-zeros
+* 0: obj = -0.000000000e+00 inf =   0.000e+00 (3)
+* 4: obj =   7.500000000e+00 inf =   0.000e+00 (0)
+OPTIMAL LP SOLUTION FOUND
+Integer optimization begins...
+Long-step dual simplex will be used
++     4: mip =   not found yet <=     +inf        (1; 0)
++     6: >>>>>   7.000000000e+00 <=   7.000000000e+00   0.0% (2; 0)
++     6: mip =   7.000000000e+00 <=   7.000000000e+00   0.0% (0; 3)
+tree is empty
+INTEGER OPTIMAL SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.1 Mb (124952 bytes)
+Optimal (max) sum is: 7.
+x = 1
+y = 2
+z = 4
+Model has been successfully processed
+```
+
+Notice that a so-called **LP relaxation** is solved first. The output for this appears identical to the output for our initial LP problem. This is actually the nature of the solution algorithm: the problem is first solved as if all integer restrictions were removed—treating it as an LP problem. Then, the actual MILP model is solved, and we find that the optimal solution is only $7.0$ instead of the LP's optimal solution of $7.5$.
+
+This isn't surprising. The only difference between the two models is that the integer problem is more restrictive regarding the variables. This means any solution to the MILP is also a solution to the LP. However, the reverse is not true, as the optimal solution of the LP ($x = 0.5$, $y = 2.5$, $z = 4.5$) was eliminated by the integer restrictions. LP relaxation is an important concept in solving MILP models—for example, it serves as a good initial solution when trying to force all variables to integer values. Also, if the integer variables happen to result in integer values in the LP relaxation, that solution is guaranteed to be optimal for the MILP as well, because the MILP is the more restricted problem.
+
+In this model, the solver needed a little extra work for the MILP and found the solution $x = 1$, $y = 2$, and $z = 4$. Note that while this is an optimal solution, it is not the only one. $x = 0$, $y = 3$, $z = 4$ and $x = 0$, $y = 2$, $z = 5$ are also feasible and optimal solutions with the same objective value of $7.0$.
+
+As you might suspect, the algorithmic procedure behind the MILP can be substantially more complex than that of an LP. However, the only difference in the formulation is the integer restrictions on the variables.
+
+Keep in mind that while solvers can handle a large number of variables and constraints in an LP model, they can usually only handle a **limited number of integer variables** in an MILP model. The exact limit strongly depends on the model itself and can range from dozens to thousands. 
+
+----
+# Chapter 4: Equation Systems
+
+In this chapter, we will explore the basic capabilities of the GNU MathProg language using a sample modeling problem: finding the general solution for linear equation systems. Our goal is to progress from a simple, initial implementation to a more advanced approach using indexing and separate model and data sections.
+
+With these skills, maintaining code and solving the model with different instances (different data) becomes very easy, provided the model is implemented correctly from the start. This will be our standard approach for future models.
+
+Note that solving linear systems of equations is considered a routine task. There are plenty of capable software tools available, either as standalone programs or embedded libraries. A well-known algorithm for this is Gaussian elimination [10]. However, right now we are interested in **modeling** rather than solution algorithms—specifically, we are focusing on GNU MathProg implementation techniques.
+
+---
+
+## 4.1 Example System
+
+Let’s begin by solving a small system of equations using GNU MathProg.
+
+**Problem 4.**
+Solve the following system of equations in the real domain.
+
+$$
+\begin{aligned}
+2 (x - y) &= -5 \\
+y - z &= w - 5 \\
+1 &= y + z \\
+x + 2w &= 7y - x
+\end{aligned}
+$$
+
+(8)
+
+Even though it isn't explicitly stated in the problem description, there are four variables: $x$, $y$, $z$, and $w$. The "real domain" means that all of these can independently take arbitrary real values. Our goal is to find values for these four variables such that all four equations are true.
+
+If we required a complete analysis of the problem, our goal would be not just to find a single solution, but to find *all* of them. If there were infinitely many solutions, we would need to characterize this infinite set and prove that no other solutions exist. However, for simplicity, we currently only want to find a single solution to the system of equations without determining if others exist.
+
+Therefore, this is a **feasibility problem**, meaning we only need to find a single feasible solution. There is no need for an objective function to optimize, as there are no "better" or "worse" solutions here.
+
+You can observe that Problem 4 describes a linear system of equations. This becomes apparent after we arrange the equations into the following format:
+
+$$
+\begin{aligned}
+2x - 2y - w &= -5 \\
+y - z - w &= -5 \\
+y + z &= 1 \\
+2x - 7y + 2w &= 0
+\end{aligned}
+$$
+
+(9)
+
+The point is that we can derive this arrangement from the original system by simplifying each equation individually: removing parentheses and adding or merging terms on both sides. In this way, the arranged system is equivalent to the original. On the left-hand side (LHS) of each equation, there is a linear expression of the variables (each multiplied by a constant and then added), and on the right-hand side (RHS), there is a constant. Therefore, all equations are linear.
+
+If we add zero terms to fill in the gaps and align the coefficients in each column, we get the following equivalent form of the same system:
+
+$$
+\begin{aligned}
+(+2) \cdot x + (-2) \cdot y + 0 \cdot z + 0 \cdot w &= -5 \\
+0 \cdot x + (+1) \cdot y + (-1) \cdot z + (-1) \cdot w &= -5 \\
+0 \cdot x + (+1) \cdot y + (+1) \cdot z + 0 \cdot w &= 1 \\
+(+2) \cdot x + (-7) \cdot y + 0 \cdot z + (+2) \cdot w &= 0
+\end{aligned}
+$$
+
+(10)
+
+Although this representation is less readable, it represents more generally what a system of linear equations actually means. For each equation, there is a constant right-hand side and a linear expression on the left-hand side, for which we only need to know the coefficients for each variable. Thus, this whole problem can be represented in a **matrix of coefficients**, where the rows correspond to equations and the columns correspond to variables—except for the rightmost column, which corresponds to the right-hand side.
+
+This is very close to what we call the standard form of a Linear Programming problem. The standard form also includes $\ge 0$ bounds for all variables, consists of $\le$ inequalities instead of equations, and, of course, has a linear objective function. This matrix-like form is important because it inspires solution algorithms. However, we won't go into the details of solution algorithms here, neither for systems of equations nor for LP problems.
+
+Instead, the representation shown in Equation System 10 is useful for understanding the general scheme behind systems of linear equations and for implementing a separated GNU MathProg MILP model. For this model, we can provide a data section describing an arbitrary system of linear equations, and the model will solve it.
+
+Now, let's see what the code looks like in GNU MathProg. First, here is the most straightforward implementation, without arranging the equations.
+
+```ampl
+var x;
+var y;
+var z;
+var w;
+
+s.t. Eq1: 2 * (x - y) = -5;
+s.t. Eq2: y - z = w - 5;
+s.t. Eq3: 1 = y + z;
+s.t. Eq4: x + 2 * w = 7 * y - x;
+
+solve;
+
+printf "x = %g\n", x;
+printf "y = %g\n", y;
+printf "z = %g\n", z;
+printf "w = %g\n", w;
+
+end;
+```
+
+As you can see, GNU MathProg allows the use of parentheses and basic operations, provided that the constraints—now named Eq1, Eq2, Eq3, and Eq4—simplify into an equality (or non-strict inequality) between two linear expressions.
+
+If we solve the model file above, we obtain the solution $x = 0.5$, $y = 3$, $z = -2$, and $w = 10$. This solution is unique, so all solution methods should end up with this exact result. We can also manually verify that all four equations are satisfied with the resulting variable values. The code itself helps us by printing the values of the four variables to the solver output.
+
+Now, if we were to implement the aligned version, we would get the following:
+
+```ampl
+s.t. Eq1: 2 * x + (-2) * y +    0 * z +    0 * w = -5;
+s.t. Eq2: 0 * x +    1 * y + (-1) * z + (-1) * w = -5;
+s.t. Eq3: 0 * x +    1 * y +    1 * z +    0 * w = 1;
+s.t. Eq4: 2 * x + (-7) * y +    0 * z +    2 * w = 0;
+```
+
+As you can see, whitespace characters can be freely used in GNU MathProg to improve readability. Also, zero-coefficient terms can be eliminated from the expressions and replaced with whitespace instead. The rest of the model file can remain unchanged. The result of solving this arranged model file should be the same.
+
+---
+
+## 4.2 Modifications in Code
+
+Now that we have a working model file that solves a specific system of linear equations, let's try to solve a different one obtained by making slight modifications to the original. The problem description is as follows:
+
+**Problem 5.**
+
+Take the equations defined by Equation system (8) as the initial system, using its aligned form described in either Equation system (9) or (10). Then, obtain another system by applying the following modifications:
+
+1.  Change the coefficient of **x** everywhere from $2$ to $4$.
+2.  Add **z** to Eq1 with a coefficient of $3$.
+3.  Delete **y** from Eq2 (zero out its coefficient).
+4.  Change the RHS of Eq3 to $1.5$.
+5.  Add a fifth variable **v**, with no bounds.
+6.  Add the equation $x + 3v + 0.5 = -2z$ as Eq5.
+7.  Introduce **v** in Eq4 with a coefficient of $5$.
+8.  Print out the newly introduced variable **v** after the `solve` statement, just like the others.
+
+These modifications can be done one by one in a straightforward way until we obtain the following model:
+
+```ampl
+var x;
+var y;
+var z;
+var w;
+var v;
+
+s.t. Eq1: 4 * x + (-2) * y +    3 * z +    0 * w +  0 * v = -5;
+s.t. Eq2: 0 * x +    0 * y + (-1) * z + (-1) * w +  0 * v = -5;
+s.t. Eq3: 0 * x +    1 * y +    1 * z +    0 * w +  0 * v = 1.5;
+s.t. Eq4: 4 * x + (-7) * y +    0 * z +    2 * w +  5 * v = 0;
+s.t. Eq5: 1 * x +    0 * y +    2 * z +    0 * w +  3 * v = -0.5;
+
+solve;
+
+printf "x = %g\n", x;
+printf "y = %g\n", y;
+printf "z = %g\n", z;
+printf "w = %g\n", w;
+printf "v = %g\n", v;
+
+end;
+```
+
+The solution to the new system is $x = 2$, $y = 3.5$, $z = -2$, $w = 7$, and $v = 0.5$. Although we won't prove it here, this solution is unique.
+
+Now, look at the types of modifications we had to implement in the code to achieve these results. The first four tasks were simply replacing, introducing, or erasing coefficients from the corresponding equations. In these cases, one must find the corresponding constraints, locate the corresponding variable within the constraint, and apply the changes.
+
+However, introducing the new variable requires more work than just declaring `v` as a variable with no bounds. If we wanted to maintain the visual arrangement of the equations, we had to expand all existing equations with an extra column for **v**'s coefficients. These coefficients are initially zero, indicating the variable is not yet used. Then, in Eq4 and Eq5, we can insert a nonzero coefficient for **v** afterward. We also needed to manually modify the printing code after the `solve` statement to include **v**.
+
+Inserting the new equation, Eq5, also requires additional work. Again, if we wanted to keep the code easy to read and maintain the arrangement, the new code line for Eq5 must be formatted accordingly.
+
+Although this was still a small problem, you can sense that modifying a system of equations to accommodate another problem might be frustrating. This difficulty gets worse if the number of variables and equations increases—note that several thousands of both are still considered a problem of reasonable size.
+
+One issue is that the model code includes some **redundancy**—we have to maintain the arrangement to preserve readability, even though this isn't feasible for very large problems. However, the biggest drawback is that we have to understand and **tamper with model code**, even though we only intend to change the actual problem data (i.e., the coefficients and constants).
+
+It would be wise to somehow **separate the modeling logic** of linear equation systems from the **actual data** of the linear equations to be solved. This is exactly what we will do in the next sections. Afterward, we will only need to alter the data, and the model can remain unchanged. This helps us reuse code in the future and implement problems with large data sets.
+
+-----
+
+## 4.3 Parameters
+
+The first step we take to separate problem data from model logic is the introduction of **parameters**. In this case, we will implement the modified problem. We are only changing the code, not the underlying problem.
+
+Parameters can be introduced with the **`param`** statement. Its syntax is similar to the `var` statement used for introducing variables. However, the `param` statement defines **constant values** that can be used in the model formulation. Parameters are numeric values by default and are used here as such, but note that they can also represent symbolic values (like strings).
+
+The fundamental difference is that **variables** are the values the optimization procedure must find to satisfy all constraints and optimize a given objective function. From an implementation perspective, variable values are only available **after** the `solve` statement. **Parameters**, on the other hand, are constant values that are initially **given**, and they are typically used to formulate the model itself.
+
+Note that parameters defined by the `param` statement, similar to variables defined in the `var` statement, must have a **unique name**, and they can only be used in the model file **after** they have been defined. Hence, in any expression, we can only refer to parameters defined earlier in the code. For this reason, parameter definitions typically precede constraint and even variable definitions.
+
+First, we will only introduce parameters for the right-hand side (RHS) values of the equations, as follows:
+
+```ampl
+var x;
+var y;
+var z;
+var w;
+var v;
+
+param Rhs1 := -5;
+param Rhs2 := -5;
+param Rhs3 := 1.5;
+param Rhs4 := 0;
+param Rhs5 := -0.5;
+
+s.t. Eq1: 4 * x + (-2) * y + 3 * z + 0 * w + 0 * v = Rhs1;
+s.t. Eq2: 0 * x + 0 * y + (-1) * z + (-1) * w + 0 * v = Rhs2;
+s.t. Eq3: 0 * x + 1 * y + 1 * z + 0 * w + 0 * v = Rhs3;
+s.t. Eq4: 4 * x + (-7) * y + 0 * z + 2 * w + 5 * v = Rhs4;
+s.t. Eq5: 1 * x + 0 * y + 2 * z + 0 * w + 3 * v = Rhs5;
+
+solve;
+
+printf "x = %g\n", x;
+printf "y = %g\n", y;
+printf "z = %g\n", z;
+printf "w = %g\n", w;
+printf "v = %g\n", v;
+
+end;
+```
+
+From now on, if we need to modify the RHS of an equation, we do not need to modify the code of the constraint describing that equation. Instead, we only need to replace the definition of the given RHS parameter.
+
+In the same manner, we can also introduce parameters for the coefficients of the equations. Because there are coefficients for all 5 equations and all 5 variables, a total of **25 additional parameters** are needed.
+
+```ampl
+var x;
+var y;
+var z;
+var w;
+var v;
+
+param Rhs1 := -5;
+param Rhs2 := -5;
+param Rhs3 := 1.5;
+param Rhs4 := 0;
+param Rhs5 := -0.5;
+
+param c1x:=4; param c1y:=-2; param c1z:= 3; param c1w:= 0; param c1v:= 0;
+param c2x:=0; param c2y:= 0; param c2z:=-1; param c2w:=-1; param c2v:= 0;
+param c3x:=0; param c3y:= 1; param c3z:= 1; param c3w:= 0; param c3v:= 0;
+param c4x:=4; param c4y:=-7; param c4z:= 0; param c4w:= 2; param c4v:= 5;
+param c5x:=1; param c5y:= 0; param c5z:= 2; param c5w:= 0; param c5v:= 3;
+
+s.t. Eq1: c1x * x + c1y * y + c1z * z + c1w * w + c1v * v = Rhs1;
+s.t. Eq2: c2x * x + c2y * y + c2z * z + c2w * w + c2v * v = Rhs2;
+s.t. Eq3: c3x * x + c3y * y + c3z * z + c3w * w + c3v * v = Rhs3;
+s.t. Eq4: c4x * x + c4y * y + c4z * z + c4w * w + c4v * v = Rhs4;
+s.t. Eq5: c5x * x + c5y * y + c5z * z + c5w * w + c5v * v = Rhs5;
+
+solve;
+
+printf "x = %g\n", x;
+printf "y = %g\n", y;
+printf "z = %g\n", z;
+printf "w = %g\n", w;
+printf "v = %g\n", v;
+
+end;
+```
+
+Note that `param` statements can be placed on a single line for readability and to preserve the arrangement of the equations. After the total of **30 parameters** are introduced, the implementation of the equations can be considered final. With the sole modification of the parameter statements in the model file, we can solve arbitrary systems of linear equations with 5 variables and 5 equations.
+
+Note that the solution of either of these two models is exactly the same as before, as the system of equations itself did not change—only its implementation did.
+
+-----
+
+## 4.4 Data Blocks
+
+We have successfully separated the coefficients and RHS values from the equations they belong to, but we still need to modify the `param` statements within the model file to alter the problem. We have used a single model file each time so far. Now, we introduce the concept of the **model section** and the **data section**, with which we can separate the model logic from the problem data entirely.
+
+Parameter values in GNU MathProg can be determined in two ways:
+
+  * A parameter value is **explicitly given** where it is defined: as a constant value, or some expression involving other constant values, other parameters, and built-in functions and operators of the GNU MathProg language.
+  * A parameter value is **not given** in the model section but in a **separate data section**.
+
+Now let's see how we can modify the model file to create separate model and data sections. In the case where only the RHS parameters were introduced, the complete separation looks like this:
+
+```ampl
+var x;
+var y;
+var z;
+var w;
+var v;
+
+param Rhs1;
+param Rhs2;
+param Rhs3;
+param Rhs4;
+param Rhs5;
+
+s.t. Eq1: 4 * x + (-2) * y + 3 * z + 0 * w + 0 * v = Rhs1;
+s.t. Eq2: 0 * x + 0 * y + (-1) * z + (-1) * w + 0 * v = Rhs2;
+s.t. Eq3: 0 * x + 1 * y + 1 * z + 0 * w + 0 * v = Rhs3;
+s.t. Eq4: 4 * x + (-7) * y + 0 * z + 2 * w + 5 * v = Rhs4;
+s.t. Eq5: 1 * x + 0 * y + 2 * z + 0 * w + 3 * v = Rhs5;
+
+solve;
+
+printf "x = %g\n", x;
+printf "y = %g\n", y;
+printf "z = %g\n", z;
+printf "w = %g\n", w;
+printf "v = %g\n", v;
+
+data;
+
+param Rhs1 := -5;
+param Rhs2 := -5;
+param Rhs3 := 1.5;
+param Rhs4 := 0;
+param Rhs5 := -0.5;
+
+end;
+```
+
+Notice that the parameters are only **defined** in the model section, without a value given. Then, after the model construction and the post-processing procedures (in this case, printing the variables out), there is a **`data`** statement. There can be a single `data` statement at the end of a model file, which denotes the end of the model section and the start of the data section. The data section contains the actual values of parameters that were defined in the model without a value provided there.
+
+This can also be done for the full parameterization example:
+
+```ampl
+var x;
+var y;
+var z;
+var w;
+var v;
+
+param Rhs1;
+param Rhs2;
+param Rhs3;
+param Rhs4;
+param Rhs5;
+
+param c1x; param c1y; param c1z; param c1w; param c1v;
+param c2x; param c2y; param c2z; param c2w; param c2v;
+param c3x; param c3y; param c3z; param c3w; param c3v;
+param c4x; param c4y; param c4z; param c4w; param c4v;
+param c5x; param c5y; param c5z; param c5w; param c5v;
+
+s.t. Eq1: c1x * x + c1y * y + c1z * z + c1w * w + c1v * v = Rhs1;
+s.t. Eq2: c2x * x + c2y * y + c2z * z + c2w * w + c2v * v = Rhs2;
+s.t. Eq3: c3x * x + c3y * y + c3z * z + c3w * w + c3v * v = Rhs3;
+s.t. Eq4: c4x * x + c4y * y + c4z * z + c4w * w + c4v * v = Rhs4;
+s.t. Eq5: c5x * x + c5y * y + c5z * z + c5w * w + c5v * v = Rhs5;
+
+solve;
+
+printf "x = %g\n", x;
+printf "y = %g\n", y;
+printf "z = %g\n", z;
+printf "w = %g\n", w;
+printf "v = %g\n", v;
+
+data;
+
+param Rhs1 := -5;
+param Rhs2 := -5;
+param Rhs3 := 1.5;
+param Rhs4 := 0;
+param Rhs5 := -0.5;
+
+param c1x:=4; param c1y:=-2; param c1z:= 3; param c1w:= 0; param c1v:= 0;
+param c2x:=0; param c2y:= 0; param c2z:=-1; param c2w:=-1; param c2v:= 0;
+param c3x:=0; param c3y:= 1; param c3z:= 1; param c3w:= 0; param c3v:= 0;
+param c4x:=4; param c4y:=-7; param c4z:= 0; param c4w:= 2; param c4v:= 5;
+param c5x:=1; param c5y:= 0; param c5z:= 2; param c5w:= 0; param c5v:= 3;
+
+end;
+```
+
+The solution obtained by solving these model files is exactly the same in all the parameterization examples, because the system of linear equations remains the same. But now, if you want to solve an arbitrary system of 5 linear equations with 5 variables, only the **data section** of this model file needs to be modified.
+
+More complex models require more complex data sections. However, the syntax for data sections is generally **more permissive** than in the model section. This means that even if we only want to implement a single model and solve it with a single problem instance, it is still a good choice to write its data to a separate data section rather than hard-coding parameter values into the model section. The more permissive syntax also allows for shorter and more readable data representation.
+
+One feature that makes data sections useful is that they can be implemented in a **separate data file**. A data file is simply a data section written in a separate file. Its content would be all the code between the `data` and `end` statements. Note that both statements are optional in this case, but they increase readability.
+
+The model file should only contain the full model section and no data sections. Suppose we had a model file named `equations.mod`, and we write the data section for the actual system of equations into the file `eq-example.dat`. Then, the solution using the `glpsol` command line tool can be obtained with the following command:
+
+```bash
+glpsol -m equations.mod -d eq-example.dat
+```
+
+Unlike in the model section, where referring to model elements defined later in the file is illegal, the statements in the data section can be in **arbitrary order**. Moreover, multiple data files can be solved with a single model file, allowing us to further separate problem data. This does not mean we are solving different problems at the same time, but rather a single problem instance where its different parameters are separated into different data files.
+
+For example, if we have $n$ different variations for the value of a given parameter and $k$ different variations for the value of another parameter, we can implement these as $n + k$ data files. We effectively have $nk$ different problem instances, all of which can be solved with the same single model file by providing `glpsol` the corresponding two variations for the two parameters.
+
+One important property of parameters in GNU MathProg that you should keep in mind is that parameter values are only calculated if they are actually **required**—for example, to define model elements (like constraints, variable bounds, objectives), to print them out, or if they are required in the calculation of other parameters which are themselves required. This might cause a situation where, for instance, an erroneously defined parameter value is reported as a modeling error only when the constraint it first appears in is reached in the model file. Note that basic syntax checking is still performed by `glpsol` even in this case; only the substitution of parameter values is "lazy."
+
+One particular example of this is when we do not give a value for a parameter and use it afterward. It is legal in GNU MathProg to define a parameter without a value—for example, when we want to assign a value to it in the data section after the whole model section, or even in a separate file. If the parameter is not actually used at all in the model, then it is not an error. However, if the parameter **is used** and there is no value at definition or in any data sections, an error is generated.
+
+To demonstrate this, erase the statement `param c3z := 1;` from the data section of the model and try to solve it with `glpsol` as before. The following error message is shown:
+
+```ampl
+Generating Eq1...
+Generating Eq2...
+Generating Eq3...
+eqsystem-data-blocks-full.mod:21: no value for c3z
+MathProg model processing error
+```
+
+You can see that the first two equations, Eq1 and Eq2, were generated successfully. However, Eq3 utilized the parameter `c3z` in its definition, but there was no value given for that particular parameter: neither in the model section nor in the data section (or any data sections). The model could not be generated and solved.
+
+Note that it is also illegal to provide a parameter value twice (in the model and in a data section, or in any two data sections). However, there is a way we can "optionally" provide parameter values in data files by providing default values in the model file. More on that later.
+
+-----
 
 ## 4.5 Indexing
 
@@ -24,7 +852,7 @@ In GNU MathProg, this can be achieved by **indexing expressions**, which also re
 
 There are two sets needed in our model. One is for the variables, and one is for the equations:
 
-```
+```ampl
 set UnknownValues;
 set Equations;
 ```
@@ -50,7 +878,7 @@ The parameter **`Coef`** is defined similarly, but there are **two indices** sep
 
 Now we can define the variables in the model:
 
-```
+```ampl
 var value {u in UnknownValues};
 ```
 
@@ -62,7 +890,7 @@ Also note that the variables fortunately have consistently no bounds; they all c
 
 Now that we have defined the required parameters and variables in the model, we can express the constraints:
 
-```
+```ampl
 s.t. Cts {e in Equations}:
    sum {u in UnknownValues} Coef[e,u] * value[u] = Rhs[e];
 ```
@@ -79,7 +907,7 @@ Note that inside the scope of the `sum` operator, the $u$ index is also availabl
 
 Now that we have a single `s.t.` constraint statement describing the model of systems of linear equations, the `solve` statement may come, after which we can print the values of the variables. Again, we do not know the exact set of variables, but indexing can be used to do something for all variables:
 
-```
+```ampl
 for {u in UnknownValues}
 {
    printf "%s = %g\n", u, value[u];
@@ -93,7 +921,6 @@ Now, for each $u$ unknown value, we want to print out the corresponding value in
 At this point, the model section is ready. This means any system of linear equations can be translated into a data section, and if done with the correct syntax, can be solved without altering the model file. Now, let us translate the previous problem instance into a well-formed data section.
 
 ```ampl
-
 data;
 set UnknownValues := x y z w v;
 set Equations := Eq1 Eq2 Eq3 Eq4 Eq5;
@@ -153,7 +980,7 @@ And now we are ready. The model section has attained its most general form. From
 
 The complete model file and one possible data section are shown below. The solution is again exactly the same as before: $x = 2$, $y = 3.5$, $z = -2$, $w = 7$, and $v = 0.5$.
 
-```
+```ampl
 set UnknownValues;
 set Equations;
 
@@ -175,7 +1002,7 @@ for {u in UnknownValues}
 end;
 ```
 
-```
+```ampl
 data;
 
 set UnknownValues := x y z w v;
@@ -234,7 +1061,7 @@ This can be achieved by indicating a **default value** for a given parameter in 
 
 To add a default value to a parameter, we must do the following:
 
-```
+```ampl
 param Coef {e in Equations, u in UnknownValues}, default 0;
 ```
 
@@ -242,7 +1069,7 @@ Note that the default value in this example is zero, but in general, it could be
 
 After the default value of zero is given for `Coef`, all entries in the data section that indicate a value of zero can be omitted, significantly trimming the size of the data section.
 
-```
+```ampl
 param Coef :=
     Eq1 x 4
     Eq1 y -2
@@ -265,7 +1092,7 @@ Note that, while maintaining the code of this data section, care must be taken w
 
 Another trick that may help in designing shorter and more readable data sections is the **matrix data format**. It works in many situations where two-dimensional data must be provided—like in this case. Values for parameter `Coef` can be implemented in matrix format in the following way:
 
-```
+```ampl
 param Coef: 
       x  y  z  w  v :=
   Eq1 4 -2  3  .  .
@@ -288,7 +1115,7 @@ An important issue about indexing is the **out of domain error**. For all parame
 
 Let us demonstrate this by changing the $u$ and $e$ indices in the constraint where the `Coef` parameter is indexed. The following message is obtained, and the model cannot be processed:
 
-```
+```ampl
 Generating Cts...
 eqsystem-indexing-matrix-ERROR-outofdomain.mod:10: Coef[x,Eq1] out of domain
 MathProg model processing error
@@ -300,7 +1127,7 @@ This example suggests an important source of error: **indexing must be done prop
 
 In our example, the two indices are from two different sets, so it is unlikely that a wrong indexing is not reported. However, it may be the case if the two sets have common elements. For example, if both the variables are labeled from 1 to 5, and all the equations are labeled also from 1 to 5, there is nothing that forbids this. The correspondingly edited data section is the following:
 
-```
+```ampl
 data;
 
 set UnknownValues := 1 2 3 4 5;
@@ -340,7 +1167,7 @@ There is still a bit of redundancy in the rows of the equations. The RHS of the 
 
 We can easily solve this in GNU MathProg. Now, a common **`EqConstants`** parameter is introduced which works as follows. Its indices are the **columns of the problem in general**. Each column can correspond to a variable (unknown value) in the system of equations, or the RHS of the equation. We can implement this with the following code:
 
-```
+```ampl
 set UnknownValues;
 set Equations;
 
@@ -351,7 +1178,7 @@ param EqConstants {e in Equations, u in Columns}, default 0;
 
 Note that `Columns` is a set just like `UnknownValues` and `Equations`. However, this set is not provided by a data section but instead calculated on the spot. `Columns` is the set `UnknownValues`, with the string `'RHS'` added to it.
 
-```
+```ampl
 var value {u in UnknownValues};
 
 s.t. ImplementingEquations {e in Equations}:
@@ -363,7 +1190,7 @@ The rest of the model is basically the same, but instead of the `Rhs` parameter,
 
 The data section is the following. The only parameter is `EqConstants`. Note that the solution shall be exactly the same as before; the modifications only affected the format of the data section, but the data content remained the same.
 
-```
+```ampl
 data;
 
 set UnknownValues := x y z w v;
@@ -387,7 +1214,7 @@ We can make our model foolproof by establishing this rule with a **`check` state
 
 In this example, we state that `UnknownValues` shall not contain the string `'RHS'`. In other words, no variables in the system of equations shall be named `RHS`. The statement is best positioned soon after the definition of the `UnknownValues` set.
 
-```
+```ampl
 check 'RHS' !in UnknownValues;
 ```
 
@@ -395,7 +1222,7 @@ Note that the `check` statement can also be indexed, which is an effective way o
 
 The evaluation of a `check` statement is also reported in the output generated by `glpsol` as follows:
 
-```
+```ampl
 Checking (line 4)...
 ```
 
@@ -419,7 +1246,7 @@ Append a sixth equation, $x + y + z + w + v = 0$, to Problem 5 and solve it.
 
 Now that we have the complete model, Problem 6 can be implemented in a single data section. A new element, `Eq6`, is added to the set `Equations`, and the corresponding RHS and coefficients are also introduced. Note that the original model and data section format is used, where parameters `Rhs` and `Coef` are not merged.
 
-```
+```ampl
 data;
 
 set UnknownValues := x y z w v;
@@ -451,7 +1278,7 @@ We already know the original solution for Problem 5 with the system of just the 
 
 Here is the solver output:
 
-```
+```ampl
 GLPSOL: GLPK LP/MIP Solver, v4.65
 Parameter(s) specified in the command line:
 -m eqsystem-original.mod -d eqsystem-overspecified.dat --log
@@ -493,7 +1320,7 @@ Solving this efficiently requires a modeling trick: minimizing the maximum objec
 
 The first part of this concept involves introducing the objective—the maximum error itself—into the model as an individual variable, as follows:
 
-```
+```ampl
 var maxError;
 
 minimize maxOfAllErrors: maxError;
@@ -505,7 +1332,7 @@ Suppose that $L$ and $R$ are the left-hand side and right-hand side values of an
 
 This leads to our second idea. Instead of representing the errors themselves in the model, we use an upper bound for the error. Suppose that $E$ is a valid upper bound for the error between $L$ and $R$, meaning $|L - R| \le E$. This can now be expressed as linear constraints as follows:
 
-```
+```ampl
 L - R <= E
 L - R >= -E           (11)
 ```
@@ -514,7 +1341,7 @@ Note that $E$ must be nonnegative, as the errors themselves are nonnegative. Alt
 
 Now, what would be a good candidate for an upper bound on the error in any equation? Naturally, the maximum of the errors, which is denoted by `maxError`. Therefore, we define two constraints so that the two sides of the equations differ at most by the value of `maxError`.
 
-```
+```ampl
 s.t. Cts_Error_Up {e in Equations}:
   sum {u in UnknownValues} Coef[e,u] * value[u]
   <= Rhs[e] + maxError;
@@ -531,7 +1358,7 @@ Due to the constraints, `maxError` is forced to act as a valid upper bound for t
 
 Below is the full model section, with some `printf` statements added to provide meaningful output.
 
-```
+```ampl
 set UnknownValues;
 set Equations;
 
@@ -573,7 +1400,7 @@ end;
 
 If we solve it, we get the following results:
 
-```
+```ampl
 Optimal error: 0.478261
 Variables:
 x = -3.42029
@@ -665,7 +1492,7 @@ We have defined the variables, the objective, constraints, and bounds, so we are
 
 The variables denote production amounts. By convention, these are all in **dollars ($)**.
 
-```
+```ampl
 var P1, >=0;
 var P2, >=0;
 var P3, >=0;
@@ -675,7 +1502,7 @@ Constraints are formulated next. For each production amount, it must be multipli
 
 Note how the tabular data of the problem correspond to the implementation of constraints.
 
-```
+```ampl
 s.t. Raw_material_A:  200 * P1 +   50 * P2 +    0 * P3 <= 23000;
 s.t. Raw_material_B:   25 * P1 +  180 * P2 +   75 * P3 <= 31000;
 s.t. Raw_material_C: 3200 * P1 + 1000 * P2 + 4500 * P3 <= 450000;
@@ -684,13 +1511,13 @@ s.t. Raw_material_D:    1 * P1 +    1 * P2 +    1 * P3 <= 200;
 
 Finally, the objective can also be defined based on production amounts. Note that each constraint is within its own unit for the raw material, and the objective is in the **$** unit. From now on, we use units consistently and will not refer to them.
 
-```
+```ampl
 maximize Raw_material: 252 * P1 + 89 * P2 + 139 * P3;
 ```
 
 A `solve` statement can be inserted in the model, after which some additional post-processing work can be done to print the solution. The full code is below. We print the total revenue (the objective), the production of each product (the variables), and the usage of each raw material. In the usage part, we print both the total amount consumed for production and the amount remaining available.
 
-```
+```ampl
 var P1, >=0;
 var P2, >=0;
 var P3, >=0;
@@ -730,7 +1557,7 @@ end;
 
 In this model file, there is **no data section at all**; the data is **hard-coded** into the model. Therefore, we can solve it with `glpsol` without providing any additional data files, yielding the following result (showing only our `printf` results).
 
-```
+```ampl
 Total Revenue: 33389
 Production of P1: 91.3386
 Production of P2: 94.6457
@@ -747,7 +1574,7 @@ Production consumes **all of A, C, and D**, but there is a **surplus of B** that
 
 Another option is to add `--xcheck` as a command-line argument to `glpsol`. This forces the final solution to be recalculated with **exact arithmetic**, eliminating rounding errors.
 
-```
+```ampl
 glpsol -m model.mod -d data.dat --xcheck
 ```
 
@@ -759,14 +1586,14 @@ Our next task is to create a more general, **indexed model** that requires only 
 
 In the production problem, two sets are relevant: the set of **products** and the set of **raw materials**.
 
-```
+```ampl
 set Products;
 set Raw_Materials;
 ```
 
 We can also identify three important **parameters**. One for the production ratios, defined for each pair of raw materials and products; we'll call it `Consumption_Rate`. One for availability, defined for each raw material; we name it `Storage`. The name "storage" captures the logic of how raw materials work from a modeling perspective: they are present in a given amount beforehand, like physically stored material, and no more than this amount can be used for production. Another parameter is `Revenue`, defined for each product.
 
-```
+```ampl
 param Storage {r in Raw_Materials}, >=0;
 param Consumption_Rate {r in Raw_Materials, p in Products}, >=0, default 0;
 param Revenue {p in Products}, >=0, default 0;
@@ -778,13 +1605,13 @@ Also, in GNU MathProg, we can define **bounds and other value restrictions for p
 
 The variables can now be defined. They denote production amounts, and each must be nonnegative.
 
-```
+```ampl
 var production {p in Products}, >=0;
 ```
 
 Finally, all the constraints can be described by one general `s.t.` statement. The logic is as follows: There is a single inequality for each raw material: its **total consumption cannot exceed its availability**. The availability is simply described as a parameter, but the total consumption is obtained by a **summation**. We must sum, for each product, its amount multiplied by the consumption rate of that particular raw material.
 
-```
+```ampl
 s.t. Material_Balance {r in Raw_Materials}:
     sum {p in Products} Consumption_Rate[r,p] * production[p]
     <= Storage[r];
@@ -792,14 +1619,14 @@ s.t. Material_Balance {r in Raw_Materials}:
 
 The objective is obtained as a **sum** for all products, where the amounts must be multiplied by the unit revenues.
 
-```
+```ampl
 maximize Total_Revenue:
     sum {p in Products} Revenue[p] * production[p];
 ```
 
 Finally, we can implement a general post-processing routine to print the total revenue, production amounts, and raw material usages. The full model file is below.
 
-```
+```ampl
 set Products;
 set Raw_Materials;
 
@@ -835,7 +1662,7 @@ end;
 
 If the corresponding data file is implemented as follows, we should get the same result as with the straightforward implementation.
 
-```
+```ampl
 data;
 set Products := P1 P2 P3;
 set Raw_Materials := A B C D;
@@ -867,7 +1694,7 @@ Although the model is very general and compact, it still contains some **redunda
 
 Remember that we can introduce parameters in the model section and calculate values on the spot. If we are after the `solve` statement, then even variable values can be referred to, as their values have already been determined by the solver. We introduce `Material_Consumed` and `Material_Remained` to denote the total amount consumed and the amount remaining for each material.
 
-```
+```ampl
 param Material_Consumed {r in Raw_Materials} :=
     sum {p in Products} Consumption_Rate[r,p] * production[p];
 
@@ -913,7 +1740,7 @@ There are four limits altogether:
 
 First, we have to add the extra parameters to describe the limits.
 
-```
+```ampl
 param Storage {r in Raw_Materials}, >=0, default 1e100;
 
 param Consumption_Rate {r in Raw_Materials, p in Products}, >=0, default 0;
@@ -931,7 +1758,7 @@ The new $Min\_Usage$ is for the **minimum** total consumption for each raw mater
 
 The variables and the objective function remain the same. However, we must add **three additional constraints** to tighten the search space of the model. Each of the four constraints corresponds to one of the four limits mentioned. The $Material\_Balance$ constraint is for the upper limit of total consumption of raw materials; this one was originally there and was left unchanged.
 
-```
+```ampl
 var production {p in Products}, >=0;
 
 s.t. Material_Balance {r in Raw_Materials}:
@@ -965,7 +1792,7 @@ Solve the **production problem** described in Problem 9, but with the following 
 
 Since the problem is simply an "**extension**" of the original one, its implementation can be done by just extending the **data section** with the aforementioned limits. Note that each parameter is indexed with the set of all raw materials and all products. Those that do not appear in the data section will simply default to $0$ for lower limits and $10^{100}$ for upper limits, effectively making the limits redundant. In that case, they don't modify the search space of the model because those limits are true anyway for any otherwise feasible solution.
 
-```
+```ampl
 param Min_Usage :=
     B 21000
     D 200
@@ -982,7 +1809,7 @@ param Max_Production :=
 
 The solution to the problem is now slightly different due to the newly defined bounds.
 
-```
+```ampl
 Total Revenue: 32970
 Production of P1: 90
 Production of P2: 100
@@ -997,7 +1824,7 @@ This means that **$90$ units of P1, $100$ units of P2, and $10$ units of P3** ar
 
 Now, our implementation for limits is complete. But we can still improve the model implementation by making it a bit more **readable** and less **redundant**. First, there's a neat feature in **GNU MathProg**: if a **linear expression** can be bounded by both an upper and a lower value, and both limits are constants, they can be defined in a **single constraint** instead of two. Using this, we can reduce the number of `s.t.` statements from four to two in our model section, as follows. All other parts of the model, the data, and the solution remain the same.
 
-```
+```ampl
 s.t. Material_Balance {r in Raw_Materials}: Min_Usage[r] <=
     sum {p in Products} Consumption_Rate[r,p] * production[p]
     <= Storage[r];
@@ -1008,7 +1835,7 @@ s.t. Production_Limits {p in Products}:
 
 There is another thing we can improve, which is actually a **modeling technique** rather than a language feature: we can introduce **auxiliary variables** for linear expressions. The variables, constraints, and objective function will look like this:
 
-```
+```ampl
 var production {p in Products}, >=Min_Production[p], <=Max_Production[p];
 var usage {r in Raw_Materials}, >=Min_Usage[r], <=Storage[r];
 var total_revenue;
@@ -1040,7 +1867,7 @@ Also note that we previously introduced some new values in the post-processing w
 
 The ultimate model code for the limits is below. Note that the data section and solution remain the same as before. Also note that we didn't have to introduce new parameters after the `solve` statement, as the auxiliary variables do the work.
 
-```
+```ampl
 set Products;
 set Raw_Materials;
 
@@ -1103,7 +1930,7 @@ Using this modeling trick, we can ensure that the final optimal solution found w
 
 In the implementation, parameters and post-processing work remain the same, as do the existing variables, bounds, and constraints from the extended model (including `Min_Production`, `Max_Production`, and auxiliary variables for usage and revenue):
 
-```
+```ampl
 var production {p in Products}, >=Min_Production[p], <=Max_Production[p];
 var usage {r in Raw_Materials}, >=Min_Usage[r], <=Storage[r];
 var total_revenue;
@@ -1117,7 +1944,7 @@ s.t. Total_Revenue_Calc: total_revenue =
 
 The change is that, instead of maximizing total revenue, we set the minimum production as the new objective. This requires introducing a new variable, `min_production`, to denote a lower bound for all production amounts, and a constraint to ensure that the variable is, in fact, a lower bound. Then, this new variable is maximized as the objective function.
 
-```
+```ampl
 var min_production;
 
 s.t. Minimum_Production_Calc {p in Products}:
@@ -1128,7 +1955,7 @@ maximize Minimum_Production: min_production;
 
 The post-processing code can be the same as before, so we print the same data as we did for the total revenue objective. We only add a `printf` statement to emphasize the minimum production amount, which is our current objective.
 
-```
+```ampl
 printf "Minimum Production: %g\n", min_production;
 ```
 
@@ -1140,7 +1967,7 @@ We can now run our model to solve two problems.
 
 In the first example, all the limits (`Min_Usage`, `Min_Production`, `Max_Production`) are ignored, except for the `Storage` capacity. Note that in the data section, we can begin rows with a hash mark (`#`). This turns the row into a **comment**, effectively excluding it from processing. The data section looks like this:
 
-```
+```ampl
 data;
 
 set Products := P1 P2 P3;
@@ -1187,7 +2014,7 @@ Note that revenue data are not strictly necessary in this model, but it is not a
 
 The solution to the problem results in a minimum production amount of **51.72**.
 
-```
+```ampl
 Total Revenue: 24827.6
 Minimum Production: 51.7241
 Production of P1: 51.7241
@@ -1209,7 +2036,7 @@ In the second example, **Problem 11** is used but without the constraint on $P3$
 
 In short, we only get a meaningful new problem if we **omit** the constraint maximizing $P3$ at 10 units.
 
-```
+```ampl
 Total Revenue: 27142.1
 Minimum Production: 43.8596
 Production of P1: 43.8596
@@ -1267,13 +2094,13 @@ First, we definitely need a new parameter that describes the costs. Let's call t
 
 Before proceeding, let's observe what happens when material costs are zero. This means our problem is the same as the original, where raw materials were free. This means the current problem with raw material costs is a **generalization** of the original problem. In other words, the original problem is a **special case** of the current problem where all raw material costs are zero. For this reason, it is sensible to give a **zero default value** to material costs. This makes data files implemented for the original problem compatible with our new model as well.
 
-```
+```ampl
 param Material_Cost {r in Raw_Materials}, >=0, default 0;
 ```
 
 We also know the corresponding data, which can be implemented in the data section. Each raw material has a nonzero cost.
 
-```
+```ampl
 param Material_Cost :=
   A  1
   B  0.07
@@ -1284,7 +2111,7 @@ param Material_Cost :=
 
 Beyond the data, the only difference in the model is the **objective value**. We could simply change the objective line and our model would be complete. However, for better readability, we will introduce an **auxiliary variable** for the profit and use it instead. The modified part of the model section is below. Only three lines of code changed: the `profit` variable was introduced, the objective changed, and the `Profit_Calc` constraint was added to ensure that the `profit` variable obtains the corresponding value. We also print it after the `solve` statement.
 
-```
+```ampl
 var production {p in Products}, >=Min_Production[p], <=Max_Production[p];
 var usage {r in Raw_Materials}, >=Min_Usage[r], <=Storage[r];
 var total_revenue;
@@ -1309,7 +2136,7 @@ printf "Profit: %g\n", profit;
 
 Now both the model and the data sections are ready. If we optimize for profit now, we get the following result.
 
-```
+```ampl
 Total Revenue: 22453.9
 Profit: 1577.45
 Production of P1: 25.4839
@@ -1364,14 +2191,14 @@ However, we will instead start by defining all the data available in the problem
 
 Two sets appear in the problem: one for **food types** and one for **nutrients**.
 
-```
+```ampl
 set FoodTypes;
 set Nutrients;
 ```
 
 There are three parameters available. One denotes **food costs**, defined for each food type. One denotes the **minimum required amount of nutrients**, defined for each nutrient. Finally, one parameter denotes the **contents of food**, given by a unit amount for each pair of food type and nutrient. For example, each unit of F2 contains 20 units of N1, 0.7 units of N3, and 0.0001 units of N4. The default values are all set to zero, and all these parameters are nonnegative.
 
-```
+```ampl
 param Food_Cost {f in FoodTypes}, >=0, default 0;
 param Content {f in FoodTypes, n in Nutrients}, >=0, default 0;
 param Requirement {n in Nutrients}, >=0, default 0;
@@ -1381,7 +2208,7 @@ Now that all data are defined as sets and variables, we must identify our freedo
 
 We introduce a variable named `eaten` to denote the amount of each food included in the diet. This variable is nonnegative and indexed over the set of food types. We also introduce the auxiliary variable `total_costs` so it can be printed more easily.
 
-```
+```ampl
 var eaten {f in FoodTypes}, >=0;
 var total_costs;
 ```
@@ -1390,7 +2217,7 @@ There is one significant factor restricting which diets are acceptable: the **to
 
 Additionally, there is another constraint for calculating the auxiliary variable denoting total food costs.
 
-```
+```ampl
 s.t. Nutrient_Requirements {n in Nutrients}:
     sum {f in FoodTypes} Content[f,n] * eaten[f] >= Requirement[n];
 
@@ -1400,13 +2227,13 @@ s.t. Total_Costs_Calc: total_costs =
 
 With the auxiliary `total_costs` variable, defining the objective is straightforward.
 
-```
+```ampl
 minimize Total_Costs: total_costs;
 ```
 
 After the `solve` statement, we can write our own printing code to show the solution found. This time, we show the amount of each food in the diet, as well as the total consumption per nutrient alongside the lower limit. Our model section is now ready.
 
-```
+```ampl
 set FoodTypes;
 set Nutrients;
 
@@ -1448,7 +2275,7 @@ end;
 
 Now we implement the specific problem mentioned. It is described in a single data section as follows.
 
-```
+```ampl
 data;
 set FoodTypes := F1 F2 F3 F4 F5;
 set Nutrients := N1 N2 N3 N4;
@@ -1481,7 +2308,7 @@ end;
 
 Solving the problem gives the following result:
 
-```
+```ampl
 Total Costs: 29707.2
 Eaten of F1: 0
 Eaten of F2: 42.8571
@@ -1545,7 +2372,7 @@ Find the optimal production plan, where recipes are utilized in arbitrary volume
 
 Let's start by implementing this problem without a specific example. You'll find its implementation very similar to the original production problem. The first step is to "read" all available data for future use. For this reason, the model includes three sets: raw materials, products, and recipes.
 
-```
+```ampl
 set Raws;
 set Products;
 set Recipes;
@@ -1555,7 +2382,7 @@ Note that the problem definition doesn't exclude the possibility that the **same
 
 To ensure that raw materials are indeed distinct from products, we introduce a `check` statement. We explicitly state that the **intersection** of the set of raw materials and the set of products must contain exactly zero elements. If this condition isn't met, model construction fails immediately, as it should.
 
-```
+```ampl
 check card(Raws inter Products) == 0;
 ```
 
@@ -1563,13 +2390,13 @@ For each recipe, there are ratios for both raw materials and products. Since the
 
 Instead, we introduce the concept of **materials** in our model. We simply group raw materials and products together as "materials." In GNU MathProg, it is legal to introduce a set that is calculated on the spot based on other sets.
 
-```
+```ampl
 set Materials := Products union Raws;
 ```
 
 Since we assumed no material is both a product and a raw material, we can assume each raw material and product is represented exactly once in the union, and they are all distinct. Now, with this new set, we can define the necessary parameters compactly.
 
-```
+```ampl
 param Min_Usage {m in Materials}, >=0, default 0;
 param Max_Usage {m in Materials}, >=Min_Usage[m], default 1e100;
 param Value {m in Materials}, >=0, default 0;
@@ -1587,7 +2414,7 @@ Finally, there is a single numeric parameter, **`Initial_Funds`**. This serves a
 
 Now that all parameters and sets are defined, let's look at the freedom in our model. We have to decide the **volume for each recipe utilized**. This is slightly different than before because decisions correspond to a given recipe rather than a particular product or raw material. If recipe volumes are defined, the solution is fully determined, and all other information—including raw material usage, production amounts, costs, revenues, profit, and limitations—can be calculated.
 
-```
+```ampl
 var volume {c in Recipes}, >=0;
 var usage {m in Materials}, >=Min_Usage[m], <=Max_Usage[m];
 var total_costs, <=Initial_Funds;
@@ -1603,7 +2430,7 @@ There is also a variable named **`total_costs`** denoting total costs of consume
 
 Constraints are implemented next.
 
-```
+```ampl
 s.t. Material_Balance {m in Materials}: usage[m] =
     sum {c in Recipes} Recipe_Ratio[c,m] * volume[c];
 
@@ -1623,13 +2450,13 @@ We also define three additional constraints to calculate the values of the auxil
 
 The objective is straightforward: the profit itself.
 
-```
+```ampl
 maximize Profit: profit;
 ```
 
 After solving the problem, we can print out the auxiliary variables, the utilization volumes for each recipe, and the total consumption and production amounts for each material. The full model section is ready as follows.
 
-```
+```ampl
 set Raws;
 set Products;
 set Recipes;
@@ -1713,7 +2540,7 @@ Now that our model for arbitrary recipes is ready, we will demonstrate how it wo
 
 First, we solve **Problem 14**, which introduced raw material costs. Since this is a pure production problem in the original sense, we introduce a recipe to produce each product. All limits are implemented by the `Min_Usage` parameter, while raw material costs and product revenues are implemented by the `Value` parameter. Here is the data section:
 
-```
+```ampl
 data;
 
 set Raws := A B C D;
@@ -1756,7 +2583,7 @@ end;
 
 Solving this yields exactly the same result as the original model with raw costs. The optimal profit is **$1,577.45**, with production of 25.48 units of P1, 164.52 units of P2, and 10 units of P3. The output follows:
 
-```
+```ampl
 Total Costs: 20876.4
 Total Revenue: 22453.9
 Profit: 1577.45
@@ -1776,7 +2603,7 @@ Production of product P3: 10
 
 The second application is the **diet problem**. We solve the exact same problem instance as in **Problem 16**. Here, food types are the **raw materials**, and nutrients are the **products** we want to obtain. Unlike the original production problem (several inputs, one output per recipe), here we have one input (a food type) per recipe producing several nutrients with given ratios.
 
-```
+```ampl
 data;
 set Raws := F1 F2 F3 F4 F5;
 set Products := N1 N2 N3 N4;
@@ -1810,7 +2637,7 @@ end;
 
 The solution matches the original diet problem exactly: an optimal cost of 29,707.2, with food consumption amounts of 42.86 for F2, 49.20 for F4, and 28.75 for F5. Note that the objective reported by the solver is -29,707.2 because the profit is determined solely by food costs (revenue is zero, so profit = $0 - \text{Total Costs}$).
 
-```
+```ampl
 Total Costs: 29707.2
 Total Revenue: 0
 Profit: -29707.2
@@ -1846,7 +2673,7 @@ Solve **Problem 14**, the original production problem, using the exact same data
 
 We can solve this by manipulating the data section of the original problem. We add two extra *recipes* to the **Recipes** set, then two rows to the **Recipe\_Ratios** parameter to describe these new recipes. The data section and results are as follows:
 
-```
+```ampl
 data;
 set Raws := A B C D;
 set Products := P1 P2 P3;
@@ -1890,7 +2717,7 @@ end;
 
 -----
 
-```
+```ampl
 Total Costs: 30495
 Total Revenue: 32460.6
 Profit: 1965.62
@@ -1962,7 +2789,7 @@ Therefore, the new model is designed to work with data files from the "old" arbi
 
 Let's see how to implement the extra data for orders using sets and parameters:
 
-```
+```ampl
 set Orders, default {};
 
 param Order_Material_Flow {o in Orders, m in Materials}, >=0, default 0;
@@ -1991,7 +2818,7 @@ param Order_Pay_Before {o in Orders}, binary, default 1;
 
 We define the following variables, including a new one for order acquisition:
 
-```
+```ampl
 var volume {c in Recipes}, >=0;
 var total_costs, <=Initial_Funds;
 var total_revenue;
@@ -2014,7 +2841,7 @@ Material flow is now more complicated as materials come from/go to different sou
 
 <!-- end list -->
 
-```
+```ampl
 var usage_orders {m in Materials}, >=0;
 var usage_market {m in Materials}, >=0;
 var usage_production {m in Materials}, >=0;
@@ -2034,7 +2861,7 @@ Constraints define relationships between the new usage variables.
 
 These calculate amounts flowing through production and orders based on decision variables (`volume` and `ordcnt`).
 
-```
+```ampl
 s.t. Material_Balance_Production {m in Materials}: usage_production[m] =
     sum {c in Recipes} Recipe_Ratio[c,m] * volume[c];
 
@@ -2046,7 +2873,7 @@ s.t. Material_Balance_Orders {m in Materials}: usage_orders[m] =
 
 For raw materials, total amount obtained must equal total amount consumed (production + leftover).
 
-```
+```ampl
 s.t. Material_Balance_Total_Raws_1 {r in Raws}:
     usage_total[r] = usage_orders[r] + usage_market[r]; 
     // Total amount obtained = (From Orders) + (From Market)
@@ -2062,7 +2889,7 @@ s.t. Material_Balance_Total_Raws_2 {r in Raws}:
 
 For products, total amount obtained must equal total amount sold/delivered.
 
-```
+```ampl
 s.t. Material_Balance_Total_Products_1 {p in Products}:
     usage_total[p] = usage_production[p];
     // Total available amount = (Amount Produced)
@@ -2080,7 +2907,7 @@ s.t. Material_Balance_Total_Products_2 {p in Products}:
 
 These constraints calculate financial variables, incorporating order cash flow timing.
 
-```
+```ampl
 s.t. Total_Costs_Calc: total_costs =
     sum {r in Raws} Value[r] * usage_market[r] +
     sum {o in Orders: Order_Pay_Before[o]} Order_Cash_Flow[o] * ordcnt[o];
@@ -2123,7 +2950,7 @@ We use a **filter** in the summation's indexing expression for selective additio
 
 The final model maximizes profit:
 
-```
+```ampl
 set Raws;
 set Products;
 set Recipes;
@@ -2221,7 +3048,7 @@ The order of variable and constraint declarations doesn't affect the solution, b
 
 The first example uses data from **Problem 14** (arbitrary recipes with costs) but doesn't define the `Orders` set.
 
-```
+```ampl
 data;
 
 set Raws := A B C D;
@@ -2264,7 +3091,7 @@ end;
 
 **Results:** The optimal solution matches the original: **$1,577.45$** profit, production of 25.48 P1, 164.52 P2, and 10 P3.
 
-```
+```ampl
 Total Costs: 20876.4
 Total Revenue: 22453.9
 Profit: 1577.45
@@ -2290,7 +3117,7 @@ Production of product P3: 10 -> 0 + 10 (total: 10)
 
 The second example uses data from **Problem 18** (arbitrary recipes with joint production), but explicitly defines order-related parameters and sets as empty.
 
-```
+```ampl
 data;
 set Raws := A B C D;
 set Products := P1 P2 P3;
@@ -2343,7 +3170,7 @@ end;
 
 **Results:** The optimal solution is again the same: **$1,965.63$** profit, utilizing joint production options `Comp1` and `Comp2`.
 
-```
+```ampl
 Total Costs: 30495
 Total Revenue: 32460.6
 Profit: 1965.63
@@ -2463,7 +3290,7 @@ param Order_Pay_Before :=
 end;
 ```
 
-```
+```ampl
 Total Costs: 26497.3
 Total Revenue: 47202.7
 Profit: 20705.4
@@ -2500,7 +3327,7 @@ glpsol -m model.mod -d data.dat --nomip
 
 The model is treated as an LP, which solves much faster, but integer variables can take fractional values (making the solution **infeasible in reality**). Using this option yields:
 
-```
+```ampl
 Total Costs: 12163
 Total Revenue: 33560
 Profit: 21397
@@ -2712,11 +3539,11 @@ param Cost:
 
 end;
 
-```
+```ampl
 
 Solving the problem with `glpsol` yields the following result:
 
-```
+```ampl
 Optimal cost: 2700.
 From S1 to D1, transport 10 amount for 50 (unit cost: 5).
 From S1 to D5, transport 90 amount for 450 (unit cost: 5).
@@ -2812,7 +3639,7 @@ Solve **Problem 22**, the original example transportation problem, with one modi
 
 We introduce a parameter to denote the unit cost limit.
 
-```
+```ampl
 param Max_Unit_Cost, default 7;
 ```
 
@@ -2820,14 +3647,14 @@ Note that by providing a default value of **7** instead of setting the parameter
 
 One possible solution is to express a new constraint that explicitly finds each prohibited connection and sets the transported amount there to zero, effectively excluding the connection from the model.
 
-```
+```ampl
 s.t. Connections_Prohibited
 {s in Supplies, d in Demands: Cost[s,d] > Max_Unit_Cost}: tran[s,d] = 0;
 ```
 
 However, in this case, we use many variables in the model just to fix them at zero. It's possible **not to include** those variables in the model formulation at all, and this can be done by introducing a **filter** in the `setof` expression defining the **`Connections`** set.
 
-```
+```ampl
 set Connections :=
 setof {s in Supplies, d in Demands: Cost[s,d] <= Max_Unit_Cost} (s,d);
 ```
@@ -2836,14 +3663,14 @@ With this filter, we only include allowed connections in the **`Connections`** s
 
 Note that **care must be taken** with this method, because now the following constraint would cause an **out-of-domain error**:
 
-```
+```ampl
 s.t. Availability_at_Supply_Points {s in Supplies}:
 sum {d in Demands} tran[s,d] <= Available[s];
 ```
 
 The problem is that `tran[s,d]` is iterated over **all pairs** of `s` in **`Supplies`** and `d` in **`Demands`**, but the variable is simply **not defined** for all such pairs now. This is in strong contrast with the first approach where they **are defined**, but explicitly set to zero. We must now ensure that the sum only considers **allowed connections**, which can be done as follows:
 
-```
+```ampl
 s.t. Availability_at_Supply_Points {s in Supplies}:
 sum {(s,d) in Connections} tran[s,d] <= Available[s];
 ```
@@ -2888,21 +3715,21 @@ In the example problem, all thresholds and increased costs are **uniform** acros
 
 The first step is to define the **data** in the model needed to calculate the alternative cost function. Two parameters are introduced: **`CostThreshold`** is the amount over which the unit costs increase, and **`CostIncPercent`** denotes the rate of increase in **percent**. Note that the increase must be positive.
 
-```
+```ampl
 param CostThreshold, >=0;
 param CostIncPercent, >0;
 ```
 
 In Problem 25, the following values can be given in the **data** section.
 
-```
+```ampl
 param CostThreshold := 100;
 param CostIncPercent := 25;
 ```
 
 We introduce another parameter, **`CostOverThreshold`**, which calculates the increased unit cost using the following formula. Note that the original unit cost is `Cost[s,d]`.
 
-```
+```ampl
 param CostOverThreshold {(s,d) in Connections} :=
 Cost[s,d] * (1 + CostIncPercent / 100);
 ```
@@ -2911,7 +3738,7 @@ At this point, we have all the required data defined in the model. The question 
 
 First, we can simply introduce two variables: **`tranBase`** for amounts below and **`tranOver`** for amounts above the threshold.
 
-```
+```ampl
 var tranBase {(s,d) in Connections}, >=0, <=CostThreshold;
 var tranOver {(s,d) in Connections}, >=0;
 ```
@@ -2920,14 +3747,14 @@ Note that both quantities are **nonnegative**. The amount to be transported over
 
 The amounts represented by `tranBase` and `tranOver` are simply a **separation of the total amount** represented by `tran`. Therefore, a **constraint** is provided to ensure that the sum of the former two equals `tran` for each connection.
 
-```
+```ampl
 s.t. Total_Transported {(s,d) in Connections}:
 tran[s,d] = tranBase[s,d] + tranOver[s,d];
 ```
 
 Instead of using `tran` in the objective, we can refer to the **`tranBase` and `tranOver` parts separately** and multiply these amounts by their corresponding unit costs (`Cost` and `CostOverThreshold`).
 
-```
+```ampl
 minimize Total_Costs: sum {(s,d) in Connections}
 (tranBase[s,d] * Cost[s,d] + tranOver[s,d] * CostOverThreshold[s,d]);
 ```
@@ -2940,7 +3767,7 @@ But the model works because the unit cost above the threshold is **strictly high
 
 The full model section for the transportation problem with increasing rates is shown here.
 
-```
+```ampl
 set Supplies;
 set Demands;
 param Available {s in Supplies}, >=0;
@@ -2977,7 +3804,7 @@ Cost[s,d], CostOverThreshold[s,d];
 
 Solving the model with a value of **100** for `CostThreshold` and **25** for `CostIncPercent`, we get the following result.
 
-```
+```ampl
 Optimal cost: 2772.5.
 From S1 to D5, transport 100=100+0 amount for 500 (unit cost: 5/6.25).
 From S2 to D1, transport 120=100+20 amount for 125 (unit cost: 1/1.25).
@@ -3013,7 +3840,7 @@ Solve Problem 22, the original example transportation problem, with one modifica
 
 The only difference between this problem and the previous one is that the unit costs above the threshold are now **lower**, not higher. It is tempting to address this by slightly modifying our code to calculate decreasing costs. The parameter `CostIncPercent` is renamed to **`CostDecPercent`**, and `CostOverThreshold` is calculated accordingly.
 
-```
+```ampl
 param CostDecPercent, >0, <=100;
 param CostOverThreshold {(s,d) in Connections} :=
 Cost[s,d] * (1 - CostDecPercent / 100);
@@ -3021,7 +3848,7 @@ Cost[s,d] * (1 - CostDecPercent / 100);
 
 However, if we solve the model, the results **do not reflect reality**.
 
-```
+```ampl
 Optimal cost: 2025.
 From S1 to D1, transport 10=0+10 amount for 37.5 (unit cost: 5/3.75).
 From S1 to D5, transport 90=0+90 amount for 337.5 (unit cost: 5/3.75).
@@ -3050,7 +3877,7 @@ Since the feasible region is not convex, the **economy of scale cannot be modele
 
 For each connection, we introduce a **binary variable**, $\text{isOver}$.
 
-```
+```ampl
 var isOver {(s,d) in Connections}, binary;
 ```
 
@@ -3085,7 +3912,7 @@ There are two conditional constraints to implement:
 
 For the first constraint, we define the big-M parameter as the sum of all available supplies.
 
-```
+```ampl
 param M := sum {s in Supplies} Available[s];
 s.t. Zero_Over_Threshold_if_Threshold_Not_Chosen {(s,d) in Connections}:
 tranOver[s,d] <= M * isOver[s,d];
@@ -3095,14 +3922,14 @@ When $\text{isOver}[s,d]=0$, then $\text{tranOver}[s,d] \le 0$ is enforced (so i
 
 For the second constraint:
 
-```
+```ampl
 s.t. Full_Below_Threshold_if_Threshold_Chosen {(s,d) in Connections}:
 tranBase[s,d] >= CostThreshold - M * (1 - isOver[s,d]);
 ```
 
 However, we can use a **smarter big-M**. The big-M can be set as low as $\mathbf{CostThreshold}$. With this value, the constraint can be rearranged into a more readable form:
 
-```
+```ampl
 s.t. Full_Below_Threshold_if_Threshold_Chosen {(s,d) in Connections}:
 tranBase[s,d] >= CostThreshold * isOver[s,d];
 ```
@@ -3113,7 +3940,7 @@ We added the variable $\text{isOver}$ and these two constraints to the previous 
 
 **Full MILP Model for Economy of Scale**
 
-```
+```ampl
 set Supplies;
 set Demands;
 param Available {s in Supplies}, >=0;
@@ -3158,7 +3985,7 @@ Cost[s,d], CostOverThreshold[s,d];
 
 We get the following results for **Problem 27**:
 
-```
+```ampl
 Optimal cost: 2625.
 From S1 to D1, transport 10=10+0 amount for 50 (unit cost: 5/3.75).
 From S1 to D5, transport 90=90+0 amount for 450 (unit cost: 5/3.75).
@@ -3201,11 +4028,11 @@ Solve Problem 28 using data from the original **Problem 22**, and the following 
 
 We start with the general implementation from **Section 6.2**. We add a new parameter, **`FixedCost`**, and implement the matrix in Problem 29 in the data section.
 
-```
+```ampl
 param FixedCost {(s,d) in Connections}, >=0;
 ```
 
-```
+```ampl
 param FixedCost:
 D1 D2 D3 D4 D5 D6 :=
 S1 50 50 80 50 200 50
@@ -3219,13 +4046,13 @@ If we observe the schematic representation of the fixed cost (**Figure 5**), we 
 
 We need a **binary decision variable** to distinguish the two cases. **`tranUsed`** equals one if we choose to establish the connection. If `tranUsed` is zero, then transportation on that connection **must also be zero**.
 
-```
+```ampl
 var tranUsed {(s,d) in Connections}, binary;
 ```
 
 Two things must be enforced. First, if we **do not establish the connection** ($\text{tranUsed}=0$), there must be **no amount transported** ($\text{tran}=0$). This can be done with a **big-M constraint**.
 
-```
+```ampl
 param M := sum {s in Supplies} Available[s];
 s.t. Zero_Transport_If_Fix_Cost_Not_Paid {(s,d) in Connections}:
 tran[s,d] <= M * tranUsed[s,d];
@@ -3233,14 +4060,14 @@ tran[s,d] <= M * tranUsed[s,d];
 
 The coefficient $M$ must be large enough not to exclude legitimate solutions. To create **stricter constraints**, we can use the **minimum of the available amount at the supply and the required amount at the demand**.
 
-```
+```ampl
 s.t. Zero_Transport_If_Fix_Cost_Not_Paid {(s,d) in Connections}:
 tran[s,d] <= min(Available[s],Required[d]) * tranUsed[s,d];
 ```
 
 Second, we must include the fixed establishment cost in the **objective function**.
 
-```
+```ampl
 minimize Total_Costs: sum {(s,d) in Connections}
 (tran[s,d] * Cost[s,d] + tranUsed[s,d] * FixedCost[s,d]);
 ```
@@ -3249,7 +4076,7 @@ The full model section is the following.
 
 **Full MILP Model for Fixed Costs**
 
-```
+```ampl
 set Supplies;
 set Demands;
 param Available {s in Supplies}, >=0;
@@ -3282,7 +4109,7 @@ end;
 
 The original optimal solution (zero fixed costs) is **2,700**. If nonzero fixed costs are present, the following output is reported:
 
-```
+```ampl
 Optimal cost: 3640.
 From S1 to D1, transport 100 amount for 550 (unit cost: 5, fixed: 50).
 From S2 to D1, transport 20 amount for 220 (unit cost: 1, fixed: 200).
@@ -3323,7 +4150,7 @@ Let's investigate penalties as a function of the total materials delivered (**Fi
 
 We introduce an auxiliary variable, **`satisfied`**, denoting the **total amount delivered** to a demand.
 
-```
+```ampl
 var satisfied {d in Demands}, >=0;
 s.t. Calculating_Demand_Satisfied {d in Demands}:
 satisfied[d] = sum {s in Supplies} tran[s,d];
@@ -3333,7 +4160,7 @@ satisfied[d] = sum {s in Supplies} tran[s,d];
 
 The penalty function can be modeled by two linear constraints.
 
-```
+```ampl
 var penalty {d in Demands}, >=0;
 s.t. Shortage_Penalty_Constraint {d in Demands}:
 penalty[d] >= ShortagePenalty * (Required[d] - satisfied[d]);
@@ -3343,7 +4170,7 @@ penalty[d] >= SurplusPenalty * (satisfied[d] - Required[d]);
 
 The penalty variable is included in the objective function. The optimization procedure eliminates excessively high penalty values, so in the optimal solution, one constraint will be strict (or both if the requirement is met exactly).
 
-```
+```ampl
 minimize Total_Costs:
 sum {(s,d) in Connections} tran[s,d] * Cost[s,d] +
 sum {d in Demands} penalty[d];
@@ -3353,7 +4180,7 @@ sum {d in Demands} penalty[d];
 
 Alternatively, we can use variables for the exact shortage and surplus amounts.
 
-```
+```ampl
 var surplus {d in Demands}, >=0;
 var shortage {d in Demands}, >=0;
 s.t. Calculating_Exact_Demands {d in Demands}:
@@ -3362,7 +4189,7 @@ Required[d] - shortage[d] + surplus[d] = satisfied[d];
 
 The optimization procedure ensures that **either shortage or surplus is zero** in the optimal solution.
 
-```
+```ampl
 minimize Total_Costs:
 sum {(s,d) in Connections} tran[s,d] * Cost[s,d] +
 sum {d in Demands} (shortage[d] * ShortagePenalty +
@@ -3398,7 +4225,7 @@ We define sets `Supplies`, `Centers`, `Demands`, and parameters `Available`, `Re
 
 We define variables `tranA` and `tranB` for transportation amounts. We also need `atCenter` (amount through center) and the binary variable `useCenter` (is center used?).
 
-```
+```ampl
 var tranA {(s,c) in ConnectionsA}, >=0;
 var tranB {(c,d) in ConnectionsB}, >=0;
 var atCenter {c in Centers}, >=0;
@@ -3559,7 +4386,7 @@ Solving Problem 35 reports an **optimal gain of 17.1**, achieved by selecting it
 
 Note that we used a **conditional expression** to print the word `SELECTED` after each item $i$ where `select[i]` is 1, and an empty string where it is 0. The condition for such an expression must be a constant expression that can be interpreted as a logical value. Remember that variables only behave as constants *after* the `solve` statement in the model section. The output produced is as follows:
 
-```
+```ampl
 Optimal Gain: 17.1
 Total Weight: 59.2
 A:
@@ -3601,7 +4428,7 @@ printf "%s: %g\n", i, select[i];
 
 Solving the relaxed model with the exact same data gives the following results:
 
-```
+```ampl
 Optimal Gain: 17.7025
 Total Weight: 60
 A: 0.273292
@@ -3638,7 +4465,7 @@ We will solve one example problem.
 
 Let's see how to **implement** this in **GNU MathProg**. First, there is an `Items` set and a `Weight` parameter, just as before, but no `Gain` parameter. Instead, we **define** a single integer parameter `Knapsack_Count`, which refers to the **positive integer** $K$ from the problem description.
 
-```
+```ampl
 set Items;
 param Weight {i in Items}, >=0;
 param Knapsack_Count, integer;
@@ -3651,7 +4478,7 @@ Note that we require `Weight` to be **non-negative**; however, these parameters 
 
 There are **more decisions** to be made here than in the original knapsack problem. For each item, we don't just decide *whether* it goes into a knapsack; we decide **which knapsack it goes into**. We can do this by defining a **binary decision variable** `select` for each pair of an **item** and a **knapsack**, denoting whether that item goes into that specific knapsack. While these decisions cover the situation, we need **auxiliary variables** to express the **objective function concisely**. Therefore, we introduce a variable `weight` for each knapsack (denoting its total weight), along with `min_weight` and `max_weight` for the overall minimal and maximal knapsack weights.
 
-```
+```ampl
 var select {i in Items, k in Knapsacks}, binary;
 var weight {k in Knapsacks};
 var min_weight;
@@ -3660,14 +4487,14 @@ var max_weight;
 
 There is only **one constraint** that determines if a decision regarding knapsacks is **feasible**: **each item must go exactly into one knapsack**. If we sum the binary variables for a specific item across all knapsacks and set that sum to one, the only feasible solution is for **one binary variable to be 1 and all others to be 0**. Therefore, the constraint is:
 
-```
+```ampl
 s.t. Partitioning {i in Items}:
 sum {k in Knapsacks} select[i,k] = 1;
 ```
 
 We provide **three additional constraint statements** to express the calculation of each knapsack's weight, a **lower limit** on all knapsack weights (`min_weight`), and an **upper limit** (`max_weight`).
 
-```
+```ampl
 s.t. Total_Weights {k in Knapsacks}:
 weight[k] = sum {i in Items} select[i,k] * Weight[i];
 s.t. Total_Weight_from_Below {k in Knapsacks}:
@@ -3678,7 +4505,7 @@ max_weight >= weight[k];
 
 The **objective** is the **difference** between the upper and lower limits.
 
-```
+```ampl
 minimize Difference: max_weight - min_weight;
 ```
 
@@ -3686,7 +4513,7 @@ This design has been used before for **minimizing errors in equations** (Section
 
 Finally, we **print the contents of each knapsack** after the `solve` statement, and our model section is **ready**.
 
-```
+```ampl
 set Items;
 param Weight {i in Items}, >=0;
 param Knapsack_Count, integer;
@@ -3721,7 +4548,7 @@ end;
 
 Solving example **Problem 37** gives the following result:
 
-```
+```ampl
 Smallest difference: 2.5 (55.3 - 52.8)
 1: C F J (53.2)
 2: D E H I (55.3)
@@ -3905,7 +4732,7 @@ end;
 
 Solving the model for the smallest instance ($4 \times 6$) shows that no more than **two** cross tiles can fit. One possible construction is shown below:
 
-```
+```ampl
 Max. Cross Tiles (4x6): 2
 ....+.
 .+.+#+
@@ -3915,7 +4742,7 @@ Max. Cross Tiles (4x6): 2
 
 The medium instance ($10 \times 10$) is still solved very quickly. A maximum of **13** cross tiles fit, and the solution looks like this:
 
-```
+```ampl
 Max. Cross Tiles (10x10): 13
 .+...+..+.
 +#+.+#++#+
@@ -3939,7 +4766,7 @@ If the time limit option is omitted, the solver runs indefinitely. Note that the
 
 Running `glpsol` with a one-minute time limit produced the following output:
 
-```
+```ampl
 GLPK Integer Optimizer, v4.65
 901 rows, 1684 columns, 5604 non-zeros
 1684 integer variables, all of which are binary
@@ -3966,7 +4793,7 @@ Note that the original model contained a massive **1684 binary variables**. Prep
 
 After that, the **LP relaxation** of the MILP model is solved. The rows concerning "perturbation" indicate that the solver took measures to avoid **stalling** (an infinite loop in the Simplex algorithm). This message suggests that the solved LP is difficult, very large, or has unusual properties. The last line shows that **163.15** was the optimal solution of the LP relaxation. This tells us that the optimal solution of the actual MILP model **cannot be greater than 163**. The algorithm uses this result to set an initial bound.
 
-```
+```ampl
 Integer optimization begins...
 Long-step dual simplex will be used
 + 1896: mip = not found yet <= +inf (1; 0)
@@ -4027,7 +4854,7 @@ glpsol -m tiling.mod -d example.dat --fpump --cuts
 
 These heuristics often help, sometimes dramatically, though not always. The output for the $30 \times 30$ instance with these options is:
 
-```
+```ampl
 Integer optimization begins...
 Long-step dual simplex will be used
 Gomory's cuts enabled
@@ -4060,7 +4887,7 @@ We see evidence of preprocessing for cuts, but the most significant improvement 
 
 Note that if you are uncertain about complexity, you can omit time limits and manually stop `glpsol`, as it periodically reports the best solution. However, doing so skips the print commands at the end of the file. If `glpsol` stops on its own (e.g., due to a time limit), it sets variables to the current best solution and prints the output. Here is the reported solution with **153 tiles**:
 
-```
+```ampl
 Max. Cross Tiles (30x30): 153
 ..+....+.....+...+....+....+..
 .+#+.++#+.+.+#+++#+.++#+.++#+.
@@ -4130,7 +4957,7 @@ We can define the input sets and parameters in various ways. One possibility is 
 
 Next, we introduce the `Assignments` set for all possible worker-task pairs, which helps formulation. The `Cost` parameter is defined for all assignments.
 
-```
+```ampl
 set Workers;
 set Tasks;
 check card(Workers)==card(Tasks);
@@ -4140,7 +4967,7 @@ param Cost {(w,t) in Assignments};
 
 Data for Problem 41 can be implemented as follows:
 
-```
+```ampl
 data;
 set Workers := W1 W2 W3 W4 W5 W6 W7;
 set Tasks := T1 T2 T3 T4 T5 T6 T7;
@@ -4161,13 +4988,13 @@ end;
 
 There is only one kind of decision to be made: for each assignment, decide whether to assign that task to the worker or not. This is a binary variable named `assign`.
 
-```
+```ampl
 var assign {(w,t) in Assignments}, binary;
 ```
 
 There are two rules we must obey: each worker must have exactly one task, and each task must have exactly one worker.
 
-```
+```ampl
 s.t. One_Task_Per_Worker {w in Workers}:
 sum {t in Tasks} assign[w,t] = 1;
 s.t. One_Worker_Per_Task {t in Tasks}:
@@ -4176,14 +5003,14 @@ sum {w in Workers} assign[w,t] = 1;
 
 The objective is the total cost, obtained by adding each assignment variable multiplied by its cost.
 
-```
+```ampl
 minimize Total_Cost:
 sum {(w,t) in Assignments} assign[w,t] * Cost[w,t];
 ```
 
 Finally, we print the optimal cost and the task assigned to each worker.
 
-```
+```ampl
 set Workers;
 set Tasks;
 check card(Workers)==card(Tasks);
@@ -4211,7 +5038,7 @@ end;
 
 The solution to the example problem is as follows (costs in parentheses):
 
-```
+```ampl
 Optimal Cost: 42
 W1->T2 (6)
 W2->T1 (7)
@@ -4243,7 +5070,7 @@ This technique isn't specific to the assignment problem; it applies to many real
 
 First, we define a parameter **`Fixing`** to express these decisions.
 
-```
+```ampl
 param Fixing {(w,t) in Assignments}, in {0,1,2}, default 2;
 ```
 
@@ -4257,7 +5084,7 @@ Setting the default to 2 ensures **compatibility with old data files** that don'
 
 Next, we enforce these decisions. For any `Fixing` value of 0 or 1, we explicitly set the `assign` variable to that value.
 
-```
+```ampl
 s.t. Fixing_Constraints {(w,t) in Assignments: Fixing[w,t]!=2}:
 assign[w,t] = Fixing[w,t];
 ```
@@ -4270,13 +5097,13 @@ This completes the model. We demonstrate it with two trials.
 
 We set assignment **W6 to T6 as zero (excluded)**. Since the original optimal solution used this assignment, prohibiting it forces the solver to find an alternative.
 
-```
+```ampl
 param Fixing :=
 W6 T6 0
 ;
 ```
 
-```
+```ampl
 Optimal Cost: 42
 W1->T2 (6)
 W2->T6 (5)
@@ -4295,13 +5122,13 @@ Even though W6-\>T6 was very cheap (cost 3), there is an alternative solution wi
 
 We set assignment **W4 to T3 as mandatory (1)**. This is the **cheapest assignment** in the matrix (cost 2) but wasn't used in previous optimal solutions.
 
-```
+```ampl
 param Fixing :=
 W4 T3 1
 ;
 ```
 
-```
+```ampl
 Optimal Cost: 43
 W1->T2 (6)
 W2->T7 (5)
@@ -4363,7 +5190,7 @@ On the graph in **Figure 12**, find the shortest path between nodes **A and I**,
 
 We first implement a data section. The set **`Nodes`** contains the nodes. We define **`Start`** and **`Finish`** nodes for the shortest path. **`Weight`** describes edge weights.
 
-```
+```ampl
 data;
 set Nodes := A B C D E F G H I;
 param Start := A;
@@ -4381,7 +5208,7 @@ end;
 
 Parameters **`Start`** and **`Finish`** are symbolic and must be in the `Nodes` set. We assert they are different.
 
-```
+```ampl
 set Nodes;
 param Start, symbolic, in Nodes;
 param Finish, symbolic, in Nodes;
@@ -4392,7 +5219,7 @@ While edges in simple graphs are undirected ($AB = BA$), it is easier in math pr
 
 We introduce a parameter **`Infty`** as a default large cost to effectively exclude edges not listed in the data.
 
-```
+```ampl
 param Infty, default 99999;
 param Weight {a in Nodes, b in Nodes}, >0, default Infty;
 param W {a in Nodes, b in Nodes} := min(Weight[a,b],Weight[b,a]);
@@ -4406,7 +5233,7 @@ The idea is to imagine a single **"droplet" of material** placed at **`Start`**.
 
 A binary variable **`flow`** denotes whether the droplet flows through an arc $(a, b)$.
 
-```
+```ampl
 var flow {a in Nodes, b in Nodes}, binary;
 ```
 
@@ -4418,7 +5245,7 @@ We need to check the **material balance** at each node:
 
 <!-- end list -->
 
-```
+```ampl
 subject to Path_Balance {x in Nodes}:
 sum {a in Nodes} flow[a,x] - sum {b in Nodes} flow[x,b] =
 if (x==Start) then -1 else if (x==Finish) then 1 else 0;
@@ -4426,7 +5253,7 @@ if (x==Start) then -1 else if (x==Finish) then 1 else 0;
 
 This ensures a **feasible trail** exists. The objective is to minimize total weight.
 
-```
+```ampl
 minimize Total_Weight:
 sum {a in Nodes, b in Nodes} flow[a,b] * W[a,b];
 ```
@@ -4435,7 +5262,7 @@ Optimization will naturally rule out cycles and extra edges because of their pos
 
 Solving for **A to I** gives:
 
-```
+```ampl
 Distance A-I: 19
 A->D (3)
 B->E (4)
@@ -4457,7 +5284,7 @@ We use a similar flow strategy. We want a connected graph. Let's put a droplet i
 
 <!-- end list -->
 
-```
+```ampl
 param Sink := A;
 ```
 
@@ -4468,14 +5295,14 @@ We use two variables:
 
 <!-- end list -->
 
-```
+```ampl
 var use {a in Nodes, b in Nodes}, binary;
 var flow {a in Nodes, b in Nodes};
 ```
 
 Constraints ensure flow in one direction is the negative of the other, and flow only happens on selected (`use`) edges (using a big-M constraint based on node count).
 
-```
+```ampl
 subject to Flow_Direction {a in Nodes, b in Nodes}:
 flow[a,b] + flow[b,a] = 0;
 subject to Flow_On_Used {a in Nodes, b in Nodes}:
@@ -4489,7 +5316,7 @@ Material balance:
 
 <!-- end list -->
 
-```
+```ampl
 subject to Material_Balance {x in Nodes}:
 sum {a in Nodes} flow[a,x] - sum {b in Nodes} flow[x,b] =
 if (x==Sink) then (1-card(Nodes)) else 1;
@@ -4499,7 +5326,7 @@ Minimizing the total weight of `use`d edges results in a spanning tree directed 
 
 Solving the example with Sink **A**:
 
-```
+```ampl
 Cheapest spanning tree: 31
 A<-D (3)
 B<-E (4)
@@ -4537,7 +5364,7 @@ Find the **shortest route** starting and ending at the **green node** and visiti
 
 We implement a model that accepts planar positions and calculates distances. The nodes are listed in a set `Node_List`.
 
-```
+```ampl
 data;
 set Node_List :=
 P00 0 0
@@ -4555,7 +5382,7 @@ In the model, `Node_List` is a three-dimensional set (name, x, y). We derive `No
 
 TSP is closely related to the **assignment problem**. Each node must have exactly one "next" node in the cycle. This is an assignment from the set of nodes to itself.
 
-```
+```ampl
 var use {a in Nodes, b in Nodes}, binary;
 subject to Path_In {b in Nodes}: sum {a in Nodes} use[a,b] = 1;
 subject to Path_Out {a in Nodes}: sum {b in Nodes} use[a,b] = 1;
@@ -4563,7 +5390,7 @@ subject to Path_Out {a in Nodes}: sum {b in Nodes} use[a,b] = 1;
 
 However, simple assignment constraints might result in **multiple smaller cycles** rather than one big cycle (see Figure 17). To prevent this, we must ensure **connectivity**. We reuse the MST flow technique: put a droplet at each node and ensure they can all flow to `Start`. This is possible if and only if there is a single connected cycle.
 
-```
+```ampl
 var flow {a in Nodes, b in Nodes};
 ...
 subject to Material_Balance {x in Nodes}: ...
@@ -4573,7 +5400,7 @@ The TSP model is essentially a combination of the **assignment problem** and **c
 
 Solving Problem 47 yields a cycle length of **44.59**.
 
-```
+```ampl
 Shortest Hamiltonian cycle: 44.5948
 P00->P31 (3.16228)
 ...
@@ -4598,4 +5425,399 @@ This chapter demonstrated how **Mixed-Integer Linear Programming (MILP)** solves
   * **Graphs:** **Shortest Path** and **MST** were solved using **flow/material balance** concepts.
   * **TSP:** Solved by combining assignment logic with connectivity constraints. We also generated **visual SVG output**.
 
-**Integer programming** expands the range of solvable problems significantly compared to pure LP, but it comes with a steep increase in **computational complexity**.
+**Integer programming** expands the range of solvable problems significantly compared to pure LP, but it comes with a steep increase in **computational complexity**.
+----
+# Chapter 8: Solution Algorithms
+
+Up to this point, we have focused on $\text{LP}$ and $\text{MILP}$ **modeling techniques** and the specifics of **GNU MathProg implementation**. Mathematical programming models are solved using **dedicated solvers**, and typically, you can perform the modeling process without needing to know exactly how these solvers operate under the hood.
+
+However, understanding the **solution algorithms** themselves can be incredibly valuable during the modeling phase. This knowledge aids in **designing models**, **improving their efficiency**, **selecting the right solver tools and configurations**, and **interpreting results** and solver outputs. Therefore, this chapter aims to provide insight into how the models we describe in a modeling language are actually solved in the background.
+
+Operations research boasts a rich body of literature regarding solution algorithms, dating back to the 1970s. We recommend a few books for interested readers. First, W. L. Winston's book [31] is a widely used handbook covering the main models and algorithms. We also suggest István Maros's book on Linear Programming [32] and the work of George Dantzig [33].
+
+**Linear Programming (LP)** is a primary technique within operations research. There are several solution methods, most notably the **Simplex Method** and its various iterations. The initial version, called the **Primal Simplex Method**, was introduced by George Dantzig in 1947. We will briefly introduce it in the next section by solving a simple production problem.
+
+
+
+---
+
+## 8.1 The Primal Simplex Method
+
+Let's look at the table below, which contains the data for a production problem:
+
+| | P1 | P2 | P3 | P4 | P5 | Cap |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| Res1 | 1 | 2 | 1 | 3 | 0 | 24 |
+| Res2 | 0 | 1 | 1 | 5 | 1 | 43 |
+| Res3 | 1 | 0 | 0 | 2 | 2 | 18 |
+| **Profit** | **19** | **23** | **15** | **42** | **33** | |
+
+The data represents a scenario similar to the production problems mentioned previously (see Problem 9 from Chapter 5).
+
+Imagine a small factory that can produce several products ($\text{P}1, \ldots, \text{P}5$). We use three **resources** for production. Each product column shows the number of units required from each resource to produce one unit of that specific product. For example, producing one unit of product $\text{P}4$ requires 3 units from $\text{Res}1$, 5 units from $\text{Res}2$, and 2 units from $\text{Res}3$. A resource could be raw material, labor, electricity, etc. We can produce as much as we want, provided production doesn't exceed the available **capacities** of the resources. For instance, if we produce 8 units of $\text{P}2$ and 1 unit of $\text{P}4$, the total consumption from the first resource will be $8 \cdot 2 + 1 \cdot 3 = 19$ units. The usage of the other resources is calculated the same way. We earn a certain **profit** from production, which is a linear combination of the production plan and the profit coefficient vector. If the production vector is $x(0, 8, 0, 1, 0)$ and we introduce the profit vector $c(19, 23, 15, 42, 33)$, the earned profit would be $c \cdot x = (19, 23, 15, 42, 33) \cdot (0, 8, 0, 1, 0) = 226$. Our goal is to find a production plan that satisfies all constraints and maximizes the earned profit.
+
+If we denote the matrix of resource coefficients by $A$ and the capacity vector by $b$, our problem can be written in the general $\text{LP}$ format:
+
+$$z = c \cdot x \to \max$$
+
+$$\text{s.t. } Ax \le b, x \ge 0.$$
+
+We will demonstrate how to solve this using the Primal Simplex Method. First, let's write out the model in detail:
+
+$$\begin{array}{rcccccccc}
+x_1 & +2x_2 & +x_3 & +3x_4 & & & & \le & 24 \\
+& x_2 & +x_3 & +5x_4 & +x_5 & & & \le & 43 \\
+x_1 & & & +2x_4 & +2x_5 & & & \le & 18 \\
+19x_1 & +23x_2 & +15x_3 & +42x_4 & +33x_5 & = & z & \to & \max \\
+& & x_i \ge 0, 1 \le i \le 5
+\end{array}$$
+
+Next, we convert the inequalities into equations by adding so-called **slack variables** ($s_i$) to the left-hand side:
+
+$$\begin{array}{rccccccccc}
+x_1 & +2x_2 & +x_3 & +3x_4 & & +s_1 & & & = & 24 \\
+& x_2 & +x_3 & +5x_4 & +x_5 & & +s_2 & & = & 43 \\
+x_1 & & & +2x_4 & +2x_5 & & & +s_3 & = & 18 \\
+19x_1 & +23x_2 & +15x_3 & +42x_4 & +33x_5 & & & = & z & \to \max \\
+& & x \ge 0, s \ge 0
+\end{array}$$
+
+In this model, writing $x \ge 0$ is shorthand for writing out all non-negativity constraints for the $x$ variables, and the same holds for the $s$ vector. Instead of the system of equations, we can use a compact form called the **simplex tableau**, shown below.
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$a_3$** | **$a_4$** | **$a_5$** | **$s_1$** | **$s_2$** | **$s_3$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $s_1$ | 24 | 1 | **2** | 1 | 3 | 0 | 1 | 0 | 0 |
+| $s_2$ | 43 | 0 | 1 | 1 | 5 | 1 | 0 | 1 | 0 |
+| $s_3$ | 18 | 1 | 0 | 0 | 2 | 2 | 0 | 0 | 1 |
+| $z$ | 0 | -19 | -23 | -15 | -42 | -33 | 0 | 0 | 0 |
+
+Note that there are several equivalent versions of the simplex tableau. Here, we place the **basis solution** on the left-hand side and the extra row for the **objective function** at the bottom. These specific choices are not fundamentally important.
+
+Here, **B** stands for the **basis**, which is a maximal linearly independent set of vectors. Currently (initially), $B = \{s_1, s_2, s_3\}$, composed of the three unit vectors. The corresponding **basic feasible solution** is $x_B = (0, 0, 0, 0, 0, 24, 43, 18)$. This is a solution to the linear system; moreover, every variable is non-negative (meaning the solution is **feasible**), and any non-zero component in the vector corresponds to a basis vector.
+
+The tableau contains all the data plus an extra row. How do we define the objective function's extra row? It simply contains the **negatives** of the coefficients from the $c$ vector.
+
+The following theorem is crucial:
+
+> **Theorem 1** Exactly one of the following options occurs:
+>
+> a) There is **no negative entry** in the last row. In this case, the corresponding basic feasible solution is **optimal**.
+>
+> b) There is a negative value in the last row such that there is **no positive value** in its column. In this case, there is **no optimal solution**, as the objective value is not bounded from above.
+>
+> c) Otherwise (there is a negative value in the last row, but for every such value, a positive value exists in its column), we can perform a **basis transformation** so that the corresponding objective value is not smaller.
+
+Since this is only a brief overview of the simplex method, we won't prove the theorem; interested readers can find the proof in any of the suggested books. However, we will demonstrate the transformation process. Each transformation **exchanges one vector in the basis for another** not already present.
+
+Let's assume we choose the column of $a_2$ (which has the most negative coefficient in the objective row, -23) for the vector that **enters the basis**. The vector that **leaves the basis** is determined by a rule called the **minimum ratio test**. We calculate the following minimum: $\min \{24/2, 43/1\}$. The numerator is taken from the current basic solution ($x_B$), and the denominator is taken from the same row but in the chosen entering column ($a_2$). We **cannot divide by zero** or a **negative value**.
+
+The minimum is $24/2 = 12$, which means the vector in the row corresponding to 24 ($s_1$) must be chosen as the **leaving vector**. The value $\mathbf{2}$ is called the **pivot number**, which is bolded in the initial tableau.
+
+How is the transformation performed?
+* Divide the pivot row (the $s_1$ row) by the pivot value (2).
+* Subtract $1/2$ times the pivot row from the second row ($s_2$).
+* Subtract $0/2$ times the pivot row from the third row ($s_3$).
+* **Add** $23/2$ times the pivot row to the objective row ($z$).
+
+In the calculations above ($1/2$, $0/2$, and $23/2$), the numerator comes from the column of the pivot value, and the denominator is always the pivot value. The purpose of choosing these factors is to perform row operations that eliminate every element in the pivot column (reducing them to zero), except for the pivot element itself.
+
+After the transformation, we get the following tableau:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$a_3$** | **$a_4$** | **$a_5$** | **$s_1$** | **$s_2$** | **$s_3$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $a_2$ | 12 | 1/2 | 1 | 1/2 | 3/2 | 0 | 1/2 | 0 | 0 |
+| $s_2$ | 31 | -1/2 | 0 | 1/2 | 7/2 | 1 | -1/2 | 1 | 0 |
+| $s_3$ | 18 | 1 | 0 | 0 | 2 | **2** | 0 | 0 | 1 |
+| $z$ | 276 | -15/2 | 0 | -7/2 | -15/2 | -33 | 23/2 | 0 | 0 |
+
+Now, let's choose the column of $a_5$ to enter the basis (as it has the most negative objective coefficient, $-33$). According to the minimum ratio test: $\min \{\text{N/A}, 31/1, 18/2\}$. Division by $0$ or a negative value (which occurs for $a_5$ in the $a_2$ row) is not allowed. The minimum is $18/2 = 9$. Thus, $s_3$ is the leaving vector.
+
+After the transformation, we get:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$a_3$** | **$a_4$** | **$a_5$** | **$s_1$** | **$s_2$** | **$s_3$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $a_2$ | 12 | 1/2 | 1 | 1/2 | 3/2 | 0 | 1/2 | 0 | 0 |
+| $s_2$ | 22 | -1 | 0 | 1/2 | 5/2 | 0 | -1/2 | 1 | -1/2 |
+| $a_5$ | 9 | 1/2 | 0 | 0 | 1 | 1 | 0 | 0 | 1/2 |
+| $z$ | 573 | 9 | 0 | **-7/2** | 51/2 | 0 | 23/2 | 0 | 33/2 |
+
+Only one negative entry remains in the last row: the column of $a_3$ (with $-7/2$). We must choose this column to enter the basis. According to the minimum ratio test: $\min \{12/(1/2), 22/(1/2), \text{N/A}\}$. The minimum is $12/(1/2) = 24$. Thus, $a_2$ is the leaving vector.
+
+As we've observed, the rule for the objective function change is:
+* If we choose a column to enter the basis where the objective row value is **negative**, the **objective value increases**.
+* If we choose a column where the objective row value is **positive**, the objective value will **decrease** (which we avoid since our goal is to maximize the objective).
+* If we choose a column where the objective row value is **zero**, there will be **no change** in the objective value.
+
+Note that this rule regarding the entering column and objective change is only true if the basic solution is **non-degenerate**. This means that if the current basis is $B(a_2, s_2, a_5)$, then all of $x_2, s_2, x_5$ are positive. If the value of the variable in the basic solution for the pivot row were zero, there would be no change in the basic solution column, and consequently, no change in the objective.
+
+Let's see what happens after the final transformation:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$a_3$** | **$a_4$** | **$a_5$** | **$s_1$** | **$s_2$** | **$s_3$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $a_3$ | 24 | 1 | 2 | 1 | 3 | 0 | 1 | 0 | 0 |
+| $s_2$ | 10 | -3/2 | -1 | 0 | 1 | 0 | -1 | 1 | -1/2 |
+| $a_5$ | 9 | 1/2 | 0 | 0 | 1 | 1 | 0 | 0 | 1/2 |
+| $z$ | **657** | 25/2 | 7 | 0 | 36 | 0 | 15 | 0 | 33/2 |
+
+We can see there are no more negative entries in the last row, which means (according to Theorem 1) that the current solution is **optimal**. This optimal solution is $x_B = (0, 0, 24, 0, 9 \mid 0, 10, 0)$. The vertical line separates the first five variables (the original product variables) from the last three (the slack variables), as their meanings differ. The solution indicates that in the optimal plan (where profit is maximized while satisfying all constraints), we need to produce **24 units of the third product** and **9 units of the fifth product**. Furthermore, **10 units of the second resource remain unused**, while the full capacities of the other two resources are completely consumed.
+
+We performed three transformations, but the final tableau could have been reached with only two (since only $a_3$ and $a_5$ needed to replace vectors in the original basis). It is not easy to know in advance which transformations will lead to the final state in the fewest steps. However, several tricks can help. For example (in a small problem like this), it might be beneficial to choose the leaving vector that results in the largest possible increase in the objective function.
+
+Other issues can complicate the problem, such as the very rare occurrence of **"cycling,"** which involves returning to a previously visited basis after several transformations. In practice, this is rarely seen.
+
+Another point is that in many cases, before solving a problem, we can perform some **pre-processing**. For example, identifying and deleting **redundant** constraints (meaning that removing the constraint doesn't change the optimal solution of the remaining system).
+
+What happens if the factory introduces a new (sixth) product, where the data for its resource need is given by $a_6$? We can easily realize that there's no need to repeat the entire computation. We only compute the column for the new product. The transformed form of the $a_6$ vector can be written as $B^{-1}a_6$, where $B$ is the current basis and $B^{-1}$ is its inverse. We then insert this column vector into the tableau. If the coefficient of this new vector in the last row (calculated as $c_B B^{-1}a_6 - c_6$) is non-negative, it means producing this new product is **not advantageous**. If this value is negative, and it's the only negative value in the last row, we continue the transformations as before.
+
+For example, suppose the column of the new product is $a_6 = (1, 2, 1)^T$, where the components represent the resource consumption from the three resources to produce one unit of this new product (say, product $\text{P}6$). Furthermore, let $c_6 = 35$, which is the profit gained from producing one unit.
+
+Note that the current basis is:
+
+$$B(a_3, s_2, a_5) = \begin{bmatrix} 1 & 0 & 0 \\ 1 & 1 & 1 \\ 0 & 0 & 2 \end{bmatrix} \quad \text{and} \quad B^{-1} = \begin{bmatrix} 1 & 0 & 0 \\ -1 & 1 & -1/2 \\ 0 & 0 & 1/2 \end{bmatrix}.$$
+
+We can also find the inverse in the last three columns of the simplex tableau. Thus, $B^{-1}a_6 = (1, 1/2, 1/2)^T$, and $c_B B^{-1}a_6 - c_6 = (15, 0, 33) \cdot (1, 1/2, 1/2) - 35 = -7/2$. This negative value means producing the new product is **advantageous**, and the procedure will continue with the vector representing the new product entering the basis.
+
+Finally, we mention an article that discusses various pivoting rules [34].
+
+---
+
+## 8.2 The Two-Phase (Primal) Simplex Method
+
+In this section, we'll briefly introduce the **Two-Phase Method**. What we demonstrated earlier is actually the **second phase** of this method. Therefore, we need to show the **first phase**.
+
+
+
+[Image of two-phase simplex method flowchart]
+
+
+The goal of the first phase is to **find a basic feasible solution**. In the second phase, starting from this feasible solution, we proceed step-by-step to find an **optimal solution**. When is the first phase needed? It's required when we are **not able to start** with a suitable feasible solution immediately.
+
+We will illustrate the first phase with an example. Let's assume our $\text{LP}$ is:
+
+$$\begin{array}{rcccccccc}
+x_1 & +2x_2 & +x_3 & +3x_4 & & & & \ge & 24 \\
+& x_2 & +x_3 & +5x_4 & +x_5 & & & \le & 43 \\
+x_1 & & & +2x_4 & +2x_5 & & & = & 18 \\
+19x_1 & +23x_2 & +15x_3 & +42x_4 & +33x_5 & = & z & \to & \max \\
+& & x_i \ge 0, 1 \le i \le 5
+\end{array}$$
+
+We've slightly modified our original example. This could be interpreted as needing to use **at least 24 units** of the first resource, being able to use **at most 43 units** of the second resource (as before), and needing to consume the **exact amount** of the third resource.
+
+First, we convert the inequalities to equations:
+
+$$\begin{array}{rccccccccc}
+x_1 & +2x_2 & +x_3 & +3x_4 & & -s_1 & & & = & 24 \\
+& x_2 & +x_3 & +5x_4 & +x_5 & & +s_2 & & = & 43 \\
+x_1 & & & +2x_4 & +2x_5 & & & & = & 18 \\
+19x_1 & +23x_2 & +15x_3 & +42x_4 & +33x_5 & & & & = & z \to \max \\
+& & x \ge 0, s \ge 0
+\end{array}$$
+
+Now, we can see that we **do not have enough unit vectors** to serve as an initial basis. Note that $s_2$ is called a **slack variable** and $s_1$ is called a **surplus variable**. Let's create the missing unit vectors we need for a basis:
+
+$$\begin{array}{rcccccccccc}
+x_1 & +2x_2 & +x_3 & +3x_4 & & -s_1 & & +t_1 & & = & 24 \\
+& x_2 & +x_3 & +5x_4 & +x_5 & & +s_2 & & & = & 43 \\
+x_1 & & & +2x_4 & +2x_5 & & & & +t_2 & = & 18 \\
+19x_1 & +23x_2 & +15x_3 & +42x_4 & +33x_5 & & & & & = & z \to \max \\
+& & x \ge 0, s \ge 0, t \ge 0
+\end{array}$$
+
+We call $t_1$ and $t_2$ **artificial variables**; we use them, but we aren't "allowed" to use them in the final result. The original equation system has a feasible solution (where all equations are satisfied with the bounded $x$ and $s$ variables) if and only if we can **eliminate the artificial variables** from the system. So, our goal is to eliminate them, which is the task of the first phase. Our technique involves introducing an **artificial (or secondary) objective function** as $\hat{z} = -t_1 - t_2$. Instead of the original objective function $z$, we will **maximize $\hat{z}$** in the first phase (using the same maximization method shown earlier). If the maximum value of $\hat{z}$ is **zero**, it means we have successfully eliminated the artificial variables, and we can continue with the second phase, where we return to the original objective function $z$. Otherwise, if the maximum of $\hat{z}$ is **negative**, it means the original $\text{LP}$ cannot be solved without the artificial variables, i.e., it **does not have a feasible solution**.
+
+---
+
+## 8.3 The Dual Simplex Method
+
+Alongside the Primal Simplex Method, the **Dual Simplex Method** is the other main version. We'll introduce it briefly. Consider the following $\text{LP}$:
+
+$$\begin{array}{rccccccc}
+x_1 & & +x_3 & & & \ge & 1 \\
+2x_1 & +x_2 & +3x_3 & & & \ge & 3 \\
+x_1 & +2x_2 & & & & \ge & 5 \\
+4x_1 & +2x_2 & +x_3 & & & \ge & 7 \\
+10x_1 & +12x_2 & +15x_3 & = & z & \to & \min \\
+& & x \ge 0
+\end{array}$$
+
+After multiplying all inequalities and the objective function by $-1$ and adding slack variables ($s_i$), we get the following system:
+
+$$\begin{array}{rccccccc}
+-x_1 & & -x_3 & +s_1 & & & & = & -1 \\
+-2x_1 & -x_2 & -3x_3 & & +s_2 & & & = & -3 \\
+-x_1 & -2x_2 & & & & +s_3 & & = & -5 \\
+-4x_1 & -2x_2 & -x_3 & & & & +s_4 & = & -7 \\
+-10x_1 & -12x_2 & -15x_3 & & & & & = & -z \to \max \\
+& & x \ge 0
+\end{array}$$
+
+Here is the first simplex tableau:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$a_3$** | **$s_1$** | **$s_2$** | **$s_3$** | **$s_4$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $s_1$ | -1 | **-1** | 0 | -1 | 1 | 0 | 0 | 0 |
+| $s_2$ | -3 | -2 | -1 | -3 | 0 | 1 | 0 | 0 |
+| $s_3$ | -5 | -1 | -2 | 0 | 0 | 0 | 1 | 0 |
+| $s_4$ | -7 | -4 | -2 | -1 | 0 | 0 | 0 | 1 |
+| $-z$ | 0 | 10 | 12 | 15 | 0 | 0 | 0 | 0 |
+
+Right away, you'll notice that this simplex tableau is different from the previous form. There are **only non-negative values** in the last row. We call this property **dual-feasibility**. However, the basic solution is **not primal-feasible**; there are negative values in the $x_B$ column. In fact, all values are negative or zero, as the basic solution is $x_B = (0, 0, 0, -1, -3, -5, -7)$. If, after several transformations, we can reach a tableau that is **both dual and primal feasible**, it means we have found the optimal tableau. Note that in the Primal Simplex Method (Phase 2), we move through primal feasible solutions, while in the Dual Simplex Method, we move through dual feasible solutions.
+
+Here is the rule for the transformation:
+* First, choose a row where the coordinate of the basic solution is **negative** (this basis vector will **leave the basis**).
+* From this row, we must choose a **negative pivot value**.
+* Then, apply an appropriate version of the minimum ratio test to choose the **entering column**.
+
+Let's suppose $s_1$ is the leaving vector. We choose the pivot value from the first row. We can choose the entering column from $a_1$, $a_2$, and $a_3$ as all other vectors are in the basis. The appropriate values in this row and these columns are $-1$, $0$, and $-1$. As we said, we must choose a negative value, so we cannot choose the zero. Regarding the other two values, we perform the calculation: $\min \{10/|-1|, 15/|-1|\}$. Here, the numerators come from the objective row, and the denominators are the **negatives** of the two previously listed values (i.e., $|-1|$ and $|-1|$). Since $10/1$ is smaller, the value $\mathbf{-1}$ in the $a_1$ column is chosen as the pivot value (bolded in the tableau).
+
+After the transformation (where the rule is the same as for the primal simplex method), we get the following tableau:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$a_3$** | **$s_1$** | **$s_2$** | **$s_3$** | **$s_4$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $a_1$ | 1 | 1 | 0 | 1 | -1 | 0 | 0 | 0 |
+| $s_2$ | -1 | 0 | **-1** | -1 | -2 | 1 | 0 | 0 |
+| $s_3$ | -4 | 0 | -2 | 1 | -1 | 0 | 1 | 0 |
+| $s_4$ | -3 | 0 | -2 | 3 | -4 | 0 | 0 | 1 |
+| $-z$ | -10 | 0 | 12 | 5 | 10 | 0 | 0 | 0 |
+
+Now, let's choose $s_3$ as the leaving vector (since $-4$ is the most negative basic solution value). There are only two negative values in its row that can be considered as the pivot value: $-2$ (in $a_2$) and $-1$ (in $s_1$). The calculation is: $\min \{12/|-2|, 10/|-1|\}$. Since the former fraction ($12/2 = 6$) is smaller, $\mathbf{-2}$ is chosen as the pivot value.
+
+After the transformation, the next tableau is:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$a_3$** | **$s_1$** | **$s_2$** | **$s_3$** | **$s_4$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $a_1$ | 1 | 1 | 0 | 1 | -1 | 0 | 0 | 0 |
+| $s_2$ | 1 | 0 | 0 | -3/2 | -3/2 | 1 | -1/2 | 0 |
+| $a_2$ | 2 | 0 | 1 | -1/2 | 1/2 | 0 | -1/2 | 0 |
+| $s_4$ | 1 | 0 | 0 | 2 | -3 | 0 | -1 | 1 |
+| $-z$ | -34 | 0 | 0 | 11 | 4 | 0 | 6 | 0 |
+
+Since we obtained a tableau with a solution that is **both primal and dual feasible**, this is an optimal solution. Here, $x_B = (1, 2, 0 \mid 0, 1, 0, 1)$, and the optimal value of the objective function is $z = 34$.
+
+---
+
+## 8.4 The Gomory Cut
+
+The **Gomory cut** is a key technique for finding **integer solutions** for an $\text{LP}$. If we require that the variables of an $\text{LP}$ must be integer numbers, the model is called an **Integer Linear Program ($\text{ILP}$)**. In many cases, some variables are required to be integers, while others can be real values; this is called a **Mixed-Integer Linear Program ($\text{MILP}$)**.
+
+Solving an integer (or mixed-integer) program is usually much more difficult than a standard LP. There are several tools to handle the integrality of variables; we will show only one such commonly used method. We will demonstrate the method using an example. The example comes from a book by András Prékopa, as mentioned in Tamás Szántai's manuscript [35], page 28 (in Hungarian), and also shown in Mihály Hujter's short (Hungarian) draft [36]. Note that we perform the calculations in a slightly different manner to maintain uniformity with our presentation of the Primal and Dual Simplex tableaux.
+
+
+
+Let's consider the following $\text{ILP}$:
+
+$$\begin{array}{rccccccc}
+2x_1 & +x_2 & & & & \ge & 1 \\
+2x_1 & +5x_2 & & & & \ge & 4 \\
+-x_1 & +x_2 & & & & \ge & 0 \\
+-x_1 & -x_2 & & & & \ge & -5 \\
+-x_1 & -2x_2 & & & & \ge & -4 \\
+5x_1 & +4x_2 & = & z & \to & \min \\
+& & x \ge 0, x_1, x_2 \text{ are integers}
+\end{array}$$
+
+Let's transform the inequalities to the "$\le$" type, then convert them to equations by introducing slack variables. We also transform the objective to the "$\max$" form. We get the following:
+
+$$\begin{array}{rccccccc}
+-2x_1 & -x_2 & +s_1 & & & & & = & -1 \\
+-2x_1 & -5x_2 & & +s_2 & & & & = & -4 \\
+x_1 & -x_2 & & & +s_3 & & & = & 0 \\
+x_1 & +x_2 & & & & +s_4 & & = & 5 \\
+x_1 & +2x_2 & & & & & +s_5 & = & 4 \\
+-5x_1 & -4x_2 & & & & & & = & -z \to \max \\
+& & x \ge 0
+\end{array}$$
+
+Now, let's create the usual simplex tableau:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$s_1$** | **$s_2$** | **$s_3$** | **$s_4$** | **$s_5$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $s_1$ | -1 | **-2** | -1 | 1 | 0 | 0 | 0 | 0 |
+| $s_2$ | -4 | -2 | -5 | 0 | 1 | 0 | 0 | 0 |
+| $s_3$ | 0 | 1 | -1 | 0 | 0 | 1 | 0 | 0 |
+| $s_4$ | 5 | 1 | 1 | 0 | 0 | 0 | 1 | 0 |
+| $s_5$ | 4 | 1 | 2 | 0 | 0 | 0 | 0 | 1 |
+| $-z$ | 0 | 5 | 4 | 0 | 0 | 0 | 0 | 0 |
+
+The tableau is **dual-feasible** but **primal-infeasible**. Let's perform basis transformations using the **Dual Simplex Method** to reach the optimal solution. In fact, two steps will be enough. First, $s_1$ leaves the basis and $a_1$ enters (according to the minimum ratio test), then $s_2$ leaves the basis and $a_2$ enters. The resulting tableau is as follows:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$s_1$** | **$s_2$** | **$s_3$** | **$s_4$** | **$s_5$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $a_1$ | 1/8 | 1 | 0 | -5/8 | 1/8 | 0 | 0 | 0 |
+| $a_2$ | 3/4 | 0 | 1 | 1/4 | -1/4 | 0 | 0 | 0 |
+| $s_3$ | 5/8 | 0 | 0 | 7/8 | -3/8 | 1 | 0 | 0 |
+| $s_4$ | 33/8 | 0 | 0 | 3/8 | 1/8 | 0 | 1 | 0 |
+| $s_5$ | 19/8 | 0 | 0 | 1/8 | 3/8 | 0 | 0 | 1 |
+| $-z$ | -29/8 | 0 | 0 | 17/8 | 3/8 | 0 | 0 | 0 |
+
+This tableau is optimal. The optimal (fractional) solution is $x_B = (1/8, 3/4 \mid 0, 0, 5/8, 33/8, 19/8)$. This is the optimal solution of the **relaxed model**, where $x \ge 0$ is required, but the integrality of the variables is not. The optimum value of the relaxed problem is $z = 29/8$.
+
+At this point, we will perform the famous **Gomory Cut**!
+
+We pick a fractional variable, e.g., $x_1 = 1/8$. Let's also consider the row of this variable in the tableau, where the data means:
+
+$$1/8 = x_1 - 5/8s_1 + 1/8s_2.$$
+
+We **round up** all coefficients in this equation. The rounding-up values (for $1/8, 1, -5/8, \text{ and } 1/8$) are $7/8, 0, 5/8, \text{ and } 7/8$, respectively. Using these values (and omitting the zero), we create the next (new) constraint:
+
+$$7/8 \le 5/8s_1 + 7/8s_2.$$
+
+We can see that this condition **does not hold**, since $s_1 = s_2 = 0$ in the current optimal (fractional) basic solution. This means that by adding this constraint to the previously used constraints, the current basic solution becomes **infeasible**. Let's multiply the new constraint by $-1$ and introduce a new slack variable, $s_6$. We get:
+
+$$-5/8s_1 - 7/8s_2 + s_6 = -7/8.$$
+
+We add this new equation to the system and write it as a new line in the simplex tableau:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$s_1$** | **$s_2$** | **$s_3$** | **$s_4$** | **$s_5$** | **$s_6$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $a_1$ | 1/8 | 1 | 0 | -5/8 | 1/8 | 0 | 0 | 0 | 0 |
+| $a_2$ | 3/4 | 0 | 1 | 1/4 | -1/4 | 0 | 0 | 0 | 0 |
+| $s_3$ | 5/8 | 0 | 0 | 7/8 | -3/8 | 1 | 0 | 0 | 0 |
+| $s_4$ | 33/8 | 0 | 0 | 3/8 | 1/8 | 0 | 1 | 0 | 0 |
+| $s_5$ | 19/8 | 0 | 0 | 1/8 | 3/8 | 0 | 0 | 1 | 0 |
+| $s_6$ | -7/8 | 0 | 0 | -5/8 | **-7/8** | 0 | 0 | 0 | 1 |
+| $-z$ | -29/8 | 0 | 0 | 17/8 | 3/8 | 0 | 0 | 0 | 0 |
+
+The tableau is still dual-feasible but not primal-feasible. We choose the row of $s_6$ for the leaving vector. According to the minimum ratio test, the pivot value is **$-7/8$** (in $s_2$'s column) since $3/|-7/8| = 3/(7/8) = 24/7 \approx 3.43$, which is smaller than $17/|-5/8| = 17/(5/8) = 136/5 = 27.2$.
+
+After the transformation, the next tableau is as follows:
+
+| **B** | **$x_B$** | **$a_1$** | **$a_2$** | **$s_1$** | **$s_2$** | **$s_3$** | **$s_4$** | **$s_5$** | **$s_6$** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $a_1$ | 0 | 1 | 0 | -5/7 | 0 | 0 | 0 | 0 | 1/7 |
+| $a_2$ | 1 | 0 | 1 | 3/7 | 0 | 0 | 0 | 0 | -2/7 |
+| $s_3$ | 1 | 0 | 0 | 8/7 | 0 | 1 | 0 | 0 | -3/7 |
+| $s_4$ | 4 | 0 | 0 | 2/7 | 0 | 0 | 1 | 0 | 1/7 |
+| $s_5$ | 2 | 0 | 0 | -1/7 | 0 | 0 | 0 | 1 | 3/7 |
+| $s_2$ | 1 | 0 | 0 | 5/7 | 1 | 0 | 0 | 0 | -8/7 |
+| $-z$ | -4 | 0 | 0 | 13/7 | 0 | 0 | 0 | 0 | 3/7 |
+
+We obtained an optimal tableau again (primal and dual feasible, so it's optimal). Here, the optimal solution is $x_B = (0, 1 \mid 0, 1, 1, 4, 2)$. Since $x_1 = 0$ and $x_2 = 1$ are integer values, this means we have found the optimal solution of the $\text{ILP}$ as well.
+
+---
+----
+
+# Chapter 9: Summary
+
+We have explored the capabilities of the **GNU MathProg modeling language** through various examples. This included solving linear equation systems, the production and diet problems (along with their common extensions), the transportation problem, various general cost functions, and integer programming techniques applied to common optimization problems.
+
+**Mathematical programming** generally offers a simple, practical solution for the types of problems it is designed to handle. While **$\text{MILP}$** models cover a much wider range of scenarios than their purely **$\text{LP}$** counterparts, both problem classes are useful in their own right.
+
+Gaining expertise in GNU MathProg provides us with a **unique tool** for solving complex optimization problems. Although the solution speed might not be the absolute fastest for every specific problem, the **ease of implementation**, **maintenance**, and **adaptability to changes** in the problem definition make this methodology highly valuable for both industrial and scientific applications.
+
+Typically, you develop a single **model file** to handle all instances of a problem, while the specific data for each instance is stored in separate **data files**. The **glpsol** solver can parse the language and solve the model in a single run, and it can also generate user-defined output.
+
+We also provided insight into how $\text{LP}$ models are solved using the **Simplex Method** and introduced one technique for integer programming: the **Gomory cut**. These serve only as an introduction to how $\text{LP}/\text{MILP}$ solver software operates in the background. While we can often treat solvers as **black boxes**, having a basic understanding of them is useful for developing and improving mathematical programming models, as well as interpreting their results.
+
+Note that there are many approaches beyond the primary workflow demonstrated in this tutorial. Here are a few concluding points:
+
+* The GNU MathProg language and a parser/solver like glpsol can be used alone to develop and solve models, but the GLPK software kit offers **other features**, most notably a **callable library**. Accessing linear programming tools directly from a programming language is often better in the long run than relying on standalone GNU MathProg model files. For instance, you cannot "change" the value of a parameter within GNU MathProg logic, which limits your ability to process input data dynamically.
+* We only briefly touched on the different **configurations** of the glpsol solver in this tutorial. Applying the appropriate **heuristics** or **alternative solution methods** can significantly speed up the search.
+* While the glpsol solver is an easy-to-use tool, it is likely **not the fastest** $\text{LP}/\text{MILP}$ solver available. Other free solvers, such as **$\text{CBC}$** [7] or **$\text{lpsolve}$** [8], may be superior if performance is a concern. **Commercial $\text{MILP}$ solvers** can be significantly faster. You can still use these alternative solvers with GNU MathProg models because glpsol supports exporting models into well-known formats.
+* GNU MathProg is **not the only language** for linear programming. There are dozens of other languages, each supporting its own class of models, input/output formats, and solvers.
+* **$\text{LP}$ and $\text{MILP}$ are not the only mathematical programming problem classes** with general-purpose solvers. If you need specific **nonlinear objectives and constraints** to model a situation, you might try developing a **Nonlinear or Mixed-Integer Nonlinear Programming ($\text{NLP}$ or $\text{MINLP}$)** model in an appropriate environment. Just remember that more general tools can be much more costly in terms of running time.
+* Mathematical programming is a powerful tool, but some problems have **much more effective algorithmic solutions**. Sometimes, writing a specific algorithm yields better results, though it often requires more coding effort.
+* Throughout this tutorial, we solved models **in their entirety** to get a final answer. Generally, however, mathematical programming tools can be used as **part of a larger algorithmic framework**. For example, a large problem can be **decomposed** into several different models that are solved separately or sequentially. Alternatively, an $\text{LP}/\text{MILP}$ model can serve as a **relaxation** for a more complex optimization problem, providing a **bound** for its objective function.
+
+We hope you find this tutorial helpful and motivating as you tackle real-life optimization problems in the future.
